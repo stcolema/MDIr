@@ -5,6 +5,20 @@ runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed
     .Call(`_MDIr_runAltMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
 }
 
+#' @title Create Similarity Matrix
+#' @description Constructs a similarity matrix comparing all points clustering across the 
+#' iterations.
+#' 
+#' @param cluster_record Matrix of label assignment for data across iterations.
+#' 
+#' @return A symmetric n x n matrix (for n rows in cluster record) describing 
+#' the fraction of iterations for which each pairwise combination of points are
+#' assigned the same label.
+#' @export
+createSimilarityMat <- function(cluster_record) {
+    .Call(`_MDIr_createSimilarityMat`, cluster_record)
+}
+
 #' title Propose new non-negative value
 #' description Propose new non-negative for sampling.
 #' param x Current value to be proposed
