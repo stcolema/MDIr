@@ -1,0 +1,51 @@
+
+useDynLib(MDIr, .registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+
+# Export statements
+export(calcAllocProb)
+export(callMDI)
+export(callMixtureModel)
+export(findOrder)
+export(generateInitialLabels)
+export(generateInitialSemiSupervisedLabels)
+export(generateInitialUnsupervisedLabels)
+export(getLikelihood)
+export(plotLikelihoods)
+export(predictFromMultipleChains)
+export(prepDataForggHeatmap)
+export(prepSimilarityMatricesForGGplot)
+export(prepareMSObject)
+export(processMCMCChain)
+export(processMCMCChains)
+export(runMCMCChains)
+
+# Import statements
+## Rcpp
+importFrom(Rcpp,evalCpp)
+importFrom(Rcpp,sourceCpp)
+
+## RcppParallel
+importFrom(RcppParallel, RcppParallelLibs)
+
+## ggplot2
+importFrom(ggplot2,aes_string)
+importFrom(ggplot2,facet_wrap)
+importFrom(ggplot2,geom_line)
+importFrom(ggplot2,ggplot)
+importFrom(ggplot2,label_both)
+
+## stats
+importFrom(stats,dist)
+importFrom(stats,hclust)
+importFrom(stats,median)
+importFrom(stats,rbeta)
+
+## stringr
+importFrom(stringr,str_extract)
+
+## tidyr
+importFrom(tidyr,any_of)
+importFrom(tidyr,pivot_longer)
+
+useDynLib(MDIr)
