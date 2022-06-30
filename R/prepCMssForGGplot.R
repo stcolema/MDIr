@@ -32,6 +32,8 @@
 #'   facet_grid(Depth~Width, labeller = label_both()) + 
 #'   scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 #'}
+#'
+#' @export
 prepCMssForGGplot <- function(cms, model_description_df,
                               matrix_setting_order = NULL) {
   

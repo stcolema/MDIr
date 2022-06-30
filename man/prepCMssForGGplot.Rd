@@ -39,4 +39,5 @@ ggplot(aes(x = x, y = y, fill = Entry)) +
   facet_grid(Depth~Width, labeller = label_both()) + 
   scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 }
+
 }
