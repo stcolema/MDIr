@@ -38,6 +38,7 @@
 #'   labs(title = "Assessing stability across cms for increasing numbers of chains") +
 #'   ggthemes::scale_color_colorblind()
 #'}
+#' @export
 makeCMComparisonSummaryDF <- function(cms, model_description_df) {
   D <- model_description_df$Depth
   W <- model_description_df$Width
