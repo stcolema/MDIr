@@ -242,3 +242,17 @@ arma::mat roundMatrix(arma::mat X, int n_places) {
   double multiplier = std::pow(10, n_places);
   return round(X * multiplier) / multiplier;
 }
+
+int choose(arma::uword n, arma::uword k) {
+  if (k == 0) {
+    return 1;
+  } 
+  return (n * choose(n - 1, k - 1)) / k;
+}
+
+int logChoose(arma::uword n, arma::uword k) {
+  if (k == 1 || k == 0) {
+    return 0;
+  } 
+  return log(n) - log(k) + logChoose(n - 1, k - 1);
+}

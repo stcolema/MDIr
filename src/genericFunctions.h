@@ -156,4 +156,19 @@ vec sampleMean(arma::mat X);
 //' @return Matrix X round to n_places decimal places.
 arma::mat roundMatrix(arma::mat X, int n_places = 0);
 
+
+//' @title Choose
+//' @description N choose K for binomial coefficient
+//' @param n unsigned int (greater than k)
+//' @param k unsigned int 
+//' @return n choose k
+int choose(arma::uword n, arma::uword k);
+
+//' @title Log Choose
+//' @description Log transform of N choose K for binomial coefficient
+//' @param n unsigned int (greater than k)
+//' @param k unsigned int 
+//' @return n choose k
+int logChoose(arma::uword n, arma::uword k);
+
 #endif /* GENFUN_H */

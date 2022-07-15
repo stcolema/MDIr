@@ -96,6 +96,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs$V <- V
   merged_outputs$K <- K
 
+  merged_outputs$phis <- do.call(rbind, lapply(processed_chains, function(x) x$phis))
+  merged_outputs$mass <- do.call(rbind, lapply(processed_chains, function(x) x$mass))
+  
   first_chain <- TRUE
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
