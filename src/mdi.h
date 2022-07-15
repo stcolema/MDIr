@@ -49,7 +49,7 @@ public:
     
     // Prior hyperparameters for MDI phi parameters
     phi_shape_prior = 1.0,
-    phi_rate_prior = 0.2,
+    phi_rate_prior = 0.1,
     
     // Model fit
     complete_likelihood = 0.0;
@@ -68,7 +68,11 @@ public:
     L_inds,             // indices over views
     N_inds;             // indices over items
   
-  arma::vec phis, complete_likelihood_vec, mass;
+  arma::vec phis,
+    mass, 
+    complete_likelihood_vec, 
+    N_ones, 
+    N_log_factorial_vec;
   
   arma::umat 
     
@@ -140,7 +144,7 @@ public:
   
   // Calculate the log-weights of the mixture of Gammas the shape is sampled 
   // from
-  arma::vec calculatePhiShapeMixtureWeights(arma::uword N_vw, double rate);
+  arma::vec calculatePhiShapeMixtureWeights(int N_vw, double rate);
   
   // Sample the shape parameter of the phi posterior distribution from a mixture 
   // of Gammas
@@ -207,6 +211,7 @@ public:
   // Check if labels should be swapped to improve correlation of clustering
   // across datasets via random sampling.
   void updateLabels();
+  void updateLabelsViewL(uword l);
 
 };
 
