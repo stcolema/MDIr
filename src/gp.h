@@ -38,7 +38,7 @@ class gp : virtual public density
 public:
   
   bool logNormPriorUsed = true, use_log_norm_proposal = true;
-  uword sampleHypersFrequency = 5, samplingCount = 0;
+  uword sampleHypersFrequencyBefore100 = 5, sampleHypersFrequencyBefore1000 = 10, sampleHypersFrequencyAfter1000 = 25, samplingCount = 0;
   std::string matrixSaved = "i";
   
   double

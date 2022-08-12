@@ -418,6 +418,7 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
 };
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
+  bool sampleHypers = false;
   vec mu_tilde(P), sample_mean(P);
   mat
     cov_tilde(P, P), 
@@ -478,7 +479,13 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
-  if((samplingCount % sampleHypersFrequency) == 0) {
+  sampleHypers = (
+    (samplingCount < 100 && (samplingCount % sampleHypersFrequencyBefore100) == 0) ||
+    (samplingCount > 100 && samplingCount < 1000 && (samplingCount % sampleHypersFrequencyBefore1000) == 0) ||
+    (samplingCount > 1000 && (samplingCount % sampleHypersFrequencyAfter1000) == 0)
+  );
+  
+  if(sampleHypers) {
     sampleHyperParametersKthComponent(
       k,
       n_k,

@@ -252,6 +252,20 @@ NULL
 #' @return Matrix X round to n_places decimal places.
 NULL
 
+#' @title Choose
+#' @description N choose K for binomial coefficient
+#' @param n unsigned int (greater than k)
+#' @param k unsigned int 
+#' @return n choose k
+NULL
+
+#' @title Log Choose
+#' @description Log transform of N choose K for binomial coefficient
+#' @param n unsigned int (greater than k)
+#' @param k unsigned int 
+#' @return n choose k
+NULL
+
 #' @title Squared exponential function
 #' @description The squared exponential function as used in a covariance kernel.
 #' @param amplitude The amplitude parameter (double)

@@ -1,0 +1,219 @@
+---
+title: "Running TAGM"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+T-augmented Gaussian mixture (TAGM) models have previously been implemented for semi-supervised prediction of protein localisation in the ``pRoloc`` Bioconductor package. Here we show how to call such a model, both on a single dataset and as a density choice within Multiple Dataset Integration (MDI).
+
+We will look at data from Tan et al. (2009), available in ``pRolocdata``.
+
+## Setup
+
+First we call we construct our library of packages for the analysis.
+
+```{r library}
+library(tagmReDraft)
+library(pRoloc)
+library(pRolocdata)
+
+# Used for visualisation
+library(magrittr)
+library(ggplot2)
+library(tidyr)
+library(tibble)
+library(dplyr)
+
+# My preference for ggplot2 theme
+ggplot2::theme_set(
+  ggplot2::theme_bw()
+  + ggplot2::theme(strip.background = ggplot2::element_rect(fill = "#21677e")) 
+  + ggplot2::theme(strip.text = ggplot2::element_text(colour = "white"))
+)
+
+# Load the first replicate for the Tan dataset.
+data(tan2009r1)
+```
+
+We then convert this to the format required by our model.
+
+```{r dataPrep}
+marker.data <- pRoloc::markerMSnSet(tan2009r1)
+
+# The numeric data we will be clustering
+X <- MSnbase::exprs(tan2009r1)
+
+# The number of samples modelled
+N <- nrow(X)
+
+# The number of components to model
+K <- length(pRoloc::getMarkerClasses(tan2009r1))
+
+# Create a data frame of the classes present and their associated number
+classes_pres <- pRoloc::getMarkerClasses(tan2009r1)
+class_key <- data.frame(Class = classes_pres, Key = 1:length(classes_pres))
+  
+# Number of views/datasets modelled
+V <- 1
+
+# save true marker labels
+test.markers <- MSnbase::fData(tan2009r1)$markers
+labels <- match(test.markers, class_key$Class)
+
+labels[is.na(labels)] <- 1
+
+# The initial labelling to model from; this is described in a matrix
+initial_labels <- matrix(labels, ncol = V)
+    
+# Fix training points, allow test points to move component
+fix_vec_1 <- (MSnbase::fData(tan2009r1)[, "markers"] != "unknown") * 1    
+    
+# Our model requires a matrix input
+fixed <- matrix(fix_vec_1, ncol = V)
+
+# The type of density modelled is tagm, this is inputted as a vector
+types <- c("TAGM")
+   
+# The modelled data is passed as a list to generalise to multiple datasets
+data_modelled <- list(
+  X
+)
+```    
+   
+ We then call the model, choosing to run a certain number of chains and iterations.
+   
+```{r callModel, cache=TRUE}     
+n_chains <- 3
+num_iter <- 5000
+thin <- 50
+burn <- 1000
+
+# tagm
+mcmc_chains <- runMCMCChains(data_modelled,
+  n_chains,
+  num_iter,
+  thin,
+  initial_labels,
+  fixed,
+  types,
+  K
+)
+    
+```
+
+This returns a list containing various objects, including the complete likelihod which can be used to assess convergence.
+
+```{r modelFit}
+likelihood_mat <- matrix(0, 
+  nrow = length(mcmc_chains[[1]]$complete_likelihood),
+  ncol = n_chains
+)
+    
+for(jj in seq(n_chains)) {
+  likelihood_mat[, jj] <- mcmc_chains[[jj]]$complete_likelihood
+}
+
+likelihood_df <- likelihood_mat %>% 
+  as.data.frame() %>%
+  set_colnames(paste("Chain", seq(1, n_chains))) %>% 
+  rowid_to_column(var = "Iteration") %>% 
+  mutate(Iteration = Iteration * thin) %>% 
+  pivot_longer(-Iteration, names_to = "Chain", values_to = "Complete_likelihood")
+
+likelihood_df %>% 
+  ggplot(aes(x = Iteration, y = Complete_likelihood, colour = Chain)) +
+  geom_line() + 
+  labs(
+    title = "TAGM: model fit",
+    y = "Complete log-likelihood"
+  )
+
+
+likelihood_df %>% 
+  filter(Iteration > burn) %>% 
+  ggplot(aes(x = Iteration, y = Complete_likelihood, colour = Chain)) +
+  geom_line() + 
+  labs(
+    title = "TAGM: model fit after burn-in",
+    y = "Complete log-likelihood"
+  )
+    
+```
+
+We want to turn our sampled quantities into point estimates. Here we will combine all three chains rather than use a single chain as representative.
+
+```{r pointEstimate}
+combined_chains <- predictFromMultipleChains(mcmc_chains, burn)
+allocation_matrix <- combined_chains$allocation_probability[[1]]
+
+# predicted classes
+predicted_classes <- combined_chains$pred[[1]]
+allocation_probabilities <- combined_chains$prob[[1]]
+predicted_organelles <- class_key$Class[predicted_classes]
+
+pc1 <- prcomp(X)
+
+relevant_components <- pc1$x[, c(1, 2)]
+
+point_estimate_viz_df <- relevant_components %>% 
+  as.data.frame() %>%
+  set_colnames(c("PC1", "PC2")) %>% 
+  mutate(
+    Organelle = predicted_organelles, 
+    Probability = allocation_probabilities
+  )
+
+point_estimate_viz_df %>% 
+  ggplot(aes(x = PC1, y= PC2, colour = Organelle, alpha = Probability)) + 
+  geom_point() + 
+  labs(title = "TAGM: predicted localisation")
+
+
+```    
+
+## Multiple datasets
+
+We might want to run multiple datasets, such as integrating LOPIT data and GO term data. To do this we load the relevant data from ``pRolocdata`` and put it into similar format to the preceding section. However, this dataset will be unsupervised, so the associated column of the ``fixed`` input will contain only zeros.
+
+```{r prepMDI, cache=TRUE}
+data(tan2009r1goCC)
+
+# We also model a categorical density, represented by "C"
+types <- c("TAGM", "C")
+
+# we will use an overfitted mixture model to cluster the GO terms
+n_clust_cat <- 50
+
+# We add the e
+data_modelled <- list(
+  MSnbase::exprs(tan2009r1),
+  MSnbase::exprs(tan2009r1goCC)
+)
+
+K <- c(K, n_clust_cat)
+V <- 2
+
+# The initial labelling to model from; this is described in a matrix
+initial_labels <- fixed <- matrix(0, nrow = N, ncol = V)
+
+# We have to update the labels and fixed objects for the semi-supervised data
+initial_labels[, 1] <- labels
+fixed[, 1] <- fix_vec_1
+
+# Call MDI
+mcmc_chains <- runMCMCChains(data_modelled,
+  n_chains,
+  num_iter,
+  thin,
+  initial_labels,
+  fixed,
+  types,
+  K
+)
+
+```
