@@ -4,11 +4,14 @@
 \alias{prepareMSObject}
 \title{Prepare MS Object}
 \usage{
-prepareMSObject(MS_object)
+prepareMSObject(MS_object, order_by_protein_name = FALSE)
 }
 \arguments{
 \item{MS_object}{A mass spectrometry experiment such as ``tan2009r1`` from 
 ``pRolocdata``.}
+
+\item{order_by_protein_name}{Logical indicating if output should be ordered
+by protein name. Defaults to ``FALSE``.}
 }
 \value{
 A list of ``X``, the fracitonation data from a LOPIT experiment, 
