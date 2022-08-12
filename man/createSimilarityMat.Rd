@@ -4,10 +4,11 @@
 \alias{createSimilarityMat}
 \title{Create Similarity Matrix}
 \usage{
-createSimilarityMat(cluster_record)
+createSimilarityMat(allocations)
 }
 \arguments{
-\item{cluster_record}{Matrix of label assignment for data across iterations.}
+\item{allocations}{Matrix of sampled partitions. Columns correspond to 
+items/samples being clustered, each row is a sampled partition.//'}
 }
 \value{
 A symmetric n x n matrix (for n rows in cluster record) describing 
@@ -15,6 +16,6 @@ the fraction of iterations for which each pairwise combination of points are
 assigned the same label.
 }
 \description{
-Constructs a similarity matrix comparing all points clustering across the 
-iterations.
+Constructs a similarity matrix of the pairwise coclustering 
+rate.
 }

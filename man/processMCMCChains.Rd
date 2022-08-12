@@ -4,12 +4,24 @@
 \alias{processMCMCChains}
 \title{Process MCMC chains}
 \usage{
-processMCMCChains(mcmc_lst, burn, point_estimate_method = "median")
+processMCMCChains(
+  mcmc_lst,
+  burn,
+  point_estimate_method = "median",
+  construct_psm = FALSE
+)
 }
 \arguments{
 \item{mcmc_lst}{Output from ``runMCMCChains``}
 
 \item{burn}{The number of MCMC samples to drop as part of a burn in.}
+
+\item{point_estimate_method}{Summary statistic used to define the point 
+estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
+
+\item{construct_psm}{Logical indicating if PSMs be constructed in the 
+unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+this is used to infer the point estimate rather than the sampled partitions.}
 }
 \value{
 A named list similar to the output of
@@ -22,8 +34,6 @@ A named list similar to the output of
  allocated to the class with the highest probability.
 
  * ``pred``: $N$ vector. The predicted class for each sample.
- 
- @importFrom parallel parLapply
 }
 \description{
 Applies a burn in to and finds a point estimate for each of the
