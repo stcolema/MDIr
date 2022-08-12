@@ -3,6 +3,11 @@
 #' chains outputted from ``runMCMCChains``.
 #' @param mcmc_lst Output from ``runMCMCChains``
 #' @param burn The number of MCMC samples to drop as part of a burn in.
+#' @param point_estimate_method Summary statistic used to define the point 
+#' estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.
+#' @param construct_psm Logical indicating if PSMs be constructed in the 
+#' unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+#' this is used to infer the point estimate rather than the sampled partitions.
 #' @returns A named list similar to the output of
 #' ``runMCMCChains`` with some additional entries:
 #' 
@@ -14,10 +19,10 @@
 #'
 #'  * ``pred``: $N$ vector. The predicted class for each sample.
 #'  
-#'  @importFrom parallel parLapply
 #' @export
 processMCMCChains <- function(mcmc_lst, burn,
-                              point_estimate_method = "median") {
+                              point_estimate_method = "median",
+                              construct_psm = FALSE) {
   new_output <- lapply(
     mcmc_lst,
     processMCMCChain,

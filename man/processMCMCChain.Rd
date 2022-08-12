@@ -4,25 +4,34 @@
 \alias{processMCMCChain}
 \title{Process MCMC chain}
 \usage{
-processMCMCChain(mcmc_output, burn, point_estimate_method = "median")
+processMCMCChain(
+  mcmc_output,
+  burn,
+  point_estimate_method = "median",
+  construct_psm = FALSE
+)
 }
 \arguments{
 \item{mcmc_output}{Output from ``batchSemiSupervisedMixtureModel``}
 
 \item{burn}{The number of MCMC samples to drop as part of a burn in.}
 
-\item{point_estimate_method}{Summary statistic used to define the point 
+\item{point_estimate_method}{Summary statistic used to define the point
 estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
+
+\item{construct_psm}{Logical indicating if PSMs be constructed in the 
+unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+this is used to infer the point estimate rather than the sampled partitions.}
 }
 \value{
-A named list similar to the output of 
+A named list similar to the output of
 ``batchSemiSupervisedMixtureModel`` with some additional entries:
- * ``allocation_probability``: $(N x K)$ matrix. The point estimate of 
+ * ``allocation_probability``: $(N x K)$ matrix. The point estimate of
  the allocation probabilities for each data point to each class.
- 
- * ``prob``: $N$ vector. The point estimate of the probability of being 
+
+ * ``prob``: $N$ vector. The point estimate of the probability of being
  allocated to the class with the highest probability.
- 
+
  * ``pred``: $N$ vector. The predicted class for each sample.
 }
 \description{

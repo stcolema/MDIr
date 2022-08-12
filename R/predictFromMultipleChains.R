@@ -5,6 +5,10 @@
 #' @param burn The number of MCMC samples to drop as part of a burn in.
 #' @param point_estimate_method Summary statistic used to define the point
 #' estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.
+#' @param construct_psm Logical indicating if PSMs be constructed in the 
+#' unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+#' this is used to infer the point estimate rather than the sampled partitions.
+#' @param chains_already_processed 
 #' @returns A named list of quantities related to prediction/clustering:
 #'
 #'  * ``allocation_probability``: List with an $(N x K)$ matrix for each
@@ -21,10 +25,12 @@
 #'  * ``allocations``: List of sampled allocations for each view. Columns
 #'    correspond to items being clustered, rows to MCMC samples.
 #'
+#' @importFrom salso salso
 #' @export
 predictFromMultipleChains <- function(mcmc_outputs,
                                       burn,
                                       point_estimate_method = "median",
+                                      construct_psm = FALSE,
                                       chains_already_processed = FALSE) {
 
   
@@ -33,7 +39,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
     processed_chains <- mcmc_outputs
   } else {
     # Process the chains, making point estimates and applying a burn-in
-    processed_chains <- processMCMCChains(mcmc_outputs, burn, point_estimate_method)
+    processed_chains <- processMCMCChains(mcmc_outputs, burn, point_estimate_method, construct_psm)
   }
 
   # The number of chains
@@ -84,6 +90,10 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs$allocation_probability <- vector("list", V)
   merged_outputs$prob <- vector("list", V)
   merged_outputs$pred <- vector("list", V)
+  
+  if(construct_psm) {
+    merged_outputs$psm <- vector("list", V)
+  }
 
   merged_outputs$R <- R
   merged_outputs$thin <- thin
@@ -117,7 +127,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
       } else {
         .prev <- merged_outputs$allocations[[v]]
         .current <- .curr_chain$allocations[, , v, drop = TRUE]
-        merged_outputs$allocations[[v]] <- rbind(.prev, .current)
+        merged_outputs$allocations[[v]] <- .alloc <- rbind(.prev, .current)
       }
 
       if (current_view_is_semi_supervised) {
@@ -138,6 +148,14 @@ predictFromMultipleChains <- function(mcmc_outputs,
       merged_outputs$prob[[v]] <- .prob <- apply(.alloc_prob, 1, max)
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     }
+     else {
+       if(construct_psm) {
+         merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+         merged_outputs$pred[[v]] <- salso::salso(.psm)
+       } else {
+         merged_outputs$pred[[v]] <- salso::salso(.alloc)
+       }
+     }
   }
 
   merged_outputs
