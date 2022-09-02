@@ -8,20 +8,23 @@ generateInitialLabels(labels, fixed, K, alpha, labels_as_intended = FALSE)
 }
 \arguments{
 \item{labels}{$N x V$ matrix of initial labels. The actual values passed only
-matter for semi-supervised views (i.e. the views for which some labels are 
+matter for semi-supervised views (i.e. the views for which some labels are
 observed).}
 
-\item{fixed}{$N x V$ matrix indicating which labels are observed and hence 
+\item{fixed}{$N x V$ matrix indicating which labels are observed and hence
 fixed. If the vth column has no 1's then this view is unsupervised.}
 
 \item{K}{The number of components modelled in each  view.}
 
 \item{alpha}{The concentration parameter (vector).}
+
+\item{labels_as_intended}{Logical indicating if ``labels`` is the intended
+output.}
 }
 \value{
 An N vector of labels.
 }
 \description{
-For V views, generate initial labels allowing for both 
+For V views, generate initial labels allowing for both
 semi-supervised and unsupervised views.
 }

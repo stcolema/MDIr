@@ -9,16 +9,16 @@ runMCMCChains(
   n_chains,
   R,
   thin,
-  initial_labels,
-  fixed,
   types,
-  K,
+  K = NULL,
+  initial_labels = NULL,
+  fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE
 )
 }
 \arguments{
-\item{X}{Data to cluster. List of $L$ matrices with the $N$ items to cluster 
+\item{X}{Data to cluster. List of $L$ matrices with the $N$ items to cluster
 held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
@@ -28,6 +28,12 @@ held in rows.}
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
 
+\item{types}{Character vector indicating density type to use. 'MVN'
+(multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
+
+\item{K}{Vector indicating the number of components to include (the upper
+bound on the number of clusters in each dataset).}
+
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
 
 \item{fixed}{Which items are fixed in their initial label. $N x L$ matrix.}
@@ -35,14 +41,8 @@ held in rows.}
 \item{alpha}{The concentration parameter for the stick-breaking prior and the
 weights in the model.}
 
-\item{initial_labels_as_intended}{Logical indicating if the passed initial 
+\item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
-
-\item{type}{Character vector indicating density type to use. 'MVN'
-(multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
-
-\item{K_max}{Vector indicating the number of components to include (the upper
-bound on the number of clusters in each dataset).}
 }
 \value{
 A named list containing the sampled partitions, component weights and
@@ -51,4 +51,28 @@ phi parameters, model fit measures and some details on the model call.
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using
 the same inputs in each model run.
+}
+\examples{
+
+N <- 100
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+
+truth <- c(rep(1, N / 2), rep(2, N / 2))
+data_modelled <- list(X, Y)
+
+V <- length(data_modelled)
+
+# This R is much too low for real applications
+R <- 100
+thin <- 5
+burn <- 10
+
+K_max <- 10
+K <- rep(K_max, V)
+types <- rep("G", V)
+
+n_chains <- 3
+mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+
 }

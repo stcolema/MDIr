@@ -11,6 +11,11 @@ checkNumberOfSamples(R, thin, verbose = FALSE)
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
+
+\item{verbose}{Logical inficating if warnings should be printed.}
+}
+\value{
+No return value, called for side effects.
 }
 \description{
 Internal function to check the number of MCMC samples.

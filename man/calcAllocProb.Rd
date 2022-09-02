@@ -9,7 +9,7 @@ calcAllocProb(mcmc_samples, view, burn = 0, method = "median")
 \arguments{
 \item{mcmc_samples}{Output from ``callMDI``.}
 
-\item{view}{Which view to calculate the allocation probabilities for.}
+\item{view}{The view for which to calculate the allocation probabilities.}
 
 \item{burn}{The number of samples to discard.}
 
@@ -21,5 +21,6 @@ An N x K matrix of class probabilities.
 }
 \description{
 Calculate the empirical allocation probability for each class
-based on the sampled allocation probabilities.
+based on the sampled allocation probabilities. Only makes sense in
+semi-supervised views.
 }

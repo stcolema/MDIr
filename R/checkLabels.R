@@ -3,9 +3,13 @@
 #' type.
 #' @param labels Vector of initial labels for a view in ``callMDI``.
 #' @param K Number of components modelled.
-#' @return NULL
+#' @return No return value, called for side effects.
+#' @examples
+#' N <- 20
+#' K <- 3
+#' labels <- sample(seq(1, K), replace = TRUE, size = N)
+#' checkLabels(labels, K)
 checkLabels <- function(labels, K) {
-  
   not_numeric <- any(!is.numeric(labels))
 
   if (not_numeric) {
@@ -15,10 +19,10 @@ checkLabels <- function(labels, K) {
     )
     stop(err_message)
   }
-  
+
   nas_present <- any(is.na(labels))
-  
-  if(nas_present) {
+
+  if (nas_present) {
     err_message <- paste(
       "NAs present in labels. All labels must be integer values between 1 and",
       "K, the number of components modelled."
@@ -33,13 +37,12 @@ checkLabels <- function(labels, K) {
   if (labels_not_integers) {
     stop("Labels must be integers, not doubles.")
   }
-  
-  
+
   n_initial_components <- length(unique(labels))
   highest_labels <- max(labels)
-  
+
   too_many_components <- (n_initial_components > K)
-    
+
   if (too_many_components) {
     err_message <- paste(
       "There are more unique labels in the initial allocations than components",
@@ -47,7 +50,7 @@ checkLabels <- function(labels, K) {
     )
     stop(err_message)
   }
-    
+
   components_are_mislabelled <- (highest_labels > K)
   if (components_are_mislabelled) {
     err <- paste0(

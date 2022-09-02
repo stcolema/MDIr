@@ -8,20 +8,18 @@
 #' @importFrom parallel parLapply
 #' @export
 plotLikelihoods <- function(mcmc_outputs,
-                            colour_by_chain = TRUE
-) {
+                            colour_by_chain = TRUE) {
   lkl_lst <- lapply(mcmc_outputs, getLikelihood)
-  
+
   n_chains <- length(lkl_lst)
-  for(ii in seq(1, n_chains)) {
+  for (ii in seq(1, n_chains)) {
     lkl_lst[[ii]]$chain <- mcmc_outputs[[ii]]$Chain
   }
-  
+
   lkl_df <- do.call(rbind, lkl_lst)
   lkl_df$chain <- factor(lkl_df$chain)
-  
-  if(colour_by_chain) {
-    
+
+  if (colour_by_chain) {
     p <- ggplot2::ggplot(
       data = lkl_df,
       mapping = ggplot2::aes_string(
@@ -44,6 +42,6 @@ plotLikelihoods <- function(mcmc_outputs,
   }
   p <- p +
     ggplot2::facet_wrap(~view, labeller = ggplot2::label_both)
-  
+
   p
 }

@@ -15,7 +15,6 @@ export(plotLikelihoods)
 export(predictFromMultipleChains)
 export(prepDataForggHeatmap)
 export(prepSimilarityMatricesForGGplot)
-export(prepareMSObject)
 export(processMCMCChain)
 export(processMCMCChains)
 export(runMCMCChains)
@@ -29,23 +28,28 @@ importFrom(Rcpp,sourceCpp)
 importFrom(RcppParallel, RcppParallelLibs)
 
 ## ggplot2
-importFrom(ggplot2,aes_string)
-importFrom(ggplot2,facet_wrap)
-importFrom(ggplot2,geom_line)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,label_both)
+importFrom(ggplot2, aes_string)
+importFrom(ggplot2, facet_wrap)
+importFrom(ggplot2, geom_line)
+importFrom(ggplot2, ggplot)
+importFrom(ggplot2, label_both)
 
 ## stats
-importFrom(stats,dist)
-importFrom(stats,hclust)
-importFrom(stats,median)
-importFrom(stats,rbeta)
+importFrom(stats, dist)
+importFrom(stats, hclust)
+importFrom(stats, median)
+importFrom(stats, rnorm)
+importFrom(stats, sd)
+importFrom(stats, rbeta)
 
 ## stringr
 importFrom(stringr,str_extract)
 
 ## tidyr
-importFrom(tidyr,any_of)
-importFrom(tidyr,pivot_longer)
+importFrom(tidyr, any_of)
+importFrom(tidyr, pivot_longer)
+
+## salso for unsupervised point estimate
+importFrom(salso, salso)
 
 useDynLib(MDIr)

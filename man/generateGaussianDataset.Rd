@@ -7,19 +7,21 @@
 generateGaussianDataset(
   cluster_means,
   std_dev,
-  n,
-  p,
+  N,
+  P,
   pi,
-  row_names = paste0("Person_", 1:n),
-  col_names = paste0("Gene_", 1:p)
+  row_names = paste0("Person_", seq(1, N)),
+  col_names = paste0("Gene_", seq(1, P))
 )
 }
 \arguments{
 \item{cluster_means}{A k-vector of cluster means defining the k clusters.}
 
-\item{n}{The number of samples to generate in the entire dataset.}
+\item{std_dev}{A k-vector of cluster standard deviations defining the k clusters.}
 
-\item{p}{The number of columns to generate in the dataset.}
+\item{N}{The number of samples to generate in the entire dataset.}
+
+\item{P}{The number of columns to generate in the dataset.}
 
 \item{pi}{A k-vector of the expected proportion of points to be drawn from
 each distribution.}
@@ -31,4 +33,12 @@ each distribution.}
 \description{
 Generate a dataset based upon a mixture of Gaussian distributions
 (with independent features).
+}
+\examples{
+cluster_means <- c(-2, 0, 2)
+std_dev <- c(1, 1, 1.25)
+N <- 100
+P <- 5
+pi <- c(0.3, 0.3, 0.4)
+generateGaussianDataset(cluster_means, std_dev, N, P, pi)
 }

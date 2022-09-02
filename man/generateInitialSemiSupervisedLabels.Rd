@@ -10,13 +10,13 @@ generateInitialSemiSupervisedLabels(labels, fixed)
 \item{labels}{The vector of labels, represented by integers, for the initial
 labelling in a dataset.}
 
-\item{fixed}{The vector of 0s and 1s indicating which labels are observed / 
+\item{fixed}{The vector of 0s and 1s indicating which labels are observed /
 to be held fixed.}
 }
 \value{
 An N vector of labels.
 }
 \description{
-For a dataset with some observed labels, generate a vector of 
+For a dataset with some observed labels, generate a vector of
 initial labels based on the proportion of each class in the observed subset.
 }

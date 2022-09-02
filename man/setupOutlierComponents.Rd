@@ -15,6 +15,6 @@ outlier component types should be used. 0, the default, means no outliers are
 modelled, 1 uses a global MVT distribution to model outliers a la Crook et al.
 }
 \description{
-Internal function that translates the types passed to ``callMDI`` 
+Internal function that translates the types passed to ``callMDI``
 into the outlier component type vector.
 }

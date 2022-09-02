@@ -16,11 +16,11 @@ processMCMCChains(
 
 \item{burn}{The number of MCMC samples to drop as part of a burn in.}
 
-\item{point_estimate_method}{Summary statistic used to define the point 
+\item{point_estimate_method}{Summary statistic used to define the point
 estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
 
-\item{construct_psm}{Logical indicating if PSMs be constructed in the 
-unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+\item{construct_psm}{Logical indicating if PSMs be constructed in the
+unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and
 this is used to infer the point estimate rather than the sampled partitions.}
 }
 \value{
