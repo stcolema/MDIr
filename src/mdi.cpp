@@ -227,9 +227,9 @@ void mdiModelAlt::initialisePhis() {
   
   // Map between a dataset pair and the column index. This will be a lower
   // triangular matrix of unsigned ints
-  phi_ind_map.set_size(L, L);
-  phi_ind_map.fill(100);
-  // phi_ind_map.diag().fill(100);
+  phi_map.set_size(L, L);
+  phi_map.fill(100);
+  // phi_map.diag().fill(100);
   
   // Column index is, for some pair of datasets l and m,
   // \sum_{i = 0}^{l} (L - i - 1) + (m - l - 1). As this is awkward, let's
@@ -242,8 +242,8 @@ void mdiModelAlt::initialisePhis() {
       // phi_indicator.col(col_ind) = (comb_inds.col(l) == comb_inds.col(m));
       
       // Record which column index maps to which phi
-      phi_ind_map(m, l) = col_ind;
-      phi_ind_map(l, m) = col_ind;
+      phi_map(m, l) = col_ind;
+      phi_map(l, m) = col_ind;
       
       // The column index is awkward, this is the  easiest solution
       col_ind++;
@@ -347,7 +347,7 @@ double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword kstar,
   }
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = m + 1; m < L; m++) {
-      output *= (1.0 + phis(phi_ind_map(l, m)) * (current_ks(l) == current_ks(m)));
+      output *= (1.0 + phis(phi_map(l, m)) * (current_ks(l) == current_ks(m)));
     }
   }
   return output;
@@ -423,12 +423,12 @@ double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, 
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
       if(m != view_j) {
-        output *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+        output *= (1.0 + phis(phi_map(m, l)) * (current_ks(l) == current_ks(m)));
       }
     }
   }
   for(uword l = 0; l < view_j - 1; l++) {
-    output *= (1.0 + phis(phi_ind_map(l, view_j)) * (current_ks(l) == current_ks(view_j)));
+    output *= (1.0 + phis(phi_map(l, view_j)) * (current_ks(l) == current_ks(view_j)));
   }
   return output;
 };
@@ -525,9 +525,9 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
 //   relevant_phi_inidicators = phi_indicator_t_mat.cols(relevant_inds);
 //  
 //   // Drop phi_{lstar, mstar} from both the indicator matrix and the phis vector
-//   relevant_phi_inidicators.shed_row(phi_ind_map(mstar, lstar));
+//   relevant_phi_inidicators.shed_row(phi_map(mstar, lstar));
 //   relevant_phis = phis;
-//   relevant_phis.shed_row(phi_ind_map(mstar, lstar));
+//   relevant_phis.shed_row(phi_map(mstar, lstar));
 //   
 //   n_used = relevant_combinations.n_rows;
 //   
@@ -582,12 +582,7 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     } else {
       rate = 1.0;
     }
-    
-    // Rcpp::Rcout << "\nk: " << k;
-    // Rcpp::Rcout << "\nShape: " << shape - 1 << "\n";
-    // Rcpp::Rcout << "\nRate: " << rate << "\n";
-    
-    
+
     // Sample a new weight
     posterior_shape = (mass(l) / (double) K(l)) + shape;
     posterior_rate = w_rate_prior + rate;
@@ -596,28 +591,24 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     // Pass the allocation count down to the mixture
     // (this is used in the parameter sampling)
     mixtures[l]->members.col(k) = members_lk;
-    
   }
-  
   mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
 }
 
 // Update the cluster weights
 void mdiModelAlt::updateWeights() {
   
-  for(uword l = 0; l < L; l++) {
-    updateWeightsViewL(l);
-  }
-
-  // std::for_each(
-  //   std::execution::par,
-  //   L_inds.begin(),
-  //   L_inds.end(),
-  //   [&](uword l) {
-  //     updateWeightsViewL(l);
-  //   }
-  // );
-  
+  // for(uword l = 0; l < L; l++) {
+  //   updateWeightsViewL(l);
+  // }
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+      updateWeightsViewL(l);
+    }
+  );
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
@@ -675,7 +666,7 @@ void mdiModelAlt::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
   for(uword ii = 0; ii < (N_lm + 1); ii++) {
     phis_vec(ii) = weights(ii) * rGamma(ii + phi_shape_prior, rate + phi_rate_prior);
   }
-  phis(phi_ind_map(m, l)) = accu(phis_vec);
+  phis(phi_map(m, l)) = accu(phis_vec);
 }
 
 arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(
@@ -694,13 +685,12 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(
     log_weights(N_lm + 1);
   log_weights.zeros();
   
-  N_lm_ones = regspace(0,  N_lm);
+  // N_lm_ones = regspace(0,  N_lm);
   // r_log_factorial_vec = N_log_factorial_vec.subvec(0, N_lm);
-
   for(int r = 0; r < (N_lm + 1); r++) {
     log_n_choose_r = logChoose(N_lm, r);
     r_alpha_gamma_function = lgamma(r + phi_shape_prior);
-    beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
+    beta_part = ((double) r + phi_shape_prior) * std::log(rate + phi_rate_prior);
     log_weights(r) = log_n_choose_r + r_alpha_gamma_function - beta_part;
   }
   return log_weights;
@@ -721,7 +711,7 @@ void mdiModelAlt::updatePhis() {
       shape = samplePhiShape(l, m, rate);
       posterior_shape = phi_shape_prior + shape;
       posterior_rate = phi_rate_prior + rate;
-      phis(phi_ind_map(m, l)) = rGamma(posterior_shape, posterior_rate);
+      phis(phi_map(m, l)) = rGamma(posterior_shape, posterior_rate);
       // averagePhiUpdate(l, m, rate); // smoother update
     }
   }
@@ -753,7 +743,7 @@ void mdiModelAlt::updatePhis() {
 //       // Rcpp::Rcout << "\n\nShape:" << shape;
 //       // Rcpp::Rcout << "\nRate:" << rate;
 //       
-//       phis(phi_ind_map(m, l)) = randg(distr_param(
+//       phis(phi_map(m, l)) = randg(distr_param(
 //         phi_shape_prior + shape,
 //         1.0 / (phi_rate_prior + rate)
 //       )
@@ -799,14 +789,17 @@ void mdiModelAlt::updatePhis() {
 
 double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   uword l = 0;
-  double iter_value = 1.0;
+  double iter_value = 1.0, log_iter_value = 0.0, same_label = 0.0;
   
   for(uword jj = 0; jj < L; jj++) {
     iter_value *= w(current_ks(jj), jj);
+    log_iter_value += log(w(current_ks(jj), jj));
   }
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
-      iter_value *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+      same_label = 1.0 * (current_ks(l) == current_ks(m));
+      iter_value *= 1.0 + phis(phi_map(m, l)) * same_label;
+      // log_iter_value += log(1.0 + phis(phi_map(m, l)) * same_label);
     }
   }
   return iter_value;
@@ -884,7 +877,7 @@ void mdiModelAlt::sampleFromGlobalPriors() {
     phis = samplePhiPrior(LC2);
     // phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
   } else {
-    phis.ones();
+    phis.zeros();
   }
   
   for(uword l = 0; l < L; l++) {
@@ -923,17 +916,40 @@ void mdiModelAlt::updateMassParameterViewL(uword lstar) {
   
   current_weights = w(span(0, K(lstar) - 1), lstar);
   current_mass = mass(lstar);
-  cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / (double) K(lstar), 1);
-  cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
+  
+  // Log likelihood and log prior density
+  cur_log_likelihood = gammaLogLikelihood(
+    current_weights, 
+    current_mass / (double) K(lstar), 
+    1
+  );
+  
+  cur_log_prior = gammaLogLikelihood(
+    current_mass, 
+    mass_shape_prior, 
+    mass_rate_prior
+  );
+  
   proposed_mass = proposeNewNonNegativeValue(current_mass,
     mass_proposal_window, 
     use_log_norm_proposal
-  ); // current_mass + randn() * mass_proposal_window;
+  );
+  
   if(proposed_mass <= 0.0) {
     acceptance_ratio = 0.0;
   } else {
-    new_log_likelihood = gammaLogLikelihood(current_weights, proposed_mass / (double) K(lstar), 1);
-    new_log_prior = gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
+    new_log_likelihood = gammaLogLikelihood(
+      current_weights, 
+      proposed_mass / (double) K(lstar), 
+      1.0
+    );
+    
+    new_log_prior = gammaLogLikelihood(
+      proposed_mass,  
+      mass_shape_prior, 
+      mass_rate_prior
+    );
+    
     acceptance_ratio = exp(
       new_log_likelihood
       + new_log_prior 
@@ -948,55 +964,50 @@ void mdiModelAlt::updateMassParameterViewL(uword lstar) {
 };
 
 mat mdiModelAlt::calculateUpweights(uword lstar) {
-  uvec matching_labels(N);
-  matching_labels.zeros();
-    
-  mat upweights(N, K(lstar));
-  upweights.ones();
+  double same_label = 0.0;
+  mat log_upweights(K(lstar), N);
+  log_upweights.zeros();
+  // Upweights are (1 + \phi)
   for(uword m = 0; m < L; m++) {
-
     if(m != lstar){
-      for(uword k = 0; k < K(lstar); k++) {
+      for(uword k = 0; k < K(lstar); k++) {  
         for(uword n = 0; n < N; n++ ) {
-          upweights(n, k) *= (1.0 + phis(phi_ind_map(m, lstar)) * (double) (labels(n, m) == k));
+          same_label = 1.0 * (double) (labels(n, m) == k);
+          log_upweights(k, n) += log(1.0 + phis(phi_map(m, lstar)) * same_label);
         }
-        // matching_labels = 1.0 * (labels.col(m) == k);
-        // // Recall that the map assumes l < m; so account for that
-        // if(l < m) {
-        //   upweights.col(k) += phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
-        // } else {
-        //   upweights.col(k) += phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
-        // }
       }
     }
   }
-  // Upweights are (1 + \phi)
-  // upweights++;
-  return upweights;
+  return log_upweights;
 };
 
+void mdiModelAlt::initialiseDatasetL(uword l) {
+  vec log_weights(K(l));
+  mat log_upweights(K(l), N);
+  log_upweights = calculateUpweights(l);
+  log_weights = log(w(span(0, K(l) - 1), l));
+  mixtures[l]->initialiseMixture(log_weights, log_upweights);
+  labels.col(l) = mixtures[l]->labels;
+  non_outliers.col(l) = mixtures[l]->non_outliers;
+}
+
 void mdiModelAlt::initialiseMDI() {
-  mat upweights;
-  
   initialiseMixtures();
   sampleFromPriors();
   for(uword l = 0; l < L; l++) {
-    upweights = calculateUpweights(l);
-    mixtures[l]->initialiseMixture(w(span(0, K(l) - 1), l), upweights.t());
-    
-    labels.col(l) = mixtures[l]->labels;
-    non_outliers.col(l) = mixtures[l]->non_outliers;
+    initialiseDatasetL(l);
   }
 };
 
 void mdiModelAlt::updateAllocationViewL(uword l) {
   
-  mat upweights; // (N, K_max);
-
-  upweights = calculateUpweights(l);
+  vec log_weights(K(l));
+  mat log_upweights(K(l), N);
+  log_weights = log(w(span(0, K(l) - 1), l));
+  log_upweights = calculateUpweights(l);
   
   // Update the allocation within the mixture using MDI level weights and phis
-  mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
+  mixtures[l]->updateAllocation(log_weights, log_upweights);
   
   // Pass the new labels from the mixture level back to the MDI level.
   labels.col(l) = mixtures[l]->labels;
@@ -1016,7 +1027,6 @@ void mdiModelAlt::updateAllocation() {
       updateAllocationViewL(l);
     }
   );
-  
   complete_likelihood = accu(complete_likelihood_vec);
 };
 
@@ -1039,32 +1049,26 @@ double mdiModelAlt::sampleLabel(arma::uword kstar, arma::vec K_inv_cum) {
 }
 
 double mdiModelAlt::calcScore(arma::uword lstar, arma::umat c) {
-  
   bool not_current_context = true;
-  double score = 0.0, upweight = 0.0;
+  double score = 0.0, upweight = 0.0; // , same_label = 0.0;
   uvec agreeing_labels(N);
+  vec same_label(N);
   agreeing_labels.zeros();
-  
-  // Rcpp::Rcout << "\nScore: " << score;
+  same_label.zeros();
   
   for(uword m = 0; m < L; m++) {
     // Skip the current context (the lth context)
     not_current_context = (m != lstar);
     if(not_current_context) {
-      for(uword n = 0; n < N; n++) {
-        upweight = phis(phi_ind_map(m, lstar)) * (c(n, m) == c(n, lstar));
-        score += log(1.0 + upweight);
-      }
-      // // Find which labels agree between datasets
-      // agreeing_labels = 1 * (c.col(m) == c.col(lstar));
-      // // Update the score based on the phi's
-      // score2 += accu(log(1.0 + phis(phi_ind_map(m, lstar)) * agreeing_labels));
+      same_label = conv_to<vec>::from(c.col(m) == c.col(lstar));
+      score += accu(log(1.0 + phis(phi_map(m, lstar)) * same_label));
+      // for(uword n = 0; n < N; n++) {
+      //   same_label = 1.0 * (c(n, m) == c(n, lstar));
+      //   upweight = phis(phi_map(m, lstar)) * same_label;
+      //   score += log(1.0 + upweight);
+      // }
     }
   }
-  // if(score != score2) {
-  //   Rcpp::Rcout << "\nScore: " << score;  
-  //   Rcpp::Rcout << "\nAlt score: " << score2;
-  // }
   return score;
 }
 
@@ -1107,46 +1111,13 @@ arma::umat mdiModelAlt::swapLabels(arma::uword lstar, arma::uword kstar, arma::u
 // Check if labels should be swapped to improve correlation of clustering
 // across datasets via random sampling.
 void mdiModelAlt::updateLabels() {
-  
   bool multipleUnfixedComponents = true;
-  
-  // // The other component considered
-  // uword k_prime = 0;
-  // 
-  // // Random uniform number
-  // double u = 0.0,
-  //   
-  //   // The current likelihood
-  //   curr_score = 0.0,
-  //   
-  //   // The competitor
-  //   alt_score = 0.0,
-  //   
-  //   // The accpetance probability
-  //   accept = 1.0,
-  //   log_accept = 0.0,
-  //   
-  //   // The weight of the kth component if we do accept the swap
-  //   old_weight = 0.0;
-  // 
-  // // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
-  // // its cumulative sum, used to sample another label to consider swapping.
-  // vec K_inv, K_inv_cum;
-  // 
-  // umat swapped_labels(N, L);
-  
   if(L == 1) {
     return;
   }
-  // std::for_each(
-  //   std::execution::par,
-  //   L_inds.begin(),
-  //   L_inds.end(),
-  //   [&](uword l) {
-      for(uword l = 0; l < L; l++) {
-      updateLabelsViewL(l);
-    }
-  // );
+  for(uword l = 0; l < L; l++) {
+    updateLabelsViewL(l);
+  }
 };
 
 void mdiModelAlt::updateLabelsViewL(uword lstar) {
@@ -1171,13 +1142,14 @@ void mdiModelAlt::updateLabelsViewL(uword lstar) {
     // The competitor
     proposed_score = 0.0,
     
-    // The accpetance probability
+    // The acceptance probability
     acceptance_prob = 1.0,
     log_acceptance_prob = 0.0,
     
     // The weight of the kth component if we do accept the swap
     old_weight = 0.0;
   
+  // Membership of the kth and k'th components in the lth dataset
   uvec members_lk, members_lk_prime;
   
   // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
@@ -1185,8 +1157,6 @@ void mdiModelAlt::updateLabelsViewL(uword lstar) {
   vec K_inv, K_inv_cum;
   
   umat swapped_labels(N, L);
-  
-  // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
   K_inv = ones<vec>(K_unfixed(lstar) - 1) * (1.0 / (double)(K_unfixed(lstar) - 1));
   K_inv_cum = cumsum(K_inv);
   

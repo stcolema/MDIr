@@ -22,7 +22,7 @@
 prepSimilarityMatricesForGGplot <- function(similarity_matrices,
                                             matrix_setting_order = 1,
                                             use_common_ordering = TRUE,
-                                            ignore_checks = FALSE) {
+                                            ignore_checks = TRUE) {
   not_list <- !is.list(similarity_matrices)
   if (not_list) {
     stop("`similarity_matrices` must be a list of matrices.")
@@ -51,6 +51,9 @@ prepSimilarityMatricesForGGplot <- function(similarity_matrices,
 
   for (ii in seq(1, n_matrices)) {
     first_iteration <- ii == 1
+    if(! use_common_ordering) {
+      row_order <- col_order <- findOrder(similarity_matrices[[ii]])
+    }
     .df <- prepDataForggHeatmap(similarity_matrices[[ii]], row_order, col_order)
     .df$Chain <- ii
     if (first_iteration) {

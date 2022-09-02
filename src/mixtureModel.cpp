@@ -87,7 +87,11 @@ mixtureModel::mixtureModel(
   
 };
 
-void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
+void mixtureModel::updateItemAllocation(
+    uword n, 
+    vec log_weights, 
+    vec log_upweigths
+  ) {
   double u = 0.0;
   uvec uniqueK;
   vec comp_prob(K), ll(K);
@@ -96,7 +100,7 @@ void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
   ll = itemLogLikelihood(X_t.col(n));
   
   // Update with weights
-  comp_prob = ll + log(weights) + log(upweigths.col(n));
+  comp_prob = ll + log_weights + log_upweigths;
   
   // Record the likelihood - this is used to calculate the observed likelihood
   observed_likelihood_vec(n) = accu(comp_prob);
@@ -123,8 +127,8 @@ void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
 };
   
 void mixtureModel::updateAllocation(
-  arma::vec weights, 
-  arma::mat upweigths
+  arma::vec log_weights, 
+  arma::mat log_upweigths
 ) {
   
   double u = 0.0;
@@ -140,7 +144,7 @@ void mixtureModel::updateAllocation(
   
   // for (auto& n : unfixed_ind) {
   std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
-    updateItemAllocation(n, weights, upweigths);
+    updateItemAllocation(n, log_weights, log_upweigths.col(n));
   }
   );
   
@@ -215,8 +219,8 @@ void mixtureModel::initialiseOutlierComponent(uword type) {
 
 
 void mixtureModel::initialiseMixture(
-    arma::vec weights,
-    arma::mat upweigths
+    arma::vec log_weights,
+    arma::mat log_upweigths
 ) {
   
   uvec uniqueK;
@@ -232,7 +236,7 @@ void mixtureModel::initialiseMixture(
     ll = itemLogLikelihood(X_t.col(n));
     
     // Update with weights
-    comp_prob = ll + log(weights) + log(upweigths.col(n));
+    comp_prob = ll + log_weights + log_upweigths.col(n);
     
     // Record the likelihood - this is used to calculate the observed likelihood
     // likelihood(n) = accu(comp_prob);

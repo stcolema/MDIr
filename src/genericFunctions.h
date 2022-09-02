@@ -169,6 +169,6 @@ int choose(arma::uword n, arma::uword k);
 //' @param n unsigned int (greater than k)
 //' @param k unsigned int 
 //' @return n choose k
-int logChoose(arma::uword n, arma::uword k);
+double logChoose(double n, double k);
 
 #endif /* GENFUN_H */

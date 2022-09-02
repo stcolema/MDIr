@@ -64,8 +64,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
   # Indices for views
   view_inds <- seq(1, V)
 
-  # Is the output semisupervised
+  # Is the output semisupervised and overfitted
   is_semisupervised <- first_chain$Semisupervised
+  is_overfitted <- first_chain$Overfitted
 
   # What summary statistic is used to define our point estimates
   use_median <- point_estimate_method == "median"
@@ -86,6 +87,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   # Setup the output list
   merged_outputs <- list()
+  merged_outputs$Semisupervised <- is_semisupervised
+  merged_outputs$Overfitted <- is_overfitted
+  
   merged_outputs$allocations <- vector("list", V)
   merged_outputs$allocation_probability <- vector("list", V)
   merged_outputs$prob <- vector("list", V)
@@ -109,10 +113,16 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs$phis <- do.call(rbind, lapply(processed_chains, function(x) x$phis))
   merged_outputs$mass <- do.call(rbind, lapply(processed_chains, function(x) x$mass))
   
+  merged_outputs$weights <- list()
+  for(v in view_inds) {
+    merged_outputs$weights[[v]] <- do.call(rbind, lapply(processed_chains, function(x) x$weights[-dropped_indices, , v, drop = TRUE]))
+  }
+  
   first_chain <- TRUE
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
-    
+    current_view_is_overfitted <- is_overfitted[v]
+
     merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
       0,
       N,
@@ -123,7 +133,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
       in_first_chain <- (ii == 1)
 
       if (in_first_chain) {
-        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v, drop = TRUE]
+        merged_outputs$allocations[[v]] <- .alloc <- .curr_chain$allocations[, , v, drop = TRUE]
       } else {
         .prev <- merged_outputs$allocations[[v]]
         .current <- .curr_chain$allocations[, , v, drop = TRUE]
@@ -137,6 +147,11 @@ predictFromMultipleChains <- function(mcmc_outputs,
         .alloc_prob <- .prev + .curr
       }
     }
+    
+    if(construct_psm) {
+      merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+      # merged_outputs$pred[[v]] <- salso::salso(.psm)
+    } 
 
     if (current_view_is_semi_supervised) {
 
@@ -144,19 +159,43 @@ predictFromMultipleChains <- function(mcmc_outputs,
       .alloc_prob <- .alloc_prob / n_chains
 
       merged_outputs$allocation_probability[[v]] <- .alloc_prob
-
       merged_outputs$prob[[v]] <- .prob <- apply(.alloc_prob, 1, max)
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
+      
+      if(current_view_is_overfitted) {
+        merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
+      } 
     }
      else {
-       if(construct_psm) {
-         merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
-         merged_outputs$pred[[v]] <- salso::salso(.psm)
-       } else {
-         merged_outputs$pred[[v]] <- salso::salso(.alloc)
-       }
+       # if(construct_psm) {
+       #   merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+       #   # merged_outputs$pred[[v]] <- salso::salso(.psm)
+       # } 
+       # else {
+       merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
+       # }
      }
   }
+  
+  VC2 <- choose(V, 2)
+  merged_outputs$fusion_probabilities <- vector("list", VC2)
+  
+  entry <- 0
+  names <- c()
+  for(v in seq(1, V - 1)) {
+    for(w in seq(v + 1, V)) {
+      name <- paste0("fused_items_", v, w)
+      names <- c(names, name)
+      entry <- entry + 1
+      merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
+      for(ii in seq(1, n_chains)) {
+        merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
+          calcFusionProbabiliy(processed_chains[[ii]], v, w)
+      }
+      merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] / n_chains
+    }
+  }
+  names(merged_outputs$fusion_probabilities) <- names
 
   merged_outputs
 }

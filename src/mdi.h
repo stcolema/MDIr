@@ -82,7 +82,7 @@ public:
     // Various objects used to calculate MDI weights, normalising constant and phis
     comb_inds,
     phi_indicator,
-    phi_ind_map,
+    phi_map,
     phi_indicator_t,
     
     // Class membership in each dataset
@@ -202,6 +202,7 @@ public:
   // Initialise the model, sampling from priors and calculating some initial 
   // objects
   void initialiseMDI();
+  void initialiseDatasetL(uword l);
 
   // === Label swapping functions ==============================================
   

@@ -66,6 +66,7 @@ processMCMCChain <- function(mcmc_output, burn,
   new_output <- mcmc_output
 
   new_output$mass <- mcmc_output$mass[-dropped_indices, , drop = F]
+  new_output$weights <- mcmc_output$weights[-dropped_indices, , , drop = F]
   if (multiple_views) {
     # The information sharing parameters
     new_output$phis <- mcmc_output$phis[-dropped_indices, , drop = F]
@@ -103,13 +104,15 @@ processMCMCChain <- function(mcmc_output, burn,
       new_output$prob[[v]] <- apply(.alloc_prob, 1, max)
       new_output$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     } else {
-      if (construct_psm) {
-        new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
-        new_output$pred[[v]] <- salso::salso(.psm)
-      } else {
-        new_output$pred[[v]] <- salso::salso(new_output$allocations[, , v])
-      }
+      new_output$pred[[v]] <- suppressWarnings(salso::salso(new_output$allocations[, , v]))
     }
+    if (construct_psm) {
+      new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
+    } 
+  }
+  
+  if(multiple_views) {
+    new_output$fusion_probabilities <- calcFusionProbabiliyAllViews(new_output)
   }
 
   # Record the applied burn in

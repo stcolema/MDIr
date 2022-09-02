@@ -2,7 +2,7 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed) {
-    .Call(`_tagmReDraft_runAltMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
+    .Call(`_MDIr_runAltMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
 }
 
 #' @title Create Similarity Matrix
@@ -15,7 +15,7 @@ runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed
 #' assigned the same label.
 #' @export
 createSimilarityMat <- function(allocations) {
-    .Call(`_tagmReDraft_createSimilarityMat`, allocations)
+    .Call(`_MDIr_createSimilarityMat`, allocations)
 }
 
 #' title Propose new non-negative value
@@ -273,7 +273,7 @@ NULL
 #' @param j Time point (unsigned integer)
 #' @return Boolean indicating acceptance.
 squaredExponentialFunction <- function(amplitude, length, i, j) {
-    .Call(`_tagmReDraft_squaredExponentialFunction`, amplitude, length, i, j)
+    .Call(`_MDIr_squaredExponentialFunction`, amplitude, length, i, j)
 }
 
 #' @title Gamma log-likelihood
@@ -304,7 +304,7 @@ NULL
 #' @return the log-likelihood of x in a Gamma with parameters shape 
 #' and rate.
 gammaLogLikelihood <- function(x, shape, rate) {
-    .Call(`_tagmReDraft_gammaLogLikelihood`, x, shape, rate)
+    .Call(`_MDIr_gammaLogLikelihood`, x, shape, rate)
 }
 
 #' @title Inverse gamma log-likelihood
@@ -316,7 +316,7 @@ gammaLogLikelihood <- function(x, shape, rate) {
 #' @return the unnormalised log-likelihood of x in a inverse-Gamma with parameters 
 #' shape and scale.
 invGammaLogLikelihood <- function(x, shape, scale) {
-    .Call(`_tagmReDraft_invGammaLogLikelihood`, x, shape, scale)
+    .Call(`_MDIr_invGammaLogLikelihood`, x, shape, scale)
 }
 
 #' @title Wishart log-likelihood
@@ -329,7 +329,7 @@ invGammaLogLikelihood <- function(x, shape, scale) {
 #' @return the unnormalised log-likelihood of X in a Wishart with parameters V 
 #' and n.
 wishartLogLikelihood <- function(X, V, n, P) {
-    .Call(`_tagmReDraft_wishartLogLikelihood`, X, V, n, P)
+    .Call(`_MDIr_wishartLogLikelihood`, X, V, n, P)
 }
 
 #' @title Inverse-Wishart log-likelihood
@@ -342,7 +342,7 @@ wishartLogLikelihood <- function(X, V, n, P) {
 #' @return the unnormalised log-likelihood of X in a inverse-Wishart with parameters Psi 
 #' and nu.
 invWishartLogLikelihood <- function(X, Psi, nu, P) {
-    .Call(`_tagmReDraft_invWishartLogLikelihood`, X, Psi, nu, P)
+    .Call(`_MDIr_invWishartLogLikelihood`, X, Psi, nu, P)
 }
 
 #' @title Multivariate t log-likelihood
@@ -355,7 +355,7 @@ invWishartLogLikelihood <- function(X, Psi, nu, P) {
 #' @return the normalised log-likelihood of x in a MVT distribution with 
 #' parameters mu, Sigma and nu.
 mvtLogLikelihood <- function(x, mu, Sigma, nu) {
-    .Call(`_tagmReDraft_mvtLogLikelihood`, x, mu, Sigma, nu)
+    .Call(`_MDIr_mvtLogLikelihood`, x, mu, Sigma, nu)
 }
 
 #' @title Multivariate Normal log-likelihood
@@ -369,6 +369,6 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
 #' @return the normalised log-likelihood of x in a MVN distribution with 
 #' parameters mu, Sigma.
 pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
-    .Call(`_tagmReDraft_pNorm`, x, mu, Sigma, is_sympd)
+    .Call(`_MDIr_pNorm`, x, mu, Sigma, is_sympd)
 }
 

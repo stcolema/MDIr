@@ -8,7 +8,7 @@ prepSimilarityMatricesForGGplot(
   similarity_matrices,
   matrix_setting_order = 1,
   use_common_ordering = TRUE,
-  ignore_checks = FALSE
+  ignore_checks = TRUE
 )
 }
 \arguments{
