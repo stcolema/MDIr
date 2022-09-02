@@ -109,8 +109,8 @@ public:
   // Destructor
   virtual ~mixtureModel() { };
   
-  void updateAllocation(arma::vec weights, arma::mat upweigths);
-  void updateItemAllocation(uword n, vec weights, mat upweigths);
+  void updateAllocation(arma::vec log_weights, arma::mat log_upweigths);
+  void updateItemAllocation(uword n, vec log_weights, vec log_upweigths);
   
   arma::uword sampleOutlier(
     double non_outlier_likelihood_n,
@@ -122,7 +122,7 @@ public:
   // Initialise the density, outlier component and mixture model
   void initialiseDensity(arma::uword type);
   void initialiseOutlierComponent(arma::uword type);
-  void initialiseMixture(arma::vec weights, arma::mat upweigths);
+  void initialiseMixture(arma::vec log_weights, arma::mat log_upweigths);
   
   // The functions collected from the density
   void sampleFromPriors();

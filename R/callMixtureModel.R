@@ -135,7 +135,15 @@ callMixtureModel <- function(X,
   mcmc_output$alpha <- alpha
 
   # Indicate if the model was semi-supervised or unsupervised
-  mcmc_output$Semisupervised <- any(fixed == 1)
+  mcmc_output$Semisupervised <- is_semisupervised <- any(fixed == 1)
+  
+  mcmc_output$Overfitted <- TRUE
+  if(is_semisupervised) {
+    known_labels <- which(fixed == 1)
+    K_fix <- length(unique(initial_labels[known_labels]))
+    is_overfitted <- (K > K_fix)
+    mcmc_output$Overfitted <- is_overfitted
+  }
 
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken

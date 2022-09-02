@@ -30,13 +30,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // createSimilarityMat
-arma::mat createSimilarityMat(arma::umat cluster_record);
-RcppExport SEXP _MDIr_createSimilarityMat(SEXP cluster_recordSEXP) {
+arma::mat createSimilarityMat(arma::umat allocations);
+RcppExport SEXP _MDIr_createSimilarityMat(SEXP allocationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::umat >::type cluster_record(cluster_recordSEXP);
-    rcpp_result_gen = Rcpp::wrap(createSimilarityMat(cluster_record));
+    Rcpp::traits::input_parameter< arma::umat >::type allocations(allocationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createSimilarityMat(allocations));
     return rcpp_result_gen;
 END_RCPP
 }

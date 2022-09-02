@@ -27,7 +27,8 @@ processMCMCChains <- function(mcmc_lst, burn,
     mcmc_lst,
     processMCMCChain,
     burn,
-    point_estimate_method
+    point_estimate_method,
+    construct_psm
   )
 
   # Return the MCMC object with burn in applied and point estimates found

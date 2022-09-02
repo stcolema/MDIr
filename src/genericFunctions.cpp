@@ -250,7 +250,7 @@ int choose(arma::uword n, arma::uword k) {
   return (n * choose(n - 1, k - 1)) / k;
 }
 
-int logChoose(arma::uword n, arma::uword k) {
+double logChoose(double n, double k) {
   if (k == 1 || k == 0) {
     return 0;
   } 
