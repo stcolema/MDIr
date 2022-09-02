@@ -6,36 +6,42 @@
 \usage{
 generateSimulationDataset(
   K,
-  n,
-  p,
+  N,
+  P,
   delta_mu = 1,
   cluster_sd = 1,
   pi = rep(1/K, K),
-  p_n = 0
+  P_n = 0
 )
 }
 \arguments{
 \item{K}{The number of components to sample from.}
 
-\item{n}{The number of samples to draw.}
+\item{N}{The number of samples to draw.}
 
-\item{p}{The number of relevant (i.e. signal-bearing) features.}
+\item{P}{The number of relevant (i.e. signal-bearing) features.}
 
-\item{delta_mu}{The difference between the means defining each component 
+\item{delta_mu}{The difference between the means defining each component
 within each feature (defaults to 1).}
 
 \item{cluster_sd}{The standerd deviation of the Gaussian distributions.}
 
 \item{pi}{The K-vector of the populations proportions across each component.}
 
-\item{p_n}{The number of irrelevant features (defaults to 0).}
+\item{P_n}{The number of irrelevant features (defaults to 0).}
 }
 \value{
 A list of `data` (a data.frame of the generated data) and
 `cluster_IDs` (a vector of the cluster membership of each item).
 }
 \description{
-Generates a dataset based upon a mixture of $K$ Gaussian 
-distributions with $p$ independent, relevant features and $p_n$ irrelevant 
+Generates a dataset based upon a mixture of $K$ Gaussian
+distributions with $P$ independent, relevant features and $P_n$ irrelevant
 features.
+}
+\examples{
+K <- 4
+N <- 100
+P <- 4
+generateSimulationDataset(K, N, P)
 }

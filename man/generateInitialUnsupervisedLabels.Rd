@@ -17,6 +17,6 @@ generateInitialUnsupervisedLabels(N, alpha, K)
 An N vector of labels.
 }
 \description{
-For a dataset with no observed labels, generate a vector of 
+For a dataset with no observed labels, generate a vector of
 initial labels based on the stick-breaking prior for component weights.
 }

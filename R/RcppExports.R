@@ -13,6 +13,28 @@ runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed
 #' @return A symmetric n x n matrix (for n rows in cluster record) describing 
 #' the fraction of iterations for which each pairwise combination of points are
 #' assigned the same label.
+#' @example
+#' 
+#' N <- 100
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#'
+#' truth <- c(rep(1, N / 2), rep(2, N / 2))
+#' data_modelled <- list(X, Y)
+#'
+#' V <- length(data_modelled)
+#'
+#' # This R is much too low for real applications
+#' R <- 100
+#' thin <- 5
+#' burn <- 10
+#'
+#' K_max <- 10
+#' K <- rep(K_max, V)
+#' types <- rep("G", V)
+#'
+#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+#' createSimilarityMat(mcmc_out$allocations[, , 1])
 #' @export
 createSimilarityMat <- function(allocations) {
     .Call(`_MDIr_createSimilarityMat`, allocations)
@@ -370,5 +392,25 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
 #' parameters mu, Sigma.
 pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
     .Call(`_MDIr_pNorm`, x, mu, Sigma, is_sympd)
+}
+
+#' @title Call Multiple Dataset Integration
+#' @description C++ function to perform MCMC sampling for MDI.
+#' @param R The number of iterations to run for.
+#' @param thin thinning factor for samples recorded.
+#' @param Y The list of data matrices to perform integrative clustering upon 
+#' with items to cluster in rows.
+#' @param K Vector of the number of components to model in each view. This is the upper 
+#' limit on the number of clusters that can be found.
+#' @param mixture_types Character vector of densities used in each view
+#' @param outlier_types Character vector of outlier components used in each 
+#' view ('MVT' or 'None').
+#' @param labels Matrix item labels to initialise from. Rows correspond to the
+#' items being clustered, columns to views.
+#' @param fixed Binary matrix of the items that are fixed in their initial
+#' label.
+#' @return Named list of the different quantities drawn by the sampler.
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed) {
+    .Call(`_MDIr_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
 }
 

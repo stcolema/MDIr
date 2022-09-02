@@ -2,23 +2,29 @@
 % Please edit documentation in R/checkFixedInput.R
 \name{checkFixedInput}
 \alias{checkFixedInput}
-\title{Generate initial labels}
+\title{Check fixed input}
 \usage{
 checkFixedInput(fixed, N, V)
 }
 \arguments{
-\item{fixed}{$N x V$ matrix indicating which labels are observed and hence 
+\item{fixed}{$N x V$ matrix indicating which labels are observed and hence
 fixed. If the vth column has no 1's then this view is unsupervised.}
 
-\item{labels}{$N x V$ matrix of initial labels. The actual values passed only
-matter for semi-supervised views (i.e. the views for which some labels are 
-observed).}
+\item{N}{The number of items being clustered.}
 
-\item{alpha}{The concentration parameter (vector).}
-
-\item{K}{The number of components modelled in each  view.}
+\item{V}{The number of views being modelled.}
+}
+\value{
+No return value, called for side effects.
 }
 \description{
-For V views, generate initial labels allowing for both 
-semi-supervised and unsupervised views.
+Checks if the ``fixed`` input for ``callMDI`` has the expected
+properties.
+}
+\examples{
+N <- 100
+V <- 3
+fixed <- matrix(0, N, V)
+checkFixedInput(fixed, N, V)
+
 }

@@ -5,7 +5,7 @@
 #' @param N The number of labels to generate.
 #' @return A vector of labels.
 #' @examples
-#' initial_labels <- samplePriorLabels(1, 50, 100)
+#' initial_labels <- sampleViewPriorLabels(1, 50, 100)
 sampleViewPriorLabels <- function(alpha, K, N) {
   w <- sampleStickBreakingPrior(alpha, K)
   initial_labels <- sample(seq(1, K), N, replace = TRUE, prob = w)

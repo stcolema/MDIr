@@ -5,10 +5,11 @@
 #' @param burn The number of MCMC samples to drop as part of a burn in.
 #' @param point_estimate_method Summary statistic used to define the point
 #' estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.
-#' @param construct_psm Logical indicating if PSMs be constructed in the 
-#' unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+#' @param construct_psm Logical indicating if PSMs be constructed in the
+#' unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and
 #' this is used to infer the point estimate rather than the sampled partitions.
-#' @param chains_already_processed 
+#' @param chains_already_processed Logical indicating if the the chains have
+#' been processed already.
 #' @returns A named list of quantities related to prediction/clustering:
 #'
 #'  * ``allocation_probability``: List with an $(N x K)$ matrix for each
@@ -26,16 +27,36 @@
 #'    correspond to items being clustered, rows to MCMC samples.
 #'
 #' @importFrom salso salso
+#' @examples
+#' N <- 100
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#'
+#' truth <- c(rep(1, N / 2), rep(2, N / 2))
+#' data_modelled <- list(X, Y)
+#'
+#' V <- length(data_modelled)
+#'
+#' # This R is much too low for real applications
+#' R <- 100
+#' thin <- 5
+#' burn <- 10
+#'
+#' K_max <- 10
+#' K <- rep(K_max, V)
+#' types <- rep("G", V)
+#'
+#' n_chains <- 3
+#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+#' predictFromMultipleChains(mcmc_out, burn)
+#'
 #' @export
 predictFromMultipleChains <- function(mcmc_outputs,
                                       burn,
                                       point_estimate_method = "median",
                                       construct_psm = FALSE,
                                       chains_already_processed = FALSE) {
-
-  
-  
-  if(chains_already_processed ) {
+  if (chains_already_processed) {
     processed_chains <- mcmc_outputs
   } else {
     # Process the chains, making point estimates and applying a burn-in
@@ -89,13 +110,13 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs <- list()
   merged_outputs$Semisupervised <- is_semisupervised
   merged_outputs$Overfitted <- is_overfitted
-  
+
   merged_outputs$allocations <- vector("list", V)
   merged_outputs$allocation_probability <- vector("list", V)
   merged_outputs$prob <- vector("list", V)
   merged_outputs$pred <- vector("list", V)
-  
-  if(construct_psm) {
+
+  if (construct_psm) {
     merged_outputs$psm <- vector("list", V)
   }
 
@@ -112,12 +133,12 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   merged_outputs$phis <- do.call(rbind, lapply(processed_chains, function(x) x$phis))
   merged_outputs$mass <- do.call(rbind, lapply(processed_chains, function(x) x$mass))
-  
+
   merged_outputs$weights <- list()
-  for(v in view_inds) {
+  for (v in view_inds) {
     merged_outputs$weights[[v]] <- do.call(rbind, lapply(processed_chains, function(x) x$weights[-dropped_indices, , v, drop = TRUE]))
   }
-  
+
   first_chain <- TRUE
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
@@ -147,11 +168,11 @@ predictFromMultipleChains <- function(mcmc_outputs,
         .alloc_prob <- .prev + .curr
       }
     }
-    
-    if(construct_psm) {
+
+    if (construct_psm) {
       merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
       # merged_outputs$pred[[v]] <- salso::salso(.psm)
-    } 
+    }
 
     if (current_view_is_semi_supervised) {
 
@@ -161,34 +182,33 @@ predictFromMultipleChains <- function(mcmc_outputs,
       merged_outputs$allocation_probability[[v]] <- .alloc_prob
       merged_outputs$prob[[v]] <- .prob <- apply(.alloc_prob, 1, max)
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
-      
-      if(current_view_is_overfitted) {
+
+      if (current_view_is_overfitted) {
         merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
-      } 
+      }
+    } else {
+      # if(construct_psm) {
+      #   merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+      #   # merged_outputs$pred[[v]] <- salso::salso(.psm)
+      # }
+      # else {
+      merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
+      # }
     }
-     else {
-       # if(construct_psm) {
-       #   merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
-       #   # merged_outputs$pred[[v]] <- salso::salso(.psm)
-       # } 
-       # else {
-       merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
-       # }
-     }
   }
-  
+
   VC2 <- choose(V, 2)
   merged_outputs$fusion_probabilities <- vector("list", VC2)
-  
+
   entry <- 0
   names <- c()
-  for(v in seq(1, V - 1)) {
-    for(w in seq(v + 1, V)) {
+  for (v in seq(1, V - 1)) {
+    for (w in seq(v + 1, V)) {
       name <- paste0("fused_items_", v, w)
       names <- c(names, name)
       entry <- entry + 1
       merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
-      for(ii in seq(1, n_chains)) {
+      for (ii in seq(1, n_chains)) {
         merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
           calcFusionProbabiliy(processed_chains[[ii]], v, w)
       }

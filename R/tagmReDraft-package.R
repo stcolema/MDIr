@@ -7,7 +7,7 @@
 #' @author Stephen Coleman <stcolema@tcd.ie>, Paul D.W. Kirk, Chris Wallace,
 #' Oliver M. Crook
 #' @keywords package
-#' 
+#'
 #' @importFrom ggplot2 aes_string facet_wrap geom_line ggplot label_both
 #' @importFrom stats median rbeta
 #' @importFrom Rcpp evalCpp sourceCpp

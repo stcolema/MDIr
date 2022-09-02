@@ -2,16 +2,16 @@
 % Please edit documentation in R/callMDI.R
 \name{callMDI}
 \alias{callMDI}
-\title{Call MDI}
+\title{Call Multiple Dataset Integration}
 \usage{
 callMDI(
   X,
   R,
   thin,
-  initial_labels,
-  fixed,
   types,
-  K,
+  K = NULL,
+  initial_labels = NULL,
+  fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE
 )
@@ -25,21 +25,23 @@ in rows.}
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
 
-\item{initial_labels}{Initial clustering. $N x L$ matrix.}
+\item{types}{Character vector indicating density types to use. 'G' (Gaussian
+with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
+(t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
+mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
-\item{fixed}{Which items are fixed in their initial label. $N x L$ matrix.}
+\item{K}{Vector indicating the number of components to include (the upper
+bound on the number of clusters in each dataset).}
+
+\item{initial_labels}{Initial clustering. $N x V$ matrix.}
+
+\item{fixed}{Which items are fixed in their initial label. $N x V$ matrix.}
 
 \item{alpha}{The concentration parameter for the stick-breaking prior and the
 weights in the model.}
 
-\item{initial_labels_as_intended}{Logical indicating if the passed initial 
+\item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
-
-\item{type}{Character vector indicating density type to use. 'MVN'
-(multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
-
-\item{K_max}{Vector indicating the number of components to include (the upper
-bound on the number of clusters in each dataset).}
 }
 \value{
 A named list containing the sampled partitions, component weights,
@@ -47,28 +49,28 @@ phi and mass parameters, model fit measures and some details on the model call.
 }
 \description{
 Runs a MCMC chain of the integrative clustering method,
-Multiple Dataset Integration (MDI), to L datasets. It is recommended that
-L < 5.
+Multiple Dataset Integration (MDI), to V datasets.
 }
 \examples{
 
 N <- 100
-X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
-Y <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+
+truth <- c(rep(1, N / 2), rep(2, N / 2))
 data_modelled <- list(X, Y)
 
+V <- length(data_modelled)
+
+# This R is much too low for real applications
 R <- 100
 thin <- 5
+burn <- 10
 
-alpha <- c(1, 1)
-K <- c(10, 15)
-labels <- matrix(0, nrow = N, ncol = 2)
-labels[, 1] <- generateInitialUnsupervisedLabels(N, alpha[1], K[1])
-labels[, 2] <- generateInitialUnsupervisedLabels(N, alpha[1], K[2])
+K_max <- 10
+K <- rep(K_max, V)
+types <- rep("G", V)
 
-fixed <- matrix(0, nrow = N, ncol = 2)
-types <- c("MVN", "G")
-
-mcmc_out <- callMDI(data_modelled, R, thin, labels, fixed, types, K, alpha)
+mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
 
 }

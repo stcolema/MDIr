@@ -2,7 +2,7 @@
 % Please edit documentation in R/callMixtureModel.R
 \name{callMixtureModel}
 \alias{callMixtureModel}
-\title{Call Mixture Model}
+\title{Call mixture model}
 \usage{
 callMixtureModel(
   X,
@@ -25,8 +25,13 @@ in rows.}
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
 
-\item{type}{Character vector indicating density type to use. 'MVN'
-(multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
+\item{type}{Character vector indicating density type to use. 'G' (Gaussian
+with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
+(t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
+mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
+
+\item{K}{Integer indicating the number of components to include (the upper
+bound on the number of clusters).}
 
 \item{initial_labels}{Initial clustering. $N$-vector.}
 
@@ -37,13 +42,10 @@ weights in the model.}
 
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
-
-\item{K_max}{Integer indicating the number of components to include (the upper
-bound on the number of clusters).}
 }
 \value{
 A named list containing the sampled partitions, component weights,
-phi and mass parameters, model fit measures and some details on the model call.
+and mass parameters, model fit measures and some details on the model call.
 }
 \description{
 Runs a MCMC chain of a Bayesian mixture model. Essentially a
@@ -51,8 +53,9 @@ wrapper to allow more intuitive inputs for the single dataset case of MDI.
 }
 \examples{
 N <- 100
-X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 
+# This R is much too low for real applications
 R <- 100
 thin <- 5
 

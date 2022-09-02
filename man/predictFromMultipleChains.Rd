@@ -20,11 +20,12 @@ predictFromMultipleChains(
 \item{point_estimate_method}{Summary statistic used to define the point
 estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
 
-\item{construct_psm}{Logical indicating if PSMs be constructed in the 
-unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and 
+\item{construct_psm}{Logical indicating if PSMs be constructed in the
+unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and
 this is used to infer the point estimate rather than the sampled partitions.}
 
-\item{chains_already_processed}{}
+\item{chains_already_processed}{Logical indicating if the the chains have
+been processed already.}
 }
 \value{
 A named list of quantities related to prediction/clustering:
@@ -46,4 +47,28 @@ A named list of quantities related to prediction/clustering:
 \description{
 Applies a burn in to and finds a point estimate by combining
 multiple chains of ``callMDI``.
+}
+\examples{
+N <- 100
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+
+truth <- c(rep(1, N / 2), rep(2, N / 2))
+data_modelled <- list(X, Y)
+
+V <- length(data_modelled)
+
+# This R is much too low for real applications
+R <- 100
+thin <- 5
+burn <- 10
+
+K_max <- 10
+K <- rep(K_max, V)
+types <- rep("G", V)
+
+n_chains <- 3
+mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+predictFromMultipleChains(mcmc_out, burn)
+
 }

@@ -136,6 +136,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// runMDI
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed);
+RcppExport SEXP _MDIr_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type R(RSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type thin(thinSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_MDIr_runAltMDI", (DL_FUNC) &_MDIr_runAltMDI, 8},
@@ -147,6 +165,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_MDIr_invWishartLogLikelihood", (DL_FUNC) &_MDIr_invWishartLogLikelihood, 4},
     {"_MDIr_mvtLogLikelihood", (DL_FUNC) &_MDIr_mvtLogLikelihood, 4},
     {"_MDIr_pNorm", (DL_FUNC) &_MDIr_pNorm, 4},
+    {"_MDIr_runMDI", (DL_FUNC) &_MDIr_runMDI, 8},
     {NULL, NULL, 0}
 };
 

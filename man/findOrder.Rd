@@ -17,6 +17,13 @@ findOrder(X, dist = "euclidean", linkage = "complete")
 The order of the rows of X based on a hierarchical clustering.
 }
 \description{
-Find the ordering of the rows of X based on a hierarchical 
+Find the ordering of the rows of X based on a hierarchical
 clustering of X for linkage ``linkage`` and distance ``dist``.
+}
+\examples{
+
+N <- 100
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+findOrder(X)
+
 }

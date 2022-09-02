@@ -11,7 +11,16 @@ checkLabels(labels, K)
 
 \item{K}{Number of components modelled.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Internal function that checks the initial labels are the correct
 type.
+}
+\examples{
+N <- 20
+K <- 3
+labels <- sample(seq(1, K), replace = TRUE, size = N)
+checkLabels(labels, K)
 }

@@ -9,35 +9,36 @@ prepCMssForGGplot(cms, model_description_df, matrix_setting_order = NULL)
 \arguments{
 \item{cms}{List of similarity matrices of common size.}
 
-\item{matrix_setting_order}{The index for the consensus matrix that defines 
-the ordering of entries for the heatmap. Defaults to the final entry in 
+\item{matrix_setting_order}{The index for the consensus matrix that defines
+the ordering of entries for the heatmap. Defaults to the final entry in
 ``cms``.}
 }
 \description{
-Converts a list of consensus matrices into a long data.frame 
-ready for ggplot2. The matrices are given a common ordering defined by the 
-list entry in index ``matrix_setting_order``, this is the ``x`` and ``y`` 
-entry in the output and is used in the ``ggplot2`` geom, ``geom_tile``, as 
-the ``x`` and ``y`` aesthetics.  The description of the ensembles generating 
+Converts a list of consensus matrices into a long data.frame
+ready for ggplot2. The matrices are given a common ordering defined by the
+list entry in index ``matrix_setting_order``, this is the ``x`` and ``y``
+entry in the output and is used in the ``ggplot2`` geom, ``geom_tile``, as
+the ``x`` and ``y`` aesthetics.  The description of the ensembles generating
 the matrices is given in ``model_description_df`` and is used to annotate the
 matrices.
 }
 \examples{
-\donotrun{
-model_description_df <- data.frame("Depth" = rep(c(100, 500, 1000), 3),
+\dontrun{
+model_description_df <- data.frame(
+  "Depth" = rep(c(100, 500, 1000), 3),
   "Width" = c(rep(50, 3), rep(100, 3), rep(200, 3))
 )
 n_models <- nrow(model_description_df)
 cms <- vector("list", n_models)
-for(ii in seq(1, n_models)) {
-  cms[[ii]] <- makeSimilarityMat(mcmc[[ii]]$allocations)
+for (ii in seq(1, n_models)) {
+  cms[[ii]] <- createSimilarityMat(mcmc[[ii]]$allocations)
 }
 plot_df <- prepCMssForGGplot(cms, model_description_df)
-plot_df |> 
-ggplot(aes(x = x, y = y, fill = Entry)) + 
-  geom_tile() + 
-  facet_grid(Depth~Width, labeller = label_both()) + 
-  scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
+plot_df |>
+  ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+  ggplot2::geom_tile() +
+  ggplot2::facet_grid(Depth ~ Width, labeller = label_both()) +
+  ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 }
 
 }

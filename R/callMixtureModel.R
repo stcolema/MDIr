@@ -1,36 +1,39 @@
-#' @title Call Mixture Model
+#' @title Call mixture model
 #' @description Runs a MCMC chain of a Bayesian mixture model. Essentially a
 #' wrapper to allow more intuitive inputs for the single dataset case of MDI.
 #' @param X Data to cluster. Matrix with the N items to cluster held
 #' in rows.
-#' @param initial_labels Initial clustering. $N$-vector.
-#' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param R The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
-#' @param type Character vector indicating density type to use. 'MVN'
-#' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
-#' @param K_max Integer indicating the number of components to include (the upper
+#' @param type Character vector indicating density type to use. 'G' (Gaussian
+#' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
+#' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
+#' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
+#' @param K Integer indicating the number of components to include (the upper
 #' bound on the number of clusters).
+#' @param initial_labels Initial clustering. $N$-vector.
+#' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @return A named list containing the sampled partitions, component weights,
-#' phi and mass parameters, model fit measures and some details on the model call.
-#' @examples 
+#' and mass parameters, model fit measures and some details on the model call.
+#' @examples
 #' N <- 100
-#' X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
-#' 
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#'
+#' # This R is much too low for real applications
 #' R <- 100
 #' thin <- 5
-#' 
+#'
 #' alpha <- 1
 #' K <- 10
 #' type <- "MVN"
-#' 
+#'
 #' mcmc_out <- callMixtureModel(X, R, thin, type, K = K)
-#' 
+#'
 #' @export
 callMixtureModel <- function(X,
                              R,
@@ -67,13 +70,15 @@ callMixtureModel <- function(X,
   if (is.null(alpha)) {
     alpha <- 1
   }
-  
-  if(is.null(initial_labels))
+
+  if (is.null(initial_labels)) {
     initial_labels <- rep(1, N)
-  
-  if(is.null(fixed))
+  }
+
+  if (is.null(fixed)) {
     fixed <- rep(0, N)
-  
+  }
+
   # Generate initial labels. Uses the stick-breaking prior if unsupervised,
   # proportions of observed classes is semi-supervised.
   initial_labels <- matrix(initial_labels, ncol = 1)
@@ -90,7 +95,7 @@ callMixtureModel <- function(X,
   t_0 <- Sys.time()
 
   # Pull samples from the MDI model
-  mcmc_output <- runAltMDI(
+  mcmc_output <- runMDI(
     R,
     thin,
     X,
@@ -104,7 +109,7 @@ callMixtureModel <- function(X,
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0
 
-  # Put the outputs into a more intuitive object for a single dataset and remove 
+  # Put the outputs into a more intuitive object for a single dataset and remove
   # the phis
   mcmc_output$allocations <- mcmc_output$allocations[, , 1]
   mcmc_output$phis <- NULL
@@ -113,8 +118,8 @@ callMixtureModel <- function(X,
   mcmc_output$allocation_probabilities <- mcmc_output$allocation_probabilities[[1]]
   mcmc_output$N_k <- mcmc_output$N_k[, 1, ]
   mcmc_output$complete_likelihood <- mcmc_output$complete_likelihood[, 1]
-  
-  
+
+
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
@@ -136,9 +141,9 @@ callMixtureModel <- function(X,
 
   # Indicate if the model was semi-supervised or unsupervised
   mcmc_output$Semisupervised <- is_semisupervised <- any(fixed == 1)
-  
+
   mcmc_output$Overfitted <- TRUE
-  if(is_semisupervised) {
+  if (is_semisupervised) {
     known_labels <- which(fixed == 1)
     K_fix <- length(unique(initial_labels[known_labels]))
     is_overfitted <- (K > K_fix)
