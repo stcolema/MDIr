@@ -11,7 +11,9 @@ using namespace arma ;
 //' param x Current value to be proposed
 //' param window The proposal window
 //' return new double
-double proposeNewNonNegativeValue(double x, double window, 
+double proposeNewNonNegativeValue(
+    double x, 
+    double window, 
     bool use_log_norm,
     double tolerance
   ) {

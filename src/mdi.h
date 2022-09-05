@@ -21,7 +21,7 @@ using namespace Rcpp ;
 using namespace arma ;
 
 
-class mdiModelAlt {
+class mdi {
   
 private:
   
@@ -112,7 +112,7 @@ public:
   std::vector< std::unique_ptr<mixtureModel> > mixtures;
   // std::vector< mixtureModel > mixtures;
   
-  mdiModelAlt(
+  mdi(
     arma::field<arma::mat> _X,
     uvec _mixture_types,
     uvec _outlier_types,
@@ -122,7 +122,7 @@ public:
   ) ;
   
   // Destructor
-  virtual ~mdiModelAlt() { };
+  virtual ~mdi() { };
   
   // === Components weights ====================================================
   
