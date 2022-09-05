@@ -17,7 +17,7 @@ using namespace Rcpp ;
 using namespace arma ;
 
 
-mdiModelAlt::mdiModelAlt(
+mdi::mdi(
   arma::field<arma::mat> _X,
   uvec _mixture_types,
   uvec _outlier_types,
@@ -161,7 +161,7 @@ mdiModelAlt::mdiModelAlt(
 };
 
 
-void mdiModelAlt::initialisePhis() {
+void mdi::initialisePhis() {
   
   uword k = 0, col_ind = 0;
   
@@ -261,7 +261,7 @@ void mdiModelAlt::initialisePhis() {
 
 // This wrapper to declare the mixtures at the dataset level is kept as its
 // own separate function to make a semi-supervised class easier
-void mdiModelAlt::initialiseMixtures() {
+void mdi::initialiseMixtures() {
 
   // Initialise the collection of mixtures
   mixtures.reserve(L);
@@ -283,7 +283,7 @@ void mdiModelAlt::initialiseMixtures() {
 };
 
 
-// double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
+// double mdi::calcWeightRate(uword lstar, uword kstar) {
 //   // The rate for the (k, l)th cluster weight is the sum across all of the clusters
 //   // in each dataset (excluding the lth) of the product of the kth cluster
 //   // weight in each of the L datasets (excluding the lth) upweigthed by
@@ -336,7 +336,7 @@ void mdiModelAlt::initialiseMixtures() {
 //   return rate;
 // };
 
-double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword kstar, 
+double mdi::calcWeightRateNaiveSingleIteration(uword kstar, 
                                                        uword lstar, 
                                                        uvec current_ks) {
   double output = 1.0;
@@ -353,7 +353,7 @@ double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword kstar,
   return output;
 };
 
-double mdiModelAlt::calcWeightRateNaive(uword kstar, uword lstar) {
+double mdi::calcWeightRateNaive(uword kstar, uword lstar) {
   uword K_comb = 0, m = 0;
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
@@ -415,7 +415,7 @@ double mdiModelAlt::calcWeightRateNaive(uword kstar, uword lstar) {
   return rate;
 };
 
-double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
+double mdi::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
   double output = 1.0;
   for(uword l = 0; l < L; l++) {
     output *= w(current_ks(l), l);
@@ -433,7 +433,7 @@ double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, 
   return output;
 };
 
-double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
+double mdi::calcPhiRateNaive(uword view_i, uword view_j) {
   bool shed_j = K(view_i) < K(view_j), weight_updated = false;
   uword K_comb = prod(K), l = 0;
   double rate = 0.0;
@@ -504,7 +504,7 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
 };
 
 // // The rate for the phi coefficient between the lth and mth datasets.
-// double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
+// double mdi::calcPhiRate(uword lstar, uword mstar) {
 //   
 //   // The rate we return.
 //   double rate = 0.0;
@@ -557,7 +557,7 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
 //   return rate;
 // };
 
-void mdiModelAlt::updateWeightsViewL(uword l) {
+void mdi::updateWeightsViewL(uword l) {
   
   double shape = 0.0, rate = 0.0, posterior_shape = 0.0, posterior_rate = 0.0;
   uvec members_lk(N);
@@ -596,7 +596,7 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
 }
 
 // Update the cluster weights
-void mdiModelAlt::updateWeights() {
+void mdi::updateWeights() {
   
   // for(uword l = 0; l < L; l++) {
   //   updateWeightsViewL(l);
@@ -611,7 +611,7 @@ void mdiModelAlt::updateWeights() {
   );
 };
 
-double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
+double mdi::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   bool rTooSmall = false, priorShapeTooSmall = false;
   
   int N_lm = 0;
@@ -642,7 +642,7 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   return shape; 
 }
 
-void mdiModelAlt::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
+void mdi::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
   bool rTooSmall = false, priorShapeTooSmall = false;
   
   int N_lm = 0;
@@ -669,7 +669,7 @@ void mdiModelAlt::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
   phis(phi_map(m, l)) = accu(phis_vec);
 }
 
-arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(
+arma::vec mdi::calculatePhiShapeMixtureWeights(
     int N_lm, 
     double rate
 ) {
@@ -696,7 +696,7 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(
   return log_weights;
 };
 
-void mdiModelAlt::updatePhis() {
+void mdi::updatePhis() {
   if(L == 1) {
     return;
   }
@@ -754,7 +754,7 @@ void mdiModelAlt::updatePhis() {
 // };
 
 // // Updates the normalising constant for the posterior
-// void mdiModelAlt::updateNormalisingConst() {
+// void mdi::updateNormalisingConst() {
 //   
 //   vec w_l;
 //   
@@ -787,7 +787,7 @@ void mdiModelAlt::updatePhis() {
 //   Z = accu(weight_products % phi_products);
 // };
 
-double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
+double mdi::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   uword l = 0;
   double iter_value = 1.0, log_iter_value = 0.0, same_label = 0.0;
   
@@ -805,7 +805,7 @@ double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   return iter_value;
 };
 
-void mdiModelAlt::updateNormalisingConstantNaive() {
+void mdi::updateNormalisingConstantNaive() {
   uword K_comb = 0;
   uvec weight_ind(L), K_cumprod(L), K_rel(L), K_rel_cum(L);
   weight_ind.zeros();
@@ -841,11 +841,11 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
   }
 };
 
-void mdiModelAlt::sampleStrategicLatentVariable() {
+void mdi::sampleStrategicLatentVariable() {
   v = rGamma(N, Z);
 };
 
-void mdiModelAlt::sampleFromPriors() {
+void mdi::sampleFromPriors() {
   // Sample from the prior distribution for the phis and weights
   sampleFromGlobalPriors();
   
@@ -853,25 +853,25 @@ void mdiModelAlt::sampleFromPriors() {
   sampleFromLocalPriors();
 };
 
-void mdiModelAlt::sampleFromLocalPriors() {
+void mdi::sampleFromLocalPriors() {
   for(uword l = 0; l < L; l++) {
     mixtures[l]->sampleFromPriors();
   }
 };
 
-vec mdiModelAlt::samplePhiPrior(uword n_phis) {
+vec mdi::samplePhiPrior(uword n_phis) {
   return rGamma(n_phis, phi_shape_prior , phi_rate_prior);
 };
 
-double mdiModelAlt::sampleWeightPrior(uword l) {
+double mdi::sampleWeightPrior(uword l) {
   return rGamma(mass(l) / (double) K(l) , w_rate_prior);
 }
 
-vec mdiModelAlt::sampleMassPrior() {
+vec mdi::sampleMassPrior() {
   return rGamma(L, mass_shape_prior, mass_rate_prior);
 }
 
-void mdiModelAlt::sampleFromGlobalPriors() {
+void mdi::sampleFromGlobalPriors() {
   mass = sampleMassPrior();
   if(L > 1) {
     phis = samplePhiPrior(LC2);
@@ -887,7 +887,7 @@ void mdiModelAlt::sampleFromGlobalPriors() {
   }
 };
 
-void mdiModelAlt::updateMassParameters() {
+void mdi::updateMassParameters() {
   for(uword l = 0; l < L; l++) {
   // std::for_each(
   //   std::execution::par,
@@ -899,7 +899,7 @@ void mdiModelAlt::updateMassParameters() {
   // );
 }
 
-void mdiModelAlt::updateMassParameterViewL(uword lstar) {
+void mdi::updateMassParameterViewL(uword lstar) {
   bool accepted = false;
   double
     current_mass = 0.0, 
@@ -963,7 +963,7 @@ void mdiModelAlt::updateMassParameterViewL(uword lstar) {
   }
 };
 
-mat mdiModelAlt::calculateUpweights(uword lstar) {
+mat mdi::calculateUpweights(uword lstar) {
   double same_label = 0.0;
   mat log_upweights(K(lstar), N);
   log_upweights.zeros();
@@ -981,7 +981,7 @@ mat mdiModelAlt::calculateUpweights(uword lstar) {
   return log_upweights;
 };
 
-void mdiModelAlt::initialiseDatasetL(uword l) {
+void mdi::initialiseDatasetL(uword l) {
   vec log_weights(K(l));
   mat log_upweights(K(l), N);
   log_upweights = calculateUpweights(l);
@@ -991,7 +991,7 @@ void mdiModelAlt::initialiseDatasetL(uword l) {
   non_outliers.col(l) = mixtures[l]->non_outliers;
 }
 
-void mdiModelAlt::initialiseMDI() {
+void mdi::initialiseMDI() {
   initialiseMixtures();
   sampleFromPriors();
   for(uword l = 0; l < L; l++) {
@@ -999,7 +999,7 @@ void mdiModelAlt::initialiseMDI() {
   }
 };
 
-void mdiModelAlt::updateAllocationViewL(uword l) {
+void mdi::updateAllocationViewL(uword l) {
   
   vec log_weights(K(l));
   mat log_upweights(K(l), N);
@@ -1015,7 +1015,7 @@ void mdiModelAlt::updateAllocationViewL(uword l) {
   complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
 }
 
-void mdiModelAlt::updateAllocation() {
+void mdi::updateAllocation() {
 
   complete_likelihood = 0.0;
 
@@ -1032,7 +1032,7 @@ void mdiModelAlt::updateAllocation() {
 
 
 // This is used to consider possible label swaps
-double mdiModelAlt::sampleLabel(arma::uword kstar, arma::vec K_inv_cum) {
+double mdi::sampleLabel(arma::uword kstar, arma::vec K_inv_cum) {
   
   // Need to account for the fixed labels
   // Need the non-fixed classes (e.g., we now need, K, K_fixed and K_unfixed)
@@ -1048,7 +1048,7 @@ double mdiModelAlt::sampleLabel(arma::uword kstar, arma::vec K_inv_cum) {
   return k_prime;
 }
 
-double mdiModelAlt::calcScore(arma::uword lstar, arma::umat c) {
+double mdi::calcScore(arma::uword lstar, arma::umat c) {
   bool not_current_context = true;
   double score = 0.0, upweight = 0.0; // , same_label = 0.0;
   uvec agreeing_labels(N);
@@ -1074,7 +1074,7 @@ double mdiModelAlt::calcScore(arma::uword lstar, arma::umat c) {
 
 // Check if labels should be swapped to improve correlation of clustering
 // across datasets via random sampling.
-arma::umat mdiModelAlt::swapLabels(arma::uword lstar, arma::uword kstar, arma::uword k_prime) {
+arma::umat mdi::swapLabels(arma::uword lstar, arma::uword kstar, arma::uword k_prime) {
   
   // The labels in the current context, which will be changed
   uvec loc_labs = labels.col(lstar), 
@@ -1110,7 +1110,7 @@ arma::umat mdiModelAlt::swapLabels(arma::uword lstar, arma::uword kstar, arma::u
 
 // Check if labels should be swapped to improve correlation of clustering
 // across datasets via random sampling.
-void mdiModelAlt::updateLabels() {
+void mdi::updateLabels() {
   bool multipleUnfixedComponents = true;
   if(L == 1) {
     return;
@@ -1120,7 +1120,7 @@ void mdiModelAlt::updateLabels() {
   }
 };
 
-void mdiModelAlt::updateLabelsViewL(uword lstar) {
+void mdi::updateLabelsViewL(uword lstar) {
   
   bool multipleUnfixedComponents = (K_unfixed(lstar) > 1),
     accept = false,
