@@ -2,7 +2,7 @@
 % Please edit documentation in R/findOrder.R
 \name{findOrder}
 \alias{findOrder}
-\title{Prepare data for ggplot heatmap}
+\title{Find order}
 \usage{
 findOrder(X, dist = "euclidean", linkage = "complete")
 }

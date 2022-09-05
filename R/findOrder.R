@@ -1,4 +1,4 @@
-#' @title Prepare data for ggplot heatmap
+#' @title Find order
 #' @description Find the ordering of the rows of X based on a hierarchical
 #' clustering of X for linkage ``linkage`` and distance ``dist``.
 #' @param X Matrix.

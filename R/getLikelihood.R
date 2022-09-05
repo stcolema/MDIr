@@ -1,7 +1,7 @@
 #' @title Get likelihood
 #' @description Extracts the model fit score from the mixture model output.
 #' @param mcmc_output The output from the mixture model.
-#' @return A data.frame containing the model fit score of choice and the
+#' @return A data.frame containing the model log-likelihood and the associated
 #' iteration.
 #' @export
 getLikelihood <- function(mcmc_output) {
