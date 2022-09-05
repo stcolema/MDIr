@@ -8,6 +8,12 @@ makeCMComparisonSummaryDF(cms, model_description_df)
 }
 \arguments{
 \item{cms}{List of similarity matrices of common size.}
+
+\item{model_description_df}{A data.frame with as many rows as ``cms`` has
+entries with a common ordering. Each row is expected to contain the
+width/number of chains used in constructing the corresponding consensus
+matrix and the depth/iteration from each chain that is used. The column names
+should be ``Depth`` and ``Width``.}
 }
 \description{
 Converts a list of consensus matrices into a long data.frame

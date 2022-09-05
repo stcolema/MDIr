@@ -5,11 +5,11 @@
 #' @description Constructs a similarity matrix of the pairwise coclustering 
 #' rate.
 #' @param allocations Matrix of sampled partitions. Columns correspond to 
-#' items/samples being clustered, each row is a sampled partition.//' 
-#' @return A symmetric n x n matrix (for n rows in cluster record) describing 
+#' items/samples being clustered, each row is a sampled partition. 
+#' @return A symmetric N x N matrix (for N rows in allocations) describing 
 #' the fraction of iterations for which each pairwise combination of points are
 #' assigned the same label.
-#' @example
+#' @examples
 #' 
 #' N <- 100
 #' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)

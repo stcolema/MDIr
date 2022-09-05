@@ -4,10 +4,10 @@
 #' @param X Data passed to ``callMDI``. Should be a list of matrices each with
 #' N items held in rows.
 #' @return No return value, called for side effects.
-#' @example
+#' @examples
 #' N <- 100
-#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = T)
-#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = T)
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #' data_modelled <- list(X, Y)
 #' checkDataCorrectInput(data_modelled)
 checkDataCorrectInput <- function(X) {

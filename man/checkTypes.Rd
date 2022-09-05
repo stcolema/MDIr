@@ -14,7 +14,7 @@ strings. Viable options are ``'MVN'``, ``'TAGM'`` and ``'C'``.}
 No return value, called for side effects.
 }
 \description{
-Internal function that checks the types passed to ``callMDI`` 
+Internal function that checks the types passed to ``callMDI``
 are the correct format.
 }
 \examples{

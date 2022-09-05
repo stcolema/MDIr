@@ -9,6 +9,12 @@ prepCMssForGGplot(cms, model_description_df, matrix_setting_order = NULL)
 \arguments{
 \item{cms}{List of similarity matrices of common size.}
 
+\item{model_description_df}{A data.frame with as many rows as ``cms`` has
+entries with a common ordering. Each row is expected to contain the
+width/number of chains used in constructing the corresponding consensus
+matrix and the depth/iteration from each chain that is used. The column names
+should be ``Depth`` and ``Width``.}
+
 \item{matrix_setting_order}{The index for the consensus matrix that defines
 the ordering of entries for the heatmap. Defaults to the final entry in
 ``cms``.}
