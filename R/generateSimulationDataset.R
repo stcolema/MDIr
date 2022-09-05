@@ -3,7 +3,9 @@
 #' @title Generate simulation dataset
 #' @description Generates a dataset based upon a mixture of $K$ Gaussian
 #' distributions with $P$ independent, relevant features and $P_n$ irrelevant
-#' features.
+#' features. Irrelevant features contain no signal for underlying structure and 
+#' all measurements for an irrelevant feature are drawn from a common standard 
+#' Gaussian distribution.
 #' @param K The number of components to sample from.
 #' @param N The number of samples to draw.
 #' @param P The number of relevant (i.e. signal-bearing) features.
@@ -15,6 +17,8 @@
 #' @return A list of `data` (a data.frame of the generated data) and
 #' `cluster_IDs` (a vector of the cluster membership of each item).
 #' @importFrom stats sd
+#' @returns Named list containing ``data``, a matrix of the generated Gaussian
+#' data and ``cluster_IDs``, the true generating structure.
 #' @examples
 #' K <- 4
 #' N <- 100

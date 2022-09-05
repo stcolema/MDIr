@@ -10,7 +10,7 @@ getLikelihood(mcmc_output)
 \item{mcmc_output}{The output from the mixture model.}
 }
 \value{
-A data.frame containing the model fit score of choice and the
+A data.frame containing the model log-likelihood and the associated
 iteration.
 }
 \description{

@@ -10,6 +10,8 @@
 #' each distribution.
 #' @param row_names The row names of the generated dataset.
 #' @param col_names The column names of the generated dataset.
+#' @returns Named list of ``data``, the generated matrix and ``cluster_IDs``, 
+#' the generating structure.
 #' @importFrom stats rnorm
 #' @examples
 #' cluster_means <- c(-2, 0, 2)
