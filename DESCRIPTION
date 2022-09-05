@@ -1,6 +1,6 @@
 Package: MDIr
 Type: Package
-Title: MDIr
+Title: Bayesian model-based clustering of multi-view data
 License: GPL-3
 Version: 0.0.1
 Date: 2021-01-15
@@ -8,9 +8,16 @@ Authors@R: c(person(given = "Stephen", family = "Coleman",
                     email = "stephen.coleman@mrc-bsu.cam.ac.uk",
                     role = c("aut","cre")))
 Description: Integrative clustering and semi-supervised prediction.
-  This package includes a C++ implementation of both semi- and 
+  This package includes a C++ implementation of both semi-supervised and 
   un-supervised Multiple Dataset Integration, an extension of Bayesian mixture models
-  to the integrative (multiple dataset) setting.
+  to the integrative (multiple dataset) setting. It also includes Bayesian 
+  mixture models. Densities allowed within MDI and the mixture model are 
+  Gaussian with full and diagonal covariance matrices ('MVN' and 'G'), 
+  categorical ('C'), Gaussian with a Gaussian process prior on the mean 
+  parameter ('GP'). The GP model can only handle data with common time points of
+  equal separation. The MVN and GP models can be augmented with a global 
+  multivariate t distribution to handle outliers (called using 'TAGM' and 
+  'TAGPM').
 Imports: Rcpp (>= 1.0.6), RcppParallel, ggplot2, stringr, tidyr, salso
 LinkingTo: Rcpp, RcppArmadillo, testthat, RcppParallel
 Suggests: xml2
