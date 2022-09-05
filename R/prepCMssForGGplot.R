@@ -7,7 +7,7 @@
 #' the matrices is given in ``model_description_df`` and is used to annotate the
 #' matrices.
 #' @param cms List of similarity matrices of common size.
-#' @oaram model_description_df A data.frame with as many rows as ``cms`` has
+#' @param model_description_df A data.frame with as many rows as ``cms`` has
 #' entries with a common ordering. Each row is expected to contain the
 #' width/number of chains used in constructing the corresponding consensus
 #' matrix and the depth/iteration from each chain that is used. The column names

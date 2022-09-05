@@ -17,3 +17,10 @@ No return value, called for side effects.
 Internal function that checks the data passed to ``callMDI`` is
 the correct format.
 }
+\examples{
+N <- 100
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+data_modelled <- list(X, Y)
+checkDataCorrectInput(data_modelled)
+}

@@ -20,3 +20,8 @@ No return value, called for side effects.
 \description{
 Internal function to check the number of MCMC samples.
 }
+\examples{
+R <- 10000
+thin <- 50
+checkNumberOfSamples(R, thin)
+}

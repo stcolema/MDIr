@@ -5,7 +5,7 @@
 #' ``thin=50`` only every 50th sample is kept.
 #' @param verbose Logical inficating if warnings should be printed.
 #' @return No return value, called for side effects.
-#' @example
+#' @examples
 #' R <- 10000
 #' thin <- 50
 #' checkNumberOfSamples(R, thin)
