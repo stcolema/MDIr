@@ -1,7 +1,7 @@
 Package: MDIr
 Type: Package
 Title: MDIr
-License: GPL-3 + file LICENSE
+License: GPL-3
 Version: 0.0.1
 Date: 2021-01-15
 Authors@R: c(person(given = "Stephen", family = "Coleman",
