@@ -74,7 +74,10 @@ predictFromMultipleChains <- function(mcmc_outputs,
   V <- first_chain$V
   N <- first_chain$N
   K <- first_chain$K
-
+  
+  # Flag for mixture model vs MDI
+  multiple_views <- V > 1
+  
   # MCMC call
   R <- first_chain$R
   thin <- first_chain$thin
@@ -197,25 +200,29 @@ predictFromMultipleChains <- function(mcmc_outputs,
     }
   }
 
-  VC2 <- choose(V, 2)
-  merged_outputs$fusion_probabilities <- vector("list", VC2)
-
-  entry <- 0
-  names <- c()
-  for (v in seq(1, V - 1)) {
-    for (w in seq(v + 1, V)) {
-      name <- paste0("fused_items_", v, w)
-      names <- c(names, name)
-      entry <- entry + 1
-      merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
-      for (ii in seq(1, n_chains)) {
-        merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
-          calcFusionProbabiliy(processed_chains[[ii]], v, w)
+  # Find the fusion probabilities across views
+  # If using a mixture model (i.e. V = 1), this returns a NULL
+  merged_outputs$fusion_probabilities <- NULL
+  if(multiple_views) {
+    VC2 <- choose(V, 2)
+    merged_outputs$fusion_probabilities <- vector("list", VC2)
+  
+    entry <- 0
+    names <- c()
+    for (v in seq(1, V - 1)) {
+      for (w in seq(v + 1, V)) {
+        name <- paste0("fused_items_", v, w)
+        names <- c(names, name)
+        entry <- entry + 1
+        merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
+        for (ii in seq(1, n_chains)) {
+          merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
+            calcFusionProbabiliy(processed_chains[[ii]], v, w)
+        }
+        merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] / n_chains
       }
-      merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] / n_chains
     }
+    names(merged_outputs$fusion_probabilities) <- names
   }
-  names(merged_outputs$fusion_probabilities) <- names
-
   merged_outputs
 }
