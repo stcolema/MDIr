@@ -44,7 +44,7 @@ void outlierComponent::updateWeights(uvec non_outliers, uvec outliers) {
   // Sample values for the weights
   // outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
-  non_outlier_weight = 1.0 - outlier_weight;
+  outlier_weight = 1.0 - non_outlier_weight;
   
   // Normalise these
   // non_outlier_weight = non_outlier_weight / (non_outlier_weight + outlier_weight);

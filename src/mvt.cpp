@@ -58,8 +58,14 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   
   bool not_invertible = false;
   
+  mat small_identity(P, P), global_cov(P, P);
+  small_identity.zeros(), global_cov.zeros();
+  
+  small_identity.eye(P, P);
+  small_identity *= 1e-6;
+  
   // for use in the outlier distribution
-  mat global_cov = 0.5 * arma::cov(X);
+  global_cov = 0.5 * arma::cov(X);
   
   // Do we need to add a very little to the diagonal to ensure we can inverse 
   // the dataset covariance matrix?
@@ -72,9 +78,6 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
   if(not_invertible) {
-    mat small_identity;
-    small_identity.eye(P, P);
-    small_identity *= 1e-6;
     global_cov = 0.5 * arma::cov(X) + small_identity;
   }
   
