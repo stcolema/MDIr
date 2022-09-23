@@ -18,6 +18,11 @@
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
+#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
+#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
+#' view. For views modelled using a Gaussian process, the first entry is the
+#' proposal window for the ampltiude, the second is for the length-scale and the
+#' third is for the noise. These are not used in other mixture types.
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -51,7 +56,8 @@ callMDI <- function(X,
                     initial_labels = NULL,
                     fixed = NULL,
                     alpha = NULL,
-                    initial_labels_as_intended = FALSE) {
+                    initial_labels_as_intended = FALSE,
+                    proposal_windows = NULL) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -91,6 +97,7 @@ callMDI <- function(X,
   # Translate user input into appropriate types for C++ function
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
+  gp_used <- types %in% c("GP", "TAGPM")
 
   if (is.null(alpha)) {
     alpha <- rep(1, V)
@@ -104,6 +111,8 @@ callMDI <- function(X,
   # for(v in seq(V))
   #   checkLabels(initial_labels[, v], K[v])
 
+  proposal_windows <- processProposalWindows(proposal_windows, types)
+
   t_0 <- Sys.time()
 
   # Pull samples from the MDI model
@@ -115,7 +124,8 @@ callMDI <- function(X,
     density_types,
     outlier_types,
     initial_labels,
-    fixed
+    fixed,
+    proposal_windows
   )
 
   t_1 <- Sys.time()
@@ -145,12 +155,25 @@ callMDI <- function(X,
   mcmc_output$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))
   mcmc_output$Overfitted <- rep(TRUE, V)
 
+  # Proposal windows if any used
+  mcmc_output$proposal_windows <- proposal_windows
+
   for (v in seq(1, V)) {
     if (is_semisupervised[v]) {
       known_labels <- which(fixed[, v] == 1)
       K_fix <- length(unique(initial_labels[known_labels, v]))
       is_overfitted <- (K[v] > K_fix)
       mcmc_output$Overfitted[v] <- is_overfitted
+    }
+    if (gp_used[v]) {
+      hypers <- vector("list", 3)
+      names(hypers) <- c("amplitude", "length", "noise")
+      hypers$amplitude <- mcmc_output$hypers[[v]][, seq(1, K[v]), drop = FALSE]
+      hypers$length <- mcmc_output$hypers[[v]][, seq(K[v] + 1, 2 * K[v]), drop = FALSE]
+      hypers$noise <- mcmc_output$hypers[[v]][, seq(2 * K[v] + 1, 3 * K[v]), drop = FALSE]
+      mcmc_output$hypers[[v]] <- hypers
+    } else {
+      mcmc_output$hypers[[v]] <- NA
     }
   }
 

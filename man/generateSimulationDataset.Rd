@@ -40,8 +40,8 @@ data and ``cluster_IDs``, the true generating structure.
 \description{
 Generates a dataset based upon a mixture of $K$ Gaussian
 distributions with $P$ independent, relevant features and $P_n$ irrelevant
-features. Irrelevant features contain no signal for underlying structure and 
-all measurements for an irrelevant feature are drawn from a common standard 
+features. Irrelevant features contain no signal for underlying structure and
+all measurements for an irrelevant feature are drawn from a common standard
 Gaussian distribution.
 }
 \examples{

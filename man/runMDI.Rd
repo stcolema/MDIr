@@ -4,7 +4,17 @@
 \alias{runMDI}
 \title{Call Multiple Dataset Integration}
 \usage{
-runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
+runMDI(
+  R,
+  thin,
+  Y,
+  K,
+  mixture_types,
+  outlier_types,
+  labels,
+  fixed,
+  proposal_windows
+)
 }
 \arguments{
 \item{R}{The number of iterations to run for.}
@@ -27,6 +37,8 @@ items being clustered, columns to views.}
 
 \item{fixed}{Binary matrix of the items that are fixed in their initial
 label.}
+
+\item{proposal_windows}{List/field of vectors}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

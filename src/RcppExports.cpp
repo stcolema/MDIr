@@ -22,20 +22,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// squaredExponentialFunction
-double squaredExponentialFunction(double amplitude, double length, int i, int j);
-RcppExport SEXP _MDIr_squaredExponentialFunction(SEXP amplitudeSEXP, SEXP lengthSEXP, SEXP iSEXP, SEXP jSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type amplitude(amplitudeSEXP);
-    Rcpp::traits::input_parameter< double >::type length(lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< int >::type j(jSEXP);
-    rcpp_result_gen = Rcpp::wrap(squaredExponentialFunction(amplitude, length, i, j));
-    return rcpp_result_gen;
-END_RCPP
-}
 // gammaLogLikelihood
 double gammaLogLikelihood(double x, double shape, double rate);
 RcppExport SEXP _MDIr_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
@@ -119,8 +105,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed);
-RcppExport SEXP _MDIr_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
+RcppExport SEXP _MDIr_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -132,21 +118,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed));
+    Rcpp::traits::input_parameter< arma::field< arma::vec > >::type proposal_windows(proposal_windowsSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_MDIr_createSimilarityMat", (DL_FUNC) &_MDIr_createSimilarityMat, 1},
-    {"_MDIr_squaredExponentialFunction", (DL_FUNC) &_MDIr_squaredExponentialFunction, 4},
     {"_MDIr_gammaLogLikelihood", (DL_FUNC) &_MDIr_gammaLogLikelihood, 3},
     {"_MDIr_invGammaLogLikelihood", (DL_FUNC) &_MDIr_invGammaLogLikelihood, 3},
     {"_MDIr_wishartLogLikelihood", (DL_FUNC) &_MDIr_wishartLogLikelihood, 4},
     {"_MDIr_invWishartLogLikelihood", (DL_FUNC) &_MDIr_invWishartLogLikelihood, 4},
     {"_MDIr_mvtLogLikelihood", (DL_FUNC) &_MDIr_mvtLogLikelihood, 4},
     {"_MDIr_pNorm", (DL_FUNC) &_MDIr_pNorm, 4},
-    {"_MDIr_runMDI", (DL_FUNC) &_MDIr_runMDI, 8},
+    {"_MDIr_runMDI", (DL_FUNC) &_MDIr_runMDI, 9},
     {NULL, NULL, 0}
 };
 
