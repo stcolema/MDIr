@@ -17,6 +17,11 @@
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
+#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
+#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
+#' view. For views modelled using a Gaussian process, the first entry is the
+#' proposal window for the ampltiude, the second is for the length-scale and the
+#' third is for the noise. These are not used in other mixture types.
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
 #' @examples
@@ -52,7 +57,8 @@ runMCMCChains <- function(X,
                           initial_labels = NULL,
                           fixed = NULL,
                           alpha = NULL,
-                          initial_labels_as_intended = FALSE) {
+                          initial_labels_as_intended = FALSE,
+                          proposal_windows = NULL) {
   mcmc_lst <- vector("list", n_chains)
 
   mcmc_lst <- lapply(mcmc_lst, function(x) {
@@ -64,7 +70,8 @@ runMCMCChains <- function(X,
       initial_labels = initial_labels,
       fixed = fixed,
       alpha = alpha,
-      initial_labels_as_intended = initial_labels_as_intended
+      initial_labels_as_intended = initial_labels_as_intended,
+      proposal_windows = proposal_windows
     )
   })
 

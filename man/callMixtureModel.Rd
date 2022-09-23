@@ -13,7 +13,8 @@ callMixtureModel(
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
-  initial_labels_as_intended = FALSE
+  initial_labels_as_intended = FALSE,
+  proposal_windows = NULL
 )
 }
 \arguments{
@@ -42,6 +43,12 @@ weights in the model.}
 
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
+
+\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
+sampling of Gaussian process hyperparameters. Each entry corresponds to a
+view. For views modelled using a Gaussian process, the first entry is the
+proposal window for the ampltiude, the second is for the length-scale and the
+third is for the noise. These are not used in other mixture types.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

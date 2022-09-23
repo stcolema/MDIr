@@ -31,7 +31,7 @@ each distribution.}
 \item{col_names}{The column names of the generated dataset.}
 }
 \value{
-Named list of ``data``, the generated matrix and ``cluster_IDs``, 
+Named list of ``data``, the generated matrix and ``cluster_IDs``,
 the generating structure.
 }
 \description{

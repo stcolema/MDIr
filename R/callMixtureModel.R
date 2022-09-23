@@ -18,6 +18,11 @@
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
+#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
+#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
+#' view. For views modelled using a Gaussian process, the first entry is the
+#' proposal window for the ampltiude, the second is for the length-scale and the
+#' third is for the noise. These are not used in other mixture types.
 #' @return A named list containing the sampled partitions, component weights,
 #' and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -43,7 +48,8 @@ callMixtureModel <- function(X,
                              initial_labels = NULL,
                              fixed = NULL,
                              alpha = NULL,
-                             initial_labels_as_intended = FALSE) {
+                             initial_labels_as_intended = FALSE,
+                             proposal_windows = NULL) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -66,7 +72,8 @@ callMixtureModel <- function(X,
   # Translate user input into appropriate types for C++ function
   density_type <- translateTypes(type)
   outlier_type <- setupOutlierComponents(type)
-
+  gp_used <- type %in% c("GP", "TAGPM")
+  
   if (is.null(alpha)) {
     alpha <- 1
   }
@@ -92,6 +99,8 @@ callMixtureModel <- function(X,
   # for(v in seq(V))
   checkLabels(initial_labels, K)
 
+  proposal_windows <- processProposalWindows(proposal_windows, type)
+  
   t_0 <- Sys.time()
 
   # Pull samples from the MDI model
@@ -103,7 +112,8 @@ callMixtureModel <- function(X,
     density_type,
     outlier_type,
     initial_labels,
-    fixed
+    fixed,
+    proposal_windows
   )
 
   t_1 <- Sys.time()
@@ -150,6 +160,17 @@ callMixtureModel <- function(X,
     mcmc_output$Overfitted <- is_overfitted
   }
 
+  if (gp_used) {
+    hypers <- vector("list", 3)
+    names(hypers) <- c("amplitude", "length", "noise")
+    hypers$amplitude <- mcmc_output$hypers[[1]][, seq(1, K), drop = FALSE]
+    hypers$length <- mcmc_output$hypers[[1]][, seq(K + 1, 2 * K), drop = FALSE]
+    hypers$noise <- mcmc_output$hypers[[1]][, seq(2 * K + 1, 3 * K), drop = FALSE]
+    mcmc_output$hypers <- hypers
+  } else {
+    mcmc_output$hypers <- NA
+  }
+  
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken
 
