@@ -106,22 +106,10 @@ void gaussian::sampleFromPriors() {
 
 // The log likelihood of a item belonging to each cluster.
 arma::vec gaussian::itemLogLikelihood(arma::vec item) {
-  
-  double exponent = 0.0, dist_to_mean = 0.0;
   arma::vec ll(K);
   ll.zeros();
-  
   for(arma::uword k = 0; k < K; k++){
-    
     ll(k) = logLikelihood(item, k);
-    
-    // for(uword p = 0; p < P; p++) {
-    //   dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
-    //   exponent = dist_to_mean * precisions(p, k);
-    //   
-    //   // Normal log likelihood
-    //   ll(k) += -0.5 *(log_std_devs(p, k) + exponent + (double) P * log(2.0 * M_PI));
-    // }
   }
   return(ll);
 };
@@ -189,15 +177,15 @@ void gaussian::sampleKthComponentParameters(
     // Sample mean in the component data
     sample_mean = mean(component_data).t();
     
-    mu_n = (xi * kappa + n_k * sample_mean) / (double) (kappa + n_k);
+    mu_n = (xi * kappa + (double) n_k * sample_mean) / (kappa + (double) n_k);
     
     // Rcpp::Rcout << "\nIs this the issue?";
     diff_from_mean = component_data.each_row() - sample_mean.t();
     
     // Rcpp::Rcout << "\nEntering internal loop.";
     for(uword p = 0; p < P; p++) {
-      kappa_n = kappa + n_k;
-      nu_n = nu + n_k;
+      kappa_n = kappa + (double) n_k;
+      nu_n = nu + (double) n_k;
       
       // Rcpp::Rcout << "\nDist from mean.";
       dist_from_mean = arma::pow(diff_from_mean.col(p), 2.0);
@@ -211,7 +199,7 @@ void gaussian::sampleKthComponentParameters(
       scale_np = (
         scale(p) 
         + accu(dist_from_mean) 
-        + (n_k * kappa / (kappa_n)) * dist_from_prior
+        + ((double) n_k * kappa / (kappa_n)) * dist_from_prior
       );
       
       // if( (0.5 * nu_n < 1e-6) || (1.0 / (0.5 * scale_np) < 1e-6) ) { 

@@ -65,7 +65,10 @@ public:
     non_outliers,
     
     // Used for looping over data indices
-    N_inds;
+    N_inds,
+    
+    // Acceptance count of MH sampled parameters
+    acceptance_count;
   
   vec 
     // Concentration hyperparameter for ocmponent weights
@@ -86,7 +89,11 @@ public:
     likelihood, 
     
     // Log-likelihood of being non-outlier or outlier
-    outlier_likelihood;
+    outlier_likelihood,
+    
+    // Used in recording GP hyperparameters
+    hypers;
+  
   umat members;
   mat X, X_t, alloc;
   

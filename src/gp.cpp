@@ -88,6 +88,12 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   // Empirical Bayesian hyperparameters for the mean and covariance
   // empiricalBayesHyperparameters();
   
+  hypers.set_size(3 * K);
+  hypers.zeros();
+  
+  acceptance_count.set_size(3 * K);
+  acceptance_count.zeros();
+  
 };
 
 double gp::noisePriorLogDensity(double x, bool logNorm) {
@@ -170,6 +176,9 @@ void gp::sampleHyperParameterPriors() {
   for(uword k = 0; k < K; k++) {
     sampleKthComponentHyperParameterPrior(k, logNormPriorUsed);
   }
+  hypers.subvec(0, K - 1) = amplitude;
+  hypers.subvec(K, 2 * K - 1) = length;
+  hypers.subvec(2 * K, 3 * K - 1) = noise;
 };
 
 // arma::mat gp::calculateCovarianceKernel(arma::uvec t_inds) {
@@ -213,7 +222,6 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude,
   sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
   sub_block = exp(sub_block);
   
-  
   // for(uword ii = 0; ii < P; ii++) {
   //   sub_block(ii, ii) = amplitude;
   //   for(uword jj = ii + 1; jj < P; jj++) {
@@ -224,11 +232,11 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude,
   //       jj
   //     );
   // 
-  //     // if(sub_block(ii, jj) < kernel_subblock_threshold) {
-  //     //   sub_block(ii, jj) = 0.0;
-  //     //   sub_block(jj, ii) = 0.0;
-  //     //   break;
-  //     // }
+  //     if(sub_block(ii, jj) < kernel_subblock_threshold) {
+  //       sub_block(ii, jj) = 0.0;
+  //       sub_block(jj, ii) = 0.0;
+  //       // break;
+  //     }
   //     sub_block(jj, ii) = sub_block(ii, jj);
   //   }
   // }
@@ -466,6 +474,14 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   
   samplingCount++;
   
+  hypers.subvec(0, K - 1) = amplitude;
+  hypers.subvec(K, 2 * K - 1) = length;
+  hypers.subvec(2 * K, 3 * K - 1) = noise;
+  
+  acceptance_count.subvec(0, K - 1) = amplitude_acceptance_count;
+  acceptance_count.subvec(K, 2 * K - 1) = length_acceptance_count;
+  acceptance_count.subvec(2 * K, 3 * K - 1) = noise_acceptance_count;
+  
   // Rcpp::Rcout << "\n\n\nPARAMETERS";
   // Rcpp::Rcout << "\nMembership:\n" << sum(members);
   // Rcpp::Rcout << "\nNoise:\n" << noise.t(); 
@@ -482,6 +498,12 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
 };
 
 // === Hyper-parameters ========================================================
+
+void gp::receiveHyperParametersProposalWindows(vec proposal_windows) {
+  amplitude_proposal_window = proposal_windows[0];
+  length_proposal_window = proposal_windows[1];
+  noise_proposal_window = proposal_windows[2];
+}
 
 // Need to sample the hyperparameter and recalculate the mu tilde / cov tilde
 double gp::hyperParameterLogKernel(
@@ -684,12 +706,11 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
       // Normal log likelihood
       item_score -= 0.5 * std::pow(data(n, p) - mean_vec(p), 2.0);
     }
-    item_score *= noise;
+    item_score *= 1.0 / noise;
     item_score -= 0.5 * (double) P * (log(2.0 * M_PI) + log(noise));
-    
     score += item_score;
   }
-  prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
+  prior_contribution = noisePriorLogDensity(noise, logNormPriorUsed); 
   score += prior_contribution;
   return score;
 };
@@ -739,7 +760,11 @@ arma::vec gp::itemLogLikelihood(arma::vec item) {
 
 // The log likelihood of a item belonging to a specific cluster.
 double gp::logLikelihood(arma::vec item, arma::uword k) {
-  double ll = 0.0, dist_to_mean = 0.0, exponent = 0.0;
+  double ll = 0.0, dist_to_mean = 0.0, exponent = 0.0, ll1, ll2;
+  
+  mat std_dev(P, P);
+  std_dev.zeros();
+  std_dev.diag().fill(noise(k));
   
   // The exponent part of the gaussian pdf
   for(uword p = 0; p < P; p++) {
@@ -748,9 +773,13 @@ double gp::logLikelihood(arma::vec item, arma::uword k) {
   }
   ll *= 1.0 / noise(k);
   ll -= 0.5 * (double) P * (log(2.0 * M_PI) + log(noise(k)));
+
+  // ll1 = pNorm(item, mu.col(k), std_dev, false);
+  // ll2 = gaussianLogLikelihood(item, mu.col(k), std_dev.diag());
+  // 
+  // Rcpp::Rcout << "\n\npNorm: " << ll1 
+  //   << "\ngaussianLogLihood:" << ll2 
+  //   << "\nGP implementation " << ll;
   
-  // for(uword p = 0; p < P; p++) {
-  //   ll += pNorm(item(p), mu(p, k), noise(k));
-  // }
   return(ll);
 };

@@ -56,8 +56,10 @@ public:
   void updateWeights(uvec non_outliers, uvec outliers);
   
   // Sample if a given item is an outlier or not
-  virtual arma::uword sampleOutlier(double non_outlier_likelihood_n,
-                            double outlier_likelihood_n);
+  virtual arma::uword sampleOutlier(
+    double non_outlier_likelihood_n,
+    double outlier_likelihood_n
+  );
   
 };
 

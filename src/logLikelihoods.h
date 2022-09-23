@@ -100,4 +100,24 @@ double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd = true);
 //' parameters mu, sigma_2.
 double pNorm(double x, double mu, double sigma_2);
 
+//' @title Multivariate normal log-likelihood for diagonal covariance matrix
+//' @description The log-likelihood function for a vector in a Gaussian density 
+//' with a diagonal covariance matrix
+//' @param x - vec; the sample to calculate the log likelihood of.
+//' @param mu - vec; the mean parameter of the Gaussian distribution.
+//' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
+//' @return the normalised log-likelihood of x in a Gaussian distribution with 
+//' parameters mu, sigma_2.
+double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev);
+
+
+//' @title The Half-Cauchy Distribution
+//' @description Calculates the pdf of the Half-Cauchy distribution for value x.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param x Value to calculate the probability density of.
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Density of x in HalfCauchy(mu, scale).
+double pHalfCauchy(double x, double mu, double scale, bool logValue = true);
+
 #endif /* LOGLIKELIHOOD_H */

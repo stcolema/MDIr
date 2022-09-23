@@ -85,6 +85,17 @@ mixtureModel::mixtureModel(
   // Initialise the outlier component (default is empty)
   initialiseOutlierComponent(outlier_type);
   
+  acceptance_count.set_size(0);
+  hypers.set_size(0);
+  if(mixture_type == 3) {
+    acceptance_count.set_size(3 * K);
+    acceptance_count.zeros();
+    hypers.set_size(3 * K);
+    hypers.zeros();
+  }
+  density_ptr->acceptance_count = acceptance_count;
+  density_ptr->hypers = hypers;
+  
 };
 
 void mixtureModel::updateItemAllocation(

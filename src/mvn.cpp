@@ -195,16 +195,16 @@ void mvn::sampleKthComponentParameters(
     dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
     
     // Update the scale hyperparameter
-    scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
+    scale_n = scale + sample_cov + ((kappa * (double) n_k) / (kappa + (double) n_k)) * dist_from_prior;
     
     // Sample a new covariance matrix
-    cov.slice(k) = iwishrnd(scale_n, nu + n_k);
+    cov.slice(k) = iwishrnd(scale_n, nu + (double) n_k);
     
     // The weighted average of the prior mean and sample mean
-    mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
+    mu_n = (kappa * xi + (double) n_k * sample_mean) / (kappa + (double) n_k);
     
     // Sample a new mean vector
-    mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k));
+    mu.col(k) = mvnrnd(mu_n, (1.0 / (kappa + (double) n_k)) * cov.slice(k));
     
   } else{
     

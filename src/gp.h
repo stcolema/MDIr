@@ -39,9 +39,9 @@ public:
   
   bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword
-    sampleHypersFrequencyBefore100 = 2, 
-    sampleHypersFrequencyBefore1000 = 10, 
-    sampleHypersFrequencyAfter1000 = 25, 
+    sampleHypersFrequencyBefore100 = 5, 
+    sampleHypersFrequencyBefore1000 = 5, 
+    sampleHypersFrequencyAfter1000 = 5, 
     samplingCount = 0;
   std::string matrixSaved = "i";
   
@@ -50,13 +50,13 @@ public:
     // Prior hyperparameters
     hyper_prior_std_dev = 1.0, // 0.75,
     noise_prior_std_dev = 1.0, //0.75, // 0.5,
-    acceptance_threshold = 1e-9,
+    acceptance_threshold = 1e-6,
     
     // kernel_subblock_threshold = 1e-12,
     // matrix_precision = 8, //  1e-08,
-    amplitude_proposal_window = 0.025,
-    length_proposal_window = 0.025,
-    noise_proposal_window = 0.025;
+    amplitude_proposal_window = 0.25,
+    length_proposal_window = 0.25,
+    noise_proposal_window = 0.15;
     // amplitude_proposal_window = 75,
     // length_proposal_window = 75, 
     // noise_proposal_window = 75;
@@ -103,9 +103,9 @@ public:
   double ampltiduePriorLogDensity(double x, bool logNorm = false);
   double lengthPriorLogDensity(double x, bool logNorm = false);
   
-  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-5);
-  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-5);
-  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-5);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-6);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-6);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-6);
   
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
@@ -117,7 +117,9 @@ public:
   // Sampling and calculations related to the covarianc function/matrix
   void sampleHyperParameters();
   mat calculateKthComponentKernelSubBlock(double amplitude, double length,
-                                          double kernel_subblock_threshold = 1e-12);
+    double kernel_subblock_threshold = 1e-9
+  );
+  
   void calculateKernelSubBlock();
   mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
@@ -128,7 +130,7 @@ public:
       mat C, 
       bool checkSymmetry = false, 
       bool checkStability = true, 
-      double threshold = 1e-12
+      double threshold = 1e-9
   );
   
   // Sample and calulcate objects related to sampling the mean posterior function
@@ -145,6 +147,8 @@ public:
   void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
   
+  
+  void receiveHyperParametersProposalWindows(vec proposal_windows);
   
   // double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterLogKernel(
