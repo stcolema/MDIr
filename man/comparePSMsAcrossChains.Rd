@@ -12,6 +12,9 @@ comparePSMsAcrossChains(
 )
 }
 \arguments{
+\item{mcmc}{Output of ``processMCMCChains`` with the argument
+``construct_psm = TRUE``.}
+
 \item{matrix_setting_order}{The matrix that defines the ordering of all
 others, if a common ordering is used. Defaults to `1`.}
 
@@ -21,9 +24,6 @@ used. If false all matrices are ordered individually, defaults to `TRUE`.}
 \item{ignore_checks}{Logical indicating if checks for matrix symmetry and
 a commmon size should be ignored. Defaults to TRUE as these checks seem
 to break when they should not.}
-
-\item{mccm}{Output of ``processMCMCChains`` with the argument
-``construct_psm = TRUE``.}
 }
 \value{
 A long data.frame containing columns `x` (the x-axis position of the
