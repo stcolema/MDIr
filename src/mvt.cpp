@@ -17,22 +17,20 @@ mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
   double lgamma_df_p = 0.0, lgamma_df = 0.0, log_pi_df = 0.0;
   
   // for use in the outlier distribution
-  mat global_cov = findInvertibleGlobalCov();
-  global_mean = (mean(X, 0)).t();
-  
+  global_cov = findInvertibleGlobalCov();
+  global_mean = sampleMean(X);
+
   // Functions of the covariance relevant to the likelihood
   global_log_det = log_det(global_cov).real();
   global_cov_inv = inv(global_cov);
   
   // Components of the t-distribution likelihood that do not change
-  lgamma_df_p = std::lgamma((df + (double) P) / 2.0);
-  lgamma_df = std::lgamma(df / 2.0);
-  log_pi_df = ((double) P / 2.0) * std::log(df * M_PI);
+  lgamma_df_p = std::lgamma(0.5 * (df + (double) P));
+  lgamma_df = std::lgamma(0.5 * df);
+  log_pi_df = (0.5 * (double) P) * std::log(df * M_PI);
   
   // Constant in t likelihood
   t_likelihood_const = lgamma_df_p - lgamma_df - log_pi_df - 0.5 * global_log_det;
-
-  outlier_likelihood.set_size(N);
 
   // Calculate the log likelihood of each item within the outlier component
   calculateAllLogLikelihoods();
@@ -41,17 +39,19 @@ mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
 
 double mvt::calculateItemLogLikelihood(arma::vec x) {
   
-  double exponent = 0.0, ll = 0.0;
-  
-  vec diff_with_mean = x - global_mean;
-  
-  exponent = as_scalar( diff_with_mean.t() * global_cov_inv * diff_with_mean );
-  
-  // The T likelihood constant is calculated a member of the TAGM class
-  ll = t_likelihood_const 
-    - ((df + (double) P) / 2.0) * std::log(1.0 + (1.0 / df) * exponent);
+  return mvtLogLikelihood(x, global_mean, global_cov, df);
 
-  return ll;
+  // double exponent = 0.0, ll = 0.0;
+  // 
+  // vec diff_with_mean = x - global_mean;
+  // 
+  // exponent = as_scalar( diff_with_mean.t() * global_cov_inv * diff_with_mean );
+  // 
+  // // The T likelihood constant is calculated a member of the TAGM class
+  // ll = t_likelihood_const
+  //   - 0.5 * (df + (double) P) * std::log(1.0 + (1.0 / df) * exponent);
+  // 
+  // return ll;
 };
 
 arma::mat mvt::findInvertibleGlobalCov(double threshold) {
@@ -62,7 +62,7 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   small_identity.zeros(), global_cov.zeros();
   
   small_identity.eye(P, P);
-  small_identity *= 1e-6;
+  small_identity *= 1e-10;
   
   // for use in the outlier distribution
   global_cov = 0.5 * arma::cov(X);

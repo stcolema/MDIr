@@ -32,6 +32,7 @@ using namespace arma ;
 //' items being clustered, columns to views.
 //' @param fixed Binary matrix of the items that are fixed in their initial
 //' label.
+//' @param proposal_windows List/field of vectors
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -42,7 +43,8 @@ Rcpp::List runMDI(
   arma::uvec mixture_types,
   arma::uvec outlier_types,
   arma::umat labels,
-  arma::umat fixed
+  arma::umat fixed,
+  arma::field< arma::vec > proposal_windows
 );
 
 #endif /* RUNMDI_H */

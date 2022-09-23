@@ -7,6 +7,8 @@
 // =============================================================================
 // included dependencies
 # include "outlierComponent.h"
+# include "genericFunctions.h"
+# include "logLikelihoods.h"
 
 using namespace arma ;
 
@@ -29,7 +31,7 @@ public:
   vec global_mean;
   
   // The dataset covariance
-  mat global_cov_inv;
+  mat global_cov, global_cov_inv;
   
   using outlierComponent::outlierComponent;
   
@@ -40,7 +42,7 @@ public:
   virtual ~mvt() { };
   
   // Calculate the likelihood of each item being an outlier
-  double calculateItemLogLikelihood(arma::vec x);
+  double calculateItemLogLikelihood(arma::vec x) override;
   
   arma::mat findInvertibleGlobalCov(double threshold = DBL_EPSILON);
   

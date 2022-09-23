@@ -110,39 +110,6 @@ arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
   return mu + x * arma::sqrt(y);
 };
 
-//' title The Half-Cauchy Distribution
-//' description Calculates the pdf of the Half-Cauchy distribution for value x.
-//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-//' param x Value to calculate the probability density of.
-//' param mu Location parameter.
-//' param scale Scale parameter.
-//' return Sample from HalfCauchy(mu, scale).
-double pHalfCauchy(double x, double mu, double scale, bool logValue) {
-  double denom = 0.0;
-
-  if(x < mu) {
-    Rcpp::Rcerr << "\nIn Half-Cauchy p.d.f, the considered value is less than the threshold.";
-    return 0;
-  }
-  denom = 1 + std::pow((x - mu) / scale, 2.0);
-  if(logValue) {
-    // denom = 2.0 * std::log((x - mu) / scale);
-    return log(2) - log(M_PI) - log(scale) - log(denom);
-  } else {
-    return 2 / (M_PI * scale * denom);
-  }
-};
-
-double pHalfCauchy(double x, double mu, double scale) {
-  double denom = 0.0;
-  
-  if(x < mu) {
-    return 0;
-  }
-  denom = 2.0 * std::log((x - mu) / scale);
-  return log(2) - log(M_PI) - log(scale) - denom;
-};
-
 //' title The Beta Distribution
 //' description Random generation from the Beta distribution.
 //' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
@@ -204,25 +171,25 @@ bool doubleApproxEqual(double x, double y, double precision) {
 };
 
 
-//' title Sample mean
-//' description calculate the sample mean of a matrix X.
-//' param X Matrix
-//' return Vector of the column means of X.
-vec sampleMean(arma::mat X) {
-  mat mu_t = mean(X);
+// title Sample mean
+// description calculate the sample mean of a matrix X.
+// param X Matrix
+// return Vector of the column means of X.
+arma::vec sampleMean(arma::mat X) {
+  arma::mat mu_t = arma::mean(X);
   return mu_t.row(0).t();
 };
 
-//' title Calculate sample covariance
-//' description Returns the unnormalised sample covariance. Required as
-//' arma::cov() does not work for singletons.
-//' param data Data in matrix format
-//' param sample_mean Sample mean for data
-//' param n The number of samples in data
-//' param n_col The number of columns in data
-//' return One of the parameters required to calculate the posterior of the
-//'  Multivariate normal with uknown mean and covariance (the unnormalised
-//'  sample covariance).
+// title Calculate sample covariance
+// description Returns the unnormalised sample covariance. Required as
+// arma::cov() does not work for singletons.
+// param data Data in matrix format
+// param sample_mean Sample mean for data
+// param n The number of samples in data
+// param n_col The number of columns in data
+// return One of the parameters required to calculate the posterior of the
+//  Multivariate normal with uknown mean and covariance (the unnormalised
+//  sample covariance).
 arma::mat calcSampleCov(arma::mat data,
                         arma::vec sample_mean,
                         arma::uword N,
@@ -236,6 +203,7 @@ arma::mat calcSampleCov(arma::mat data,
   if(N > 1){
     data.each_row() -= sample_mean.t();
     sample_covariance = data.t() * data;
+    // sample_covariance = ((double) N - 1.0) * cov(data);
   }
   return sample_covariance;
 };
