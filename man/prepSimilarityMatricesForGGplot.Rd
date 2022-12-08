@@ -8,7 +8,9 @@ prepSimilarityMatricesForGGplot(
   similarity_matrices,
   matrix_setting_order = 1,
   use_common_ordering = TRUE,
-  ignore_checks = TRUE
+  ignore_checks = TRUE,
+  y_axis = "y",
+  x_axis = "x"
 )
 }
 \arguments{
@@ -23,6 +25,12 @@ used. If false all matrices are ordered individually, defaults to `TRUE`.}
 \item{ignore_checks}{Logical indicating if checks for matrix symmetry and
 a commmon size should be ignored. Defaults to TRUE as these checks seem
 to break when they should not.}
+
+\item{y_axis}{The name for the column defining the y-axis. Defaults to 
+``"y"``.}
+
+\item{x_axis}{The name for the column defining the x-axis. Defaults to 
+``"x"``.}
 }
 \value{
 A long data.frame containing columns `x` (the x-axis position of the
