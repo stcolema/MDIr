@@ -1,6 +1,6 @@
 Package: MDIr
 Type: Package
-Title: Bayesian model-based clustering of multi-view data
+Title: Bayesian Model-Based Clustering of Multi-View Data
 License: GPL-3
 Version: 0.0.1
 Date: 2021-01-15
@@ -10,9 +10,9 @@ Authors@R: c(person(given = "Stephen", family = "Coleman",
 Description: Integrative clustering and semi-supervised prediction.
   This package includes a C++ implementation of both semi-supervised and 
   un-supervised Multiple Dataset Integration, an extension of Bayesian mixture models
-  to the integrative (multiple dataset) setting. It also includes Bayesian 
-  mixture models. Densities allowed within MDI and the mixture model are 
-  Gaussian with full and diagonal covariance matrices ('MVN' and 'G'), 
+  to the integrative (multiple dataset) setting (e.g., multi-omics). It also 
+  includes Bayesian mixture models. Densities allowed within MDI and the mixture
+  model are Gaussian with full and diagonal covariance matrices ('MVN' and 'G'), 
   categorical ('C'), Gaussian with a Gaussian process prior on the mean 
   parameter ('GP'). The GP model can only handle data with common time points of
   equal separation. The MVN and GP models can be augmented with a global 
