@@ -4,7 +4,7 @@
 \alias{calcAllocProb}
 \title{Calculate allocation probabilities}
 \usage{
-calcAllocProb(mcmc_samples, view, burn = 0, method = "median")
+calcAllocProb(mcmc_samples, view, burn = 0, method = "mean")
 }
 \arguments{
 \item{mcmc_samples}{Output from ``callMDI``.}

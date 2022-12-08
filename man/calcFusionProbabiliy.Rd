@@ -2,9 +2,9 @@
 % Please edit documentation in R/calcFusionProbabiliy.R
 \name{calcFusionProbabiliy}
 \alias{calcFusionProbabiliy}
-\title{Caluclate fusion probability}
+\title{Calculate fusion probability}
 \usage{
-calcFusionProbabiliy(mcmc, v, w)
+calcFusionProbabiliy(mcmc, v, w, processed = FALSE)
 }
 \arguments{
 \item{mcmc}{Output from ``runMCMCChain``}
@@ -12,6 +12,8 @@ calcFusionProbabiliy(mcmc, v, w)
 \item{v}{First view considered.}
 
 \item{w}{Second view considered.}
+
+\item{processed}{Has the chain been processed already (defaults to FALSE).}
 }
 \value{
 A vector of probabilities

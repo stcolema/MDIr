@@ -2,19 +2,21 @@
 % Please edit documentation in R/calcFusionProbabiliyAllViews.R
 \name{calcFusionProbabiliyAllViews}
 \alias{calcFusionProbabiliyAllViews}
-\title{Caluclate fusion probability all views}
+\title{Calculate fusion probability all views}
 \usage{
-calcFusionProbabiliyAllViews(mcmc)
+calcFusionProbabiliyAllViews(mcmc, processed = FALSE)
 }
 \arguments{
 \item{mcmc}{Output from ``runMCMCChain``}
+
+\item{processed}{Has the chain been processed already (defaults to FALSE).}
 }
 \value{
-A list of vector of probabilities for each item fusing across each
+A list of vector of probabilities for each item fusing across each 
 pair of views.
 }
 \description{
-The mean of the number of MCMC samples for which each item has
+The mean of the number of MCMC samples for which each item has 
 the same label in each pair of views.
 }
 \examples{
@@ -34,7 +36,7 @@ thin <- 5
 burn <- 10
 
 K_max <- 10
-K <- rep(K_max, V)
+K <- rep(K_max, V) 
 types <- rep("G", V)
 
 mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
