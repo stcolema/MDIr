@@ -39,23 +39,23 @@
 #' calcAllocProb(mcmc_out, 1)
 #'
 #' @export
-calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "median") {
+calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "mean") {
   R <- mcmc_samples$R
   thin <- mcmc_samples$thin
   V <- mcmc_samples$V
-
+  
   .alloc <- mcmc_samples$allocation_probabilities[[view]]
-
+  
   if (burn > 0) {
     if (burn > R) {
       stop("Burn in exceeds number of iterations run.")
     }
-
+    
     eff_burn <- floor(burn / thin)
     dropped_samples <- seq(1, eff_burn)
     .alloc <- .alloc[, , -dropped_samples]
   }
-
+  
   if (view > V) {
     .err <- paste(
       "Requested view not in ``mcmc_samples``. Please check that the requested",
@@ -64,7 +64,7 @@ calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "median") {
     stop(.err)
   }
   probs <- NULL
-
+  
   if (method == "median") {
     probs <- apply(.alloc, c(1, 2), median)
   }
