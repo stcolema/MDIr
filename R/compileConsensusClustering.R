@@ -14,7 +14,7 @@
 #' estimate in unsupervised views.
 #' @returns A named list similar to the output of ``runMCMCChains``.
 #' @examples
-#'
+#' \dontrun{
 #' N <- 100
 #' K <- 4
 #' P <- 10
@@ -40,6 +40,7 @@
 #' n_chains <- 50
 #' mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 #' cc <- compileConsensusClustering(mcmc_lst)
+#' }
 #' @export
 compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
                                        point_estimate_method = "mean",
