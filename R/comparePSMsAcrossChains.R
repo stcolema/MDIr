@@ -15,7 +15,7 @@
 #' geom_tile()), `Entry` (value in similarity  matrix), `Chain` (assumes
 #' chains are ordered from one to the number of chains present) and `View`.
 #' @examples
-#'
+#' \dontrun{
 #' N <- 100
 #' K <- 4
 #' P <- 10
@@ -56,7 +56,7 @@
 #'     strip.text.x = ggplot2::element_text(size = 10.5),
 #'     legend.text = ggplot2::element_text(size = 10.5)
 #'   )
-#'
+#' }
 #' @export
 comparePSMsAcrossChains <- function(mcmc,
                                     matrix_setting_order = 1,

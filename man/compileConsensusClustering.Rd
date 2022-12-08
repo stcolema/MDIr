@@ -39,7 +39,7 @@ Performs consensus clustering on a list of MCMC chains from
 ``runMCMCChains``.
 }
 \examples{
-
+\dontrun{
 N <- 100
 K <- 4
 P <- 10
@@ -65,4 +65,5 @@ types <- rep("G", V)
 n_chains <- 50
 mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 cc <- compileConsensusClustering(mcmc_lst)
+}
 }

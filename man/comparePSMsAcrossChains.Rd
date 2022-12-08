@@ -36,7 +36,7 @@ Takes the PSMs from the output of ``processMCMCChains`` and
 converts them to a data.frame prepared for ``ggplot2``.
 }
 \examples{
-
+\dontrun{
 N <- 100
 K <- 4
 P <- 10
@@ -77,5 +77,5 @@ psm_df |>
     strip.text.x = ggplot2::element_text(size = 10.5),
     legend.text = ggplot2::element_text(size = 10.5)
   )
-
+}
 }
