@@ -10,6 +10,10 @@
 #' @param ignore_checks Logical indicating if checks for matrix symmetry and
 #' a commmon size should be ignored. Defaults to TRUE as these checks seem
 #' to break when they should not.
+#' @param x_axis The name for the column defining the x-axis. Defaults to 
+#' ``"x"``.
+#' @param y_axis The name for the column defining the y-axis. Defaults to 
+#' ``"y"``.
 #' @returns A long data.frame containing columns `x` (the x-axis position of the
 #' entry for geom_tile()), `y` (the y-axis position of the entry for
 #' geom_tile()), `Entry` (value in similarity  matrix) and `Chain` (assumes
@@ -52,13 +56,15 @@
 prepSimilarityMatricesForGGplot <- function(similarity_matrices,
                                             matrix_setting_order = 1,
                                             use_common_ordering = TRUE,
-                                            ignore_checks = TRUE) {
+                                            ignore_checks = TRUE,
+                                            y_axis = "y", 
+                                            x_axis = "x") {
   not_list <- !is.list(similarity_matrices)
   if (not_list) {
     stop("`similarity_matrices` must be a list of matrices.")
   }
   n_matrices <- length(similarity_matrices)
-
+  
   all_symmetric_matrices <- TRUE
   mismatched_dimensions <- FALSE
   if (!ignore_checks) {
@@ -76,15 +82,15 @@ prepSimilarityMatricesForGGplot <- function(similarity_matrices,
       }
     }
   }
-
+  
   row_order <- col_order <- findOrder(similarity_matrices[[matrix_setting_order]])
-
+  
   for (ii in seq(1, n_matrices)) {
     first_iteration <- ii == 1
     if (!use_common_ordering) {
       row_order <- col_order <- findOrder(similarity_matrices[[ii]])
     }
-    .df <- prepDataForggHeatmap(similarity_matrices[[ii]], row_order, col_order)
+    .df <- prepDataForggHeatmap(similarity_matrices[[ii]], row_order, col_order, x_axis, y_axis)
     .df$Chain <- ii
     if (first_iteration) {
       sim_df <- .df
