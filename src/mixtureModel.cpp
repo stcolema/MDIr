@@ -141,8 +141,6 @@ void mixtureModel::updateAllocation(
   arma::vec log_weights, 
   arma::mat log_upweigths
 ) {
-  
-  double u = 0.0;
   uvec uniqueK;
   vec comp_prob(K);
   

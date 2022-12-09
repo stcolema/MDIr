@@ -115,14 +115,11 @@ void mvn::matrixCombinations() {
 
 // The log likelihood of a item belonging to each cluster.
 arma::vec mvn::itemLogLikelihood(arma::vec item) {
-  
-  double exponent = 0.0;
   arma::vec ll(K), dist_to_mean(P);
   ll.zeros();
   dist_to_mean.zeros();
   
   for(arma::uword k = 0; k < K; k++){
-    
     // Normal log likelihood
     ll(k) = logLikelihood(item, k);
   }
