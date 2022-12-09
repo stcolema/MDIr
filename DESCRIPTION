@@ -2,11 +2,20 @@ Package: MDIr
 Type: Package
 Title: Bayesian Model-Based Clustering of Multi-View Data
 License: GPL-3
-Version: 0.0.1
-Date: 2021-01-15
+Version: 0.7.0
+Date: 2022-12-08
 Authors@R: c(person(given = "Stephen", family = "Coleman",
-                    email = "stephen.coleman@mrc-bsu.cam.ac.uk",
-                    role = c("aut","cre")))
+                    email = "stcolema@tcd.ie",
+                    role = c("aut","cre")),
+                    person(given = "Paul", family ="Kirk",
+                    email = "paul.kirk@mrc-bsu.cam.ac.uk",
+                    role = "aut"),
+                    person(given = "Chris", family ="Wallace",
+                    email = "cew56@cam.ac.uk",
+                    role = "aut"),
+                    person(given = "Oliver", family ="Crook",
+                    email = "oliver.crook@stats.ox.ac.uk",
+                    role = "aut"))
 Description: Integrative clustering and semi-supervised prediction.
   This package includes a C++ implementation of both semi-supervised and 
   un-supervised Multiple Dataset Integration, an extension of Bayesian mixture models
