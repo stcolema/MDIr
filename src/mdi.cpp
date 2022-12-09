@@ -26,9 +26,6 @@ mdi::mdi(
   arma::umat _fixed
 ) {
   
-  // These are used locally in some constructions
-  uword k = 0, col_ind = 0;
-  
   // Mixture types
   mixture_types = _mixture_types;
   
@@ -163,7 +160,7 @@ mdi::mdi(
 
 void mdi::initialisePhis() {
   
-  uword k = 0, col_ind = 0;
+  uword col_ind = 0;
   
   // // We want to track which combinations should be unweighed and by what phi.
   // // This object will be used in calculating the normalising constant (Z), the
@@ -239,8 +236,6 @@ void mdi::initialisePhis() {
   // Iterate over dataset pairings
   for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
-      // phi_indicator.col(col_ind) = (comb_inds.col(l) == comb_inds.col(m));
-      
       // Record which column index maps to which phi
       phi_map(m, l) = col_ind;
       phi_map(l, m) = col_ind;
@@ -346,7 +341,7 @@ double mdi::calcWeightRateNaiveSingleIteration(uword kstar,
     }
   }
   for(uword l = 0; l < L - 1; l++) {
-    for(uword m = m + 1; m < L; m++) {
+    for(uword m = l + 1; m < L; m++) {
       output *= (1.0 + phis(phi_map(l, m)) * (current_ks(l) == current_ks(m)));
     }
   }
@@ -612,13 +607,9 @@ void mdi::updateWeights() {
 };
 
 double mdi::samplePhiShape(arma::uword l, arma::uword m, double rate) {
-  bool rTooSmall = false, priorShapeTooSmall = false;
-  
   int N_lm = 0;
   double shape = 0.0,
-    u = 0.0,
-    prod_to_phi_shape = 0.0, 
-    prod_to_r_less_1 = 0.0;
+    u = 0.0;
   
   uvec rel_inds_l(N), rel_inds_m(N);
   vec log_weights, weights;
@@ -643,16 +634,10 @@ double mdi::samplePhiShape(arma::uword l, arma::uword m, double rate) {
 }
 
 void mdi::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
-  bool rTooSmall = false, priorShapeTooSmall = false;
-  
   int N_lm = 0;
-  double shape = 0.0,
-    u = 0.0,
-    prod_to_phi_shape = 0.0, 
-    prod_to_r_less_1 = 0.0;
-  
   uvec rel_inds_l(N), rel_inds_m(N);
   vec log_weights, weights, phis_vec;
+  
   N_lm = accu(labels.col(l) == labels.col(m));
   weights = zeros<vec>(N_lm + 1);
   log_weights = zeros<vec>(N_lm + 1);
@@ -674,9 +659,7 @@ arma::vec mdi::calculatePhiShapeMixtureWeights(
     double rate
 ) {
   
-  double r_factorial = 0.0,
-    r_alpha_gamma_function = 0.0,
-    N_lm_part = 0.0,
+  double r_alpha_gamma_function = 0.0,
     beta_part = 0.0,
     log_n_choose_r = 0.0;
 
@@ -700,7 +683,6 @@ void mdi::updatePhis() {
   if(L == 1) {
     return;
   }
-  uword r = 0;
   double shape = 0.0, rate = 0.0, posterior_shape = 0.0, posterior_rate = 0.0;
   for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
@@ -788,12 +770,11 @@ void mdi::updatePhis() {
 // };
 
 double mdi::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
-  uword l = 0;
-  double iter_value = 1.0, log_iter_value = 0.0, same_label = 0.0;
+  double iter_value = 1.0, same_label = 0.0; // log_iter_value = 0.0, 
   
   for(uword jj = 0; jj < L; jj++) {
     iter_value *= w(current_ks(jj), jj);
-    log_iter_value += log(w(current_ks(jj), jj));
+    // log_iter_value += log(w(current_ks(jj), jj));
   }
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
@@ -1050,7 +1031,7 @@ double mdi::sampleLabel(arma::uword kstar, arma::vec K_inv_cum) {
 
 double mdi::calcScore(arma::uword lstar, arma::umat c) {
   bool not_current_context = true;
-  double score = 0.0, upweight = 0.0; // , same_label = 0.0;
+  double score = 0.0; // , same_label = 0.0;
   uvec agreeing_labels(N);
   vec same_label(N);
   agreeing_labels.zeros();
@@ -1111,7 +1092,6 @@ arma::umat mdi::swapLabels(arma::uword lstar, arma::uword kstar, arma::uword k_p
 // Check if labels should be swapped to improve correlation of clustering
 // across datasets via random sampling.
 void mdi::updateLabels() {
-  bool multipleUnfixedComponents = true;
   if(L == 1) {
     return;
   }

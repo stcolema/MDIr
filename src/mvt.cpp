@@ -69,7 +69,7 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   
   // Do we need to add a very little to the diagonal to ensure we can inverse 
   // the dataset covariance matrix?
-  uword count_here = 0;
+  // uword count_here = 0;
   
   vec eigval = eig_sym( global_cov );
   
