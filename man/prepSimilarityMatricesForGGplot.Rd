@@ -44,6 +44,7 @@ to the correct formatting for ggplot2, optionally giving all a common
 ordering.
 }
 \examples{
+\dontrun{
 N <- 100
 X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
@@ -53,10 +54,10 @@ data_modelled <- list(X, Y)
 
 V <- length(data_modelled)
 
-# This R is much too low for real applications
-R <- 100
-thin <- 5
-burn <- 10
+# MCMC parameters
+R <- 5000
+thin <- 50
+burn <- 1000
 
 K_max <- 10
 K <- rep(K_max, V)
@@ -77,4 +78,5 @@ plot_df |>
   ggplot2::geom_tile() +
   ggplot2::facet_wrap(~Chain) +
   ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
+}
 }

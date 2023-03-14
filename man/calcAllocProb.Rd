@@ -35,8 +35,8 @@ data_modelled <- list(X, Y)
 
 V <- length(data_modelled)
 
-# This R is much too low for real applications
-R <- 100
+# These values are much too low for real applications
+R <- 50
 thin <- 5
 burn <- 10
 
