@@ -60,7 +60,7 @@ Run multiple chains of Multiple Dataset Integration (MDI) using
 the same inputs in each model run.
 }
 \examples{
-
+\dontrun{
 N <- 100
 X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
@@ -70,10 +70,10 @@ data_modelled <- list(X, Y)
 
 V <- length(data_modelled)
 
-# This R is much too low for real applications
-R <- 100
-thin <- 5
-burn <- 10
+# MCMC parameters
+R <- 5000
+thin <- 50
+burn <- 1000
 
 K_max <- 10
 K <- rep(K_max, V)
@@ -81,5 +81,5 @@ types <- rep("G", V)
 
 n_chains <- 3
 mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
-
+}
 }

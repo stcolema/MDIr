@@ -7,6 +7,7 @@
 // =============================================================================
 // included dependencies
 # include <RcppArmadillo.h>
+# include <memory>
 # include "density.h"
 # include "gaussian.h"
 # include "mvn.h"

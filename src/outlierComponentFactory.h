@@ -7,6 +7,7 @@
 // =============================================================================
 // included dependencies
 # include <RcppArmadillo.h>
+# include <memory>
 # include "outlierComponent.h"
 # include "mvt.h"
 # include "noOutliers.h"
