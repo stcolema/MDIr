@@ -18,15 +18,14 @@ Authors@R: c(person(given = "Stephen", family = "Coleman",
                     role = "aut"))
 Description: Integrative clustering and semi-supervised prediction.
   This package includes a C++ implementation of both semi-supervised and 
-  unsupervised Multiple Dataset Integration, an extension of Bayesian mixture models
-  to the integrative (multiple dataset) setting (e.g., multi-omics). It also 
-  includes Bayesian mixture models. Densities allowed within MDI and the mixture
-  model are Gaussian with full and diagonal covariance matrices ('MVN' and 'G'), 
-  categorical ('C'), Gaussian with a Gaussian process prior on the mean 
-  parameter ('GP'). The GP model can only handle data with common time points of
-  equal separation. The MVN and GP models can be augmented with a global 
-  multivariate t distribution to handle outliers (called using 'TAGM' and 
-  'TAGPM').
+  unsupervised Multiple Dataset Integration (MDI), an extension of Bayesian 
+  mixture models to the integrative (multiple dataset) setting (e.g., multi-omics). 
+  It also includes Bayesian mixture models. Densities allowed within MDI and the mixture
+  model are Gaussian with full and diagonal covariance matrices, categorical, 
+  Gaussian with a Gaussian process (GP) prior on the mean parameter. The GP 
+  model can only handle data with common time points of equal separation. The 
+  MVN and GP models can be augmented with a global multivariate t distribution
+  to handle outliers as per Crook et al., 2018.
 Imports: Rcpp (>= 1.0.6), RcppParallel, ggplot2, stringr, tidyr, salso
 LinkingTo: Rcpp, RcppArmadillo, testthat, RcppParallel
 Suggests: xml2
