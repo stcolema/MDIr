@@ -44,7 +44,7 @@ to the correct formatting for ggplot2, optionally giving all a common
 ordering.
 }
 \examples{
-\dontrun{
+\donttest{
 N <- 100
 X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)

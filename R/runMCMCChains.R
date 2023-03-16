@@ -25,7 +25,7 @@
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' N <- 100
 #' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
