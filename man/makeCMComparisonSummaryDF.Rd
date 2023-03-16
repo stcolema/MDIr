@@ -15,6 +15,10 @@ width/number of chains used in constructing the corresponding consensus
 matrix and the depth/iteration from each chain that is used. The column names
 should be ``Depth`` and ``Width``.}
 }
+\value{
+A data frame of the mean absolute difference between consecutive 
+ensembles from the ``model_description_df`` input.
+}
 \description{
 Converts a list of consensus matrices into a long data.frame
 ready for ggplot2. The matrices are given a common ordering defined by the

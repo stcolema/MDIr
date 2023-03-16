@@ -15,6 +15,10 @@
 #' @param matrix_setting_order The index for the consensus matrix that defines
 #' the ordering of entries for the heatmap. Defaults to the final entry in
 #' ``cms``.
+#' @return Returns a data frame of the entries from consensus matrices (``cms``)
+#' annotated by the details of the ensemble run (i.e., number of chains, chain 
+#' depth, given in ``model_description_df``), in the appropriate format to be 
+#' plotted as a set of heatmap facets in a ggplot2 object.
 #' @examples
 #' \dontrun{
 #' model_description_df <- data.frame(

@@ -19,6 +19,12 @@ should be ``Depth`` and ``Width``.}
 the ordering of entries for the heatmap. Defaults to the final entry in
 ``cms``.}
 }
+\value{
+Returns a data frame of the entries from consensus matrices (``cms``)
+annotated by the details of the ensemble run (i.e., number of chains, chain 
+depth, given in ``model_description_df``), in the appropriate format to be 
+plotted as a set of heatmap facets in a ggplot2 object.
+}
 \description{
 Converts a list of consensus matrices into a long data.frame
 ready for ggplot2. The matrices are given a common ordering defined by the

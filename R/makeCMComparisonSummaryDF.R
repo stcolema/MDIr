@@ -12,6 +12,8 @@
 #' width/number of chains used in constructing the corresponding consensus
 #' matrix and the depth/iteration from each chain that is used. The column names
 #' should be ``Depth`` and ``Width``.
+#' @return A data frame of the mean absolute difference between consecutive 
+#' ensembles from the ``model_description_df`` input.
 #' @examples
 #' \dontrun{
 #' model_description_df <- data.frame(
