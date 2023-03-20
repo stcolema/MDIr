@@ -15,8 +15,8 @@
 #' geom_tile()), `Entry` (value in similarity  matrix), `Chain` (assumes
 #' chains are ordered from one to the number of chains present) and `View`.
 #' @examples
-#' \dontrun{
-#' N <- 100
+#' \donttest{
+#' N <- 500
 #' K <- 4
 #' P <- 10
 #'
@@ -29,13 +29,13 @@
 #' data_modelled <- list(X$data, Y$data, Z$data)
 #'
 #' n_chains <- 4
-#' R <- 1000
+#' R <- 10000
 #' thin <- 25
 #' types <- c("G", "G", "G")
 #' K <- c(10, 10, 10)
 #' mcmc <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 #'
-#' burn <- 250
+#' burn <- 2500
 #' mcmc <- processMCMCChains(mcmc, burn, construct_psm = TRUE)
 #' psm_df <- comparePSMsAcrossChains(mcmc)
 #'

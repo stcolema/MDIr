@@ -39,8 +39,8 @@ Performs consensus clustering on a list of MCMC chains from
 ``runMCMCChains``.
 }
 \examples{
-\dontrun{
-N <- 100
+\donttest{
+N <- 500
 K <- 4
 P <- 10
 
@@ -54,15 +54,15 @@ data_modelled <- list(X$data, Y$data, Z$data)
 V <- length(data_modelled)
 
 # This R is much too low for real applications
-R <- 25
-thin <- 25
+R <- 1000
+thin <- 100
 
-K_max <- 10
+K_max <- 50
 K <- rep(K_max, V)
 
 types <- rep("G", V)
 
-n_chains <- 50
+n_chains <- 500
 mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 cc <- compileConsensusClustering(mcmc_lst)
 }

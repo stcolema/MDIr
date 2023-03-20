@@ -20,7 +20,7 @@
 #' depth, given in ``model_description_df``), in the appropriate format to be 
 #' plotted as a set of heatmap facets in a ggplot2 object.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' model_description_df <- data.frame(
 #'   "Depth" = rep(c(100, 500, 1000), 3),
 #'   "Width" = c(rep(50, 3), rep(100, 3), rep(200, 3))
