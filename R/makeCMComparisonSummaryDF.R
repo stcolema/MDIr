@@ -15,7 +15,7 @@
 #' @return A data frame of the mean absolute difference between consecutive 
 #' ensembles from the ``model_description_df`` input.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' model_description_df <- data.frame(
 #'   "Depth" = rep(c(100, 500, 1000), 3),
 #'   "Width" = c(rep(50, 3), rep(100, 3), rep(200, 3))
