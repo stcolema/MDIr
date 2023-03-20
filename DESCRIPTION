@@ -17,7 +17,7 @@ Authors@R: c(person(given = "Stephen", family = "Coleman",
                     email = "oliver.crook@stats.ox.ac.uk",
                     role = "aut"))
 Description: Integrative clustering and semi-supervised prediction.
-  This package includes a C++ implementation of both semi-supervised and 
+  This package includes a 'C++' implementation of both semi-supervised and 
   unsupervised Multiple Dataset Integration (MDI), an extension of Bayesian 
   mixture models to the integrative (multiple dataset or multi-modal) setting 
   such as multi-omics analysis. The package also includes Bayesian mixture models. 
