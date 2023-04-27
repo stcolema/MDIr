@@ -1,5 +1,5 @@
 
-useDynLib(MDIr, .registration=TRUE)
+useDynLib(mdir, .registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 
 # Export statements
@@ -52,4 +52,4 @@ importFrom(tidyr, pivot_longer)
 ## salso for unsupervised point estimate
 importFrom(salso, salso)
 
-useDynLib(MDIr)
+useDynLib(mdir)
