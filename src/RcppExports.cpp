@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // createSimilarityMat
 arma::mat createSimilarityMat(arma::umat allocations);
-RcppExport SEXP _MDIr_createSimilarityMat(SEXP allocationsSEXP) {
+RcppExport SEXP _mdir_createSimilarityMat(SEXP allocationsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -24,7 +24,7 @@ END_RCPP
 }
 // gammaLogLikelihood
 double gammaLogLikelihood(double x, double shape, double rate);
-RcppExport SEXP _MDIr_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
+RcppExport SEXP _mdir_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -37,7 +37,7 @@ END_RCPP
 }
 // invGammaLogLikelihood
 double invGammaLogLikelihood(double x, double shape, double scale);
-RcppExport SEXP _MDIr_invGammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP scaleSEXP) {
+RcppExport SEXP _mdir_invGammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP scaleSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -50,7 +50,7 @@ END_RCPP
 }
 // wishartLogLikelihood
 double wishartLogLikelihood(arma::mat X, arma::mat V, double n, arma::uword P);
-RcppExport SEXP _MDIr_wishartLogLikelihood(SEXP XSEXP, SEXP VSEXP, SEXP nSEXP, SEXP PSEXP) {
+RcppExport SEXP _mdir_wishartLogLikelihood(SEXP XSEXP, SEXP VSEXP, SEXP nSEXP, SEXP PSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -64,7 +64,7 @@ END_RCPP
 }
 // invWishartLogLikelihood
 double invWishartLogLikelihood(arma::mat X, arma::mat Psi, double nu, arma::uword P);
-RcppExport SEXP _MDIr_invWishartLogLikelihood(SEXP XSEXP, SEXP PsiSEXP, SEXP nuSEXP, SEXP PSEXP) {
+RcppExport SEXP _mdir_invWishartLogLikelihood(SEXP XSEXP, SEXP PsiSEXP, SEXP nuSEXP, SEXP PSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -78,7 +78,7 @@ END_RCPP
 }
 // mvtLogLikelihood
 double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu);
-RcppExport SEXP _MDIr_mvtLogLikelihood(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP nuSEXP) {
+RcppExport SEXP _mdir_mvtLogLikelihood(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP nuSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -92,7 +92,7 @@ END_RCPP
 }
 // pNorm
 double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd);
-RcppExport SEXP _MDIr_pNorm(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP is_sympdSEXP) {
+RcppExport SEXP _mdir_pNorm(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP is_sympdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -106,7 +106,7 @@ END_RCPP
 }
 // runMDI
 Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
-RcppExport SEXP _MDIr_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -125,18 +125,18 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_MDIr_createSimilarityMat", (DL_FUNC) &_MDIr_createSimilarityMat, 1},
-    {"_MDIr_gammaLogLikelihood", (DL_FUNC) &_MDIr_gammaLogLikelihood, 3},
-    {"_MDIr_invGammaLogLikelihood", (DL_FUNC) &_MDIr_invGammaLogLikelihood, 3},
-    {"_MDIr_wishartLogLikelihood", (DL_FUNC) &_MDIr_wishartLogLikelihood, 4},
-    {"_MDIr_invWishartLogLikelihood", (DL_FUNC) &_MDIr_invWishartLogLikelihood, 4},
-    {"_MDIr_mvtLogLikelihood", (DL_FUNC) &_MDIr_mvtLogLikelihood, 4},
-    {"_MDIr_pNorm", (DL_FUNC) &_MDIr_pNorm, 4},
-    {"_MDIr_runMDI", (DL_FUNC) &_MDIr_runMDI, 9},
+    {"_mdir_createSimilarityMat", (DL_FUNC) &_mdir_createSimilarityMat, 1},
+    {"_mdir_gammaLogLikelihood", (DL_FUNC) &_mdir_gammaLogLikelihood, 3},
+    {"_mdir_invGammaLogLikelihood", (DL_FUNC) &_mdir_invGammaLogLikelihood, 3},
+    {"_mdir_wishartLogLikelihood", (DL_FUNC) &_mdir_wishartLogLikelihood, 4},
+    {"_mdir_invWishartLogLikelihood", (DL_FUNC) &_mdir_invWishartLogLikelihood, 4},
+    {"_mdir_mvtLogLikelihood", (DL_FUNC) &_mdir_mvtLogLikelihood, 4},
+    {"_mdir_pNorm", (DL_FUNC) &_mdir_pNorm, 4},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 9},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_MDIr(DllInfo *dll) {
+RcppExport void R_init_mdir(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
