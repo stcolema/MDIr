@@ -1,9 +1,9 @@
-Package: MDIr
+Package: mdir
 Type: Package
 Title: Bayesian Model-Based Clustering of Multi-Modal Data
 License: GPL-3
-Version: 0.7.1
-Date: 2023-03-14
+Version: 0.7.2
+Date: 2023-04-19
 Authors@R: c(person(given = "Stephen", family = "Coleman",
                     email = "stcolema@tcd.ie",
                     role = c("aut","cre")),
@@ -31,6 +31,6 @@ LinkingTo: Rcpp, RcppArmadillo, testthat, RcppParallel
 Suggests: xml2
 SystemRequirements: GNU make
 Encoding: UTF-8
-URL: https://github.com/stcolema/MDIr
-BugReports: https://github.com/stcolema/MDIr/issues
+URL: https://github.com/stcolema/mdir
+BugReports: https://github.com/stcolema/mdir/issues
 RoxygenNote: 7.2.3
