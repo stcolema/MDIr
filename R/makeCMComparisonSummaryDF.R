@@ -26,20 +26,6 @@
 #'   cms[[ii]] <- makeSimilarityMat(mcmc[[ii]]$allocations)
 #' }
 #' mean_abs_diff_df <- makeCMComparisonSummaryDF(cms, model_description_df)
-#'
-#' mean_abs_diff_df |>
-#'   dplyr::filter(Quantity_varied == "Depth") |>
-#'   ggplot(aes(x = Depth, y = Mean_absolute_difference, color = factor(Width))) +
-#'   geom_line() +
-#'   labs(title = "Assessing stability across cms for increasing chain depth") +
-#'   ggthemes::scale_color_colorblind()
-#'
-#' mean_abs_diff_df |>
-#'   dplyr::filter(Quantity_varied == "Width") |>
-#'   ggplot(aes(x = Width, y = Mean_absolute_difference, color = factor(Depth))) +
-#'   geom_line() +
-#'   labs(title = "Assessing stability across cms for increasing numbers of chains") +
-#'   ggthemes::scale_color_colorblind()
 #' }
 #' @export
 makeCMComparisonSummaryDF <- function(cms, model_description_df) {
