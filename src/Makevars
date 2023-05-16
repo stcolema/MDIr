@@ -8,8 +8,3 @@ PKG_CPPFLAGS += -DARMA_64BIT_WORD=1
 PKG_CPPFLAGS += -DARMA_WARN_LEVEL=0
 
 PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
-
-## This is included to keep the libs folder small.
-strippedLib: $(SHLIB)
-	if test -e "/usr/bin/strip" & test -e "/bin/uname" & [[ `uname` == "Linux" ]] ; then /usr/bin/strip --strip-debug $(SHLIB); fi
-.phony: strippedLib
