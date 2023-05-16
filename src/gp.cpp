@@ -458,11 +458,7 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
 };
 
 void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
-  arma::uword n_k = 0;
-  uvec rel_inds;
   calculateKernelSubBlock();
-  
-  // for(uword k = 0; k < K; k++) {
   std::for_each(
     std::execution::par,
     K_inds.begin(),
@@ -481,20 +477,6 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   acceptance_count.subvec(0, K - 1) = amplitude_acceptance_count;
   acceptance_count.subvec(K, 2 * K - 1) = length_acceptance_count;
   acceptance_count.subvec(2 * K, 3 * K - 1) = noise_acceptance_count;
-  
-  // Rcpp::Rcout << "\n\n\nPARAMETERS";
-  // Rcpp::Rcout << "\nMembership:\n" << sum(members);
-  // Rcpp::Rcout << "\nNoise:\n" << noise.t(); 
-  // Rcpp::Rcout << "\nNoise acceptance count:\n" << noise_acceptance_count.t();
-  // 
-  // Rcpp::Rcout << "\n\nLength:\n" << length.t();
-  // Rcpp::Rcout << "\nLength acceptance count:\n" << length_acceptance_count.t();
-  // 
-  // Rcpp::Rcout << "\n\nAmplitude:\n" << amplitude.t();
-  // Rcpp::Rcout << "\nAmplitude acceptance count:\n" << amplitude_acceptance_count.t();
-  // 
-  // Rcpp::Rcout << "\n\nMean:\n" << mu;
-  
 };
 
 // === Hyper-parameters ========================================================
@@ -747,11 +729,8 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data, double threshold) {
 // === Log-likelihoods =========================================================
 // The log likelihood of a item belonging to each cluster.
 arma::vec gp::itemLogLikelihood(arma::vec item) {
-  double exponent = 0.0;
-  arma::vec ll(K), dist_to_mean(P);
-  mat noise_matrix(P, P), inverse_noise_matrix(P, P);
+  arma::vec ll(K);
   ll.zeros();
-  dist_to_mean.zeros();
   for(uword k = 0; k < K; k++) {  
     ll(k) = logLikelihood(item, k);
   }
@@ -760,26 +739,13 @@ arma::vec gp::itemLogLikelihood(arma::vec item) {
 
 // The log likelihood of a item belonging to a specific cluster.
 double gp::logLikelihood(arma::vec item, arma::uword k) {
-  double ll = 0.0, dist_to_mean = 0.0, exponent = 0.0, ll1, ll2;
-  
-  mat std_dev(P, P);
-  std_dev.zeros();
-  std_dev.diag().fill(noise(k));
-  
+  double ll = 0.0;
+  // Normal log likelihood
   // The exponent part of the gaussian pdf
   for(uword p = 0; p < P; p++) {
-    // Normal log likelihood
     ll -= 0.5 * std::pow(item(p) - mu(p, k), 2.0);
   }
   ll *= 1.0 / noise(k);
   ll -= 0.5 * (double) P * (log(2.0 * M_PI) + log(noise(k)));
-
-  // ll1 = pNorm(item, mu.col(k), std_dev, false);
-  // ll2 = gaussianLogLikelihood(item, mu.col(k), std_dev.diag());
-  // 
-  // Rcpp::Rcout << "\n\npNorm: " << ll1 
-  //   << "\ngaussianLogLihood:" << ll2 
-  //   << "\nGP implementation " << ll;
-  
   return(ll);
 };
