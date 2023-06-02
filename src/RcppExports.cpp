@@ -104,6 +104,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// readMCMCsamples
+arma::mat readMCMCsamples(arma::uword n_samples, arma::uword n_params, std::string load_dir);
+RcppExport SEXP _mdir_readMCMCsamples(SEXP n_samplesSEXP, SEXP n_paramsSEXP, SEXP load_dirSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_params(n_paramsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type load_dir(load_dirSEXP);
+    rcpp_result_gen = Rcpp::wrap(readMCMCsamples(n_samples, n_params, load_dir));
+    return rcpp_result_gen;
+END_RCPP
+}
 // runMDI
 Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
 RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
@@ -123,6 +136,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// runMDIWriteToFile
+void runMDIWriteToFile(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, std::string save_dir);
+RcppExport SEXP _mdir_runMDIWriteToFile(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_dirSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type R(RSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type thin(thinSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
+    Rcpp::traits::input_parameter< arma::field< arma::vec > >::type proposal_windows(proposal_windowsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type save_dir(save_dirSEXP);
+    runMDIWriteToFile(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir);
+    return R_NilValue;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mdir_createSimilarityMat", (DL_FUNC) &_mdir_createSimilarityMat, 1},
@@ -132,7 +164,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_invWishartLogLikelihood", (DL_FUNC) &_mdir_invWishartLogLikelihood, 4},
     {"_mdir_mvtLogLikelihood", (DL_FUNC) &_mdir_mvtLogLikelihood, 4},
     {"_mdir_pNorm", (DL_FUNC) &_mdir_pNorm, 4},
+    {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
     {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 9},
+    {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 10},
     {NULL, NULL, 0}
 };
 

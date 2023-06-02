@@ -176,7 +176,7 @@ callMDI <- function(X,
       mcmc_output$hypers[[v]] <- NA
     }
   }
-
+  
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken
 

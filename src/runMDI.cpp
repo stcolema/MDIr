@@ -32,8 +32,6 @@ Rcpp::List runMDI(
   
   field<mat> X(L);
   
-  // Rcpp::Rcout << "\nNumber of saved samples: " << n_saved;
-  
   for(uword l = 0; l < L; l++) {
     X(l) = Y(l);
   }
@@ -85,8 +83,6 @@ Rcpp::List runMDI(
     acceptance_count(l) = zeros< vec >(3 * K(l));
   }
 
-  // Rcpp::Rcout << "\nDeclaration completed.";
-  
   // Save the initial values for each object
   for(uword l = 0; l < L; l++) {
     // urowvec labels_l = my_mdi.labels.col(l).t();
@@ -105,7 +101,6 @@ Rcpp::List runMDI(
     
     
     if(mixture_types(l) == 3) {
-      // Rcpp::Rcout << "\nRecord initial hypers and acceptance count.";
       hyper_record(l).row(save_ind) = my_mdi.mixtures[l]->density_ptr->hypers.t();
       // acceptance_count(l) = my_mdi.mixtures[l]->density_ptr->acceptance_count.t();
     }
@@ -113,12 +108,8 @@ Rcpp::List runMDI(
   }
   
   likelihood_record(save_ind) = my_mdi.complete_likelihood;
-  
   mass_record.row(save_ind) = my_mdi.mass.t();
-  
-  // Rcpp::Rcout << "\n\nSave phis.";
   phis_record.row(save_ind) = my_mdi.phis.t();
-  
   N_k_record.slice(save_ind) = my_mdi.N_k;
   
   for(uword r = 0; r < R; r++) {
@@ -127,42 +118,16 @@ Rcpp::List runMDI(
     
     // Should the current MCMC iteration be saved?
     save_this_iteration = ((r + 1) % thin == 0);
-    
-    // Rcpp::Rcout << "\nUpdate normalising constant.";
-    
-    // Rcpp::Rcout << "\n\nNormalising constant.";
     my_mdi.updateNormalisingConstantNaive();
-    
-    // Rcpp::Rcout << "\nSample strategic latent variable.";
-    
-    // Rcpp::Rcout << "\nStrategic latent variable.";
     my_mdi.sampleStrategicLatentVariable();
-    
-    // Rcpp::Rcout << "\nSample component weights.";
-    
     my_mdi.updateMassParameters();
-    
-    // Rcpp::Rcout << "\nWeights update.";
     my_mdi.updateWeights();
-    
-    // Rcpp::Rcout << "\nSample phis.";
-    
-    // Rcpp::Rcout << "\nPhis update.";
     my_mdi.updatePhis();
-    
-    // Rcpp::Rcout << "\nSample mixture parameters.";
-    
-    // Rcpp::Rcout << "\nSample mixture parameters.";
     for(uword l = 0; l < L; l++) {
       my_mdi.mixtures[l]->sampleParameters();
     }
-    
-    // Rcpp::Rcout << "\nUpdate allocation.";
-    
     my_mdi.updateAllocation();
 
-    // Rcpp::Rcout << "\nSwap labels.";
-    
     // Try and swap labels within datasets to improve the correlation between 
     // clusterings across datasets
     if((r + 1) %  10 == 0) {
@@ -171,25 +136,14 @@ Rcpp::List runMDI(
     
     if( save_this_iteration ) {
       save_ind++;
-
-      // Rcpp::Rcout << "\nSave objects.";
       for(uword l = 0; l < L; l++) {
-        
-        // urowvec labels_l = my_mdi.labels.col(l).t();
         class_record.slice(l).row(save_ind) = my_mdi.labels.col(l).t();
-        
-        // Rcpp::Rcout << "\nSave weights.";
-        
         weight_record.slice(l).row(save_ind) = my_mdi.w.col(l).t();
         
         // Save the allocation probabilities
-        // alloc(l) += my_mdi.mixtures[l]->alloc;
-        // Rcpp::Rcout << "\nSave allocation probabilities.";
-        
         alloc(l).slice(save_ind) = my_mdi.mixtures[l]->alloc;
         
         // Save the record of which items are considered outliers
-        // Rcpp::Rcout << "\nSave outliers.";
         outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
         
         // Save the complete likelihood
@@ -203,28 +157,14 @@ Rcpp::List runMDI(
       }
       
       evidence(save_ind - 1) = my_mdi.Z;
-      
       likelihood_record(save_ind) = my_mdi.complete_likelihood;
-      
       mass_record.row(save_ind) = my_mdi.mass.t();
-      
-      // Rcpp::Rcout << "\n\nSave phis.";
       phis_record.row(save_ind) = my_mdi.phis.t();
-      
       N_k_record.slice(save_ind) = my_mdi.N_k;
     }
-    
-    // p.increment(); 
-    
-    // Rcpp::Rcout << r << "th iteration done.\n";
-    // throw;
   }
-  // Rcpp::Rcout << "\nNumber of times accepted: " << my_mdi.acceptance_count << "\nPossible acceptance: " <<
-  //   arma::accu(R * my_mdi.K);
-  
   for(uword l = 0; l < L; l++) {
     if(mixture_types(l) == 3) {
-      
       acceptance_count(l) = conv_to< vec >::from(my_mdi.mixtures[l]->density_ptr->acceptance_count) / ( 0.2 * (double) R );
     }
   }
