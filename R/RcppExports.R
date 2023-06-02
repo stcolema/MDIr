@@ -251,6 +251,17 @@ pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
     .Call(`_mdir_pNorm`, x, mu, Sigma, is_sympd)
 }
 
+#' @title Read MCMC Samples
+#' @description C++ function to read the files saved from 
+#' `runMDIWriteToFile.cpp` to disk and compile them into a matrix.
+#' @param n_samples The number of MCMC samples to read in.
+#' @param n_params The number of parameters recorded in each MCMC sample.
+#' @param load_dir The directory containing the output of `runMDIWriteToFile`.
+#' @return Matrix composed of the MCMC samples from `runMDIWriteToFile`.
+readMCMCsamples <- function(n_samples, n_params, load_dir) {
+    .Call(`_mdir_readMCMCsamples`, n_samples, n_params, load_dir)
+}
+
 #' @title Call Multiple Dataset Integration
 #' @description C++ function to perform MCMC sampling for MDI.
 #' @param R The number of iterations to run for.
@@ -270,5 +281,12 @@ pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
 #' @return Named list of the different quantities drawn by the sampler.
 runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows) {
     .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows)
+}
+
+#' @title Call Multiple Dataset Integration and Write to File
+NULL
+
+runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir) {
+    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir))
 }
 

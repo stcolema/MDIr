@@ -5,6 +5,7 @@ exportPattern("^[[:alpha:]]+")
 # Export statements
 export(calcAllocProb)
 export(callMDI)
+export(callMDIWritingToFile)
 export(callMixtureModel)
 export(findOrder)
 export(generateInitialLabels)
@@ -17,7 +18,9 @@ export(prepDataForggHeatmap)
 export(prepSimilarityMatricesForGGplot)
 export(processMCMCChain)
 export(processMCMCChains)
+export(readMCMCsamples)
 export(runMCMCChains)
+export(runMCMCChainsSavingToFile)
 
 # Import statements
 ## Rcpp

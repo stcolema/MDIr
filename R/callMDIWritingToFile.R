@@ -1,6 +1,6 @@
-#' @title Call Multiple Dataset Integration
+#' @title Call Multiple Dataset Integration Writing to File
 #' @description Runs a MCMC chain of the integrative clustering method,
-#' Multiple Dataset Integration (MDI), to V datasets.
+#' Multiple Dataset Integration (MDI), to V datasets and writes samples to file.
 #' @param X Data to cluster. List of matrices with the N items to cluster held
 #' in rows.
 #' @param R The number of iterations in the sampler.
@@ -23,6 +23,8 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
+#' @param dir_path A string for the directory to save samples to. This cannot be
+#' a shorthand containing the `~` symbol.
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -45,10 +47,9 @@
 #' K <- rep(K_max, V)
 #' types <- rep("G", V)
 #'
-#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
-#'
+#' mcmc_out <- callMDIWritingToFile(data_modelled, R, thin, types, K = K)
 #' @export
-callMDI <- function(X,
+callMDIWritingToFile <- function(X,
                     R,
                     thin,
                     types,
@@ -57,28 +58,29 @@ callMDI <- function(X,
                     fixed = NULL,
                     alpha = NULL,
                     initial_labels_as_intended = FALSE,
-                    proposal_windows = NULL) {
-
+                    proposal_windows = NULL,
+                    dir_path = tempdir()) {
+  
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
-
+  
   # Check inputs and translate to C++ inputs
   checkDataCorrectInput(X)
-
+  
   # The number of items modelled
   N <- nrow(X[[1]])
-
+  
   # The number of views modelled
   V <- length(X)
-
+  
   # The number of measurements in each view
   P <- lapply(X, ncol)
-
+  
   # If no upper bound on K is passed set K to half of N
   if (is.null(K)) {
     K <- rep(floor(N / 2), V)
   }
-
+  
   no_labels_passed <- is.null(initial_labels)
   if (no_labels_passed) {
     initial_labels <- matrix(1, N, V)
@@ -86,37 +88,37 @@ callMDI <- function(X,
       stop("Cannot fail to pass initial labels and pass ``initial_labels_as_intended=TRUE``.")
     }
   }
-
+  
   if (is.null(fixed)) {
     fixed <- matrix(0, N, V)
   }
-
+  
   # Check that the matrix indicating observed labels is correctly formatted.
   checkFixedInput(fixed, N, V)
-
+  
   # Translate user input into appropriate types for C++ function
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
   gp_used <- types %in% c("GP", "TAGPM")
-
+  
   if (is.null(alpha)) {
     alpha <- rep(1, V)
   }
-
+  
   # Generate initial labels. Uses the stick-breaking prior if unsupervised,
   # proportions of observed classes is semi-supervised.
   initial_labels <- generateInitialLabels(initial_labels, fixed, K, alpha,
-    labels_as_intended = initial_labels_as_intended
+                                          labels_as_intended = initial_labels_as_intended
   )
   # for(v in seq(V))
   #   checkLabels(initial_labels[, v], K[v])
-
+  
   proposal_windows <- processProposalWindows(proposal_windows, types)
-
+  
   t_0 <- Sys.time()
-
+  
   # Pull samples from the MDI model
-  mcmc_output <- runMDI(
+  runMDIWriteToFile(
     R,
     thin,
     X,
@@ -125,60 +127,59 @@ callMDI <- function(X,
     outlier_types,
     initial_labels,
     fixed,
-    proposal_windows
+    proposal_windows,
+    dir_path
   )
-
+  
+  run_details <- list()
+  
+  run_details$n_samples <- floor(R / thin) + 1
+  run_details$n_param <- N * V + sum(K) + V + choose(V, 2);
+  
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0
-
+  
   # Record details of model run to output
   # MCMC details
-  mcmc_output$thin <- thin
-  mcmc_output$R <- R
-  mcmc_output$burn <- 0
-
+  run_details$thin <- thin
+  run_details$R <- R
+  run_details$burn <- 0
+  
   # Density choice
-  mcmc_output$types <- types
-
+  run_details$types <- types
+  
   # Dimensions of data
-  mcmc_output$P <- P
-  mcmc_output$N <- N
-  mcmc_output$V <- V
-
+  run_details$P <- P
+  run_details$N <- N
+  run_details$V <- V
+  
   # Number of components modelled
-  mcmc_output$K <- K
-
+  run_details$K <- K
+  
   # Record hyperparameter choice
-  mcmc_output$alpha <- alpha
-
+  run_details$alpha <- alpha
+  
   # Indicate if the model was semi-supervised or unsupervised
-  mcmc_output$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))
-  mcmc_output$Overfitted <- rep(TRUE, V)
-
+  run_details$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))
+  run_details$Overfitted <- rep(TRUE, V)
+  
   # Proposal windows if any used
-  mcmc_output$proposal_windows <- proposal_windows
-
+  run_details$proposal_windows <- proposal_windows
+  
   for (v in seq(1, V)) {
     if (is_semisupervised[v]) {
       known_labels <- which(fixed[, v] == 1)
       K_fix <- length(unique(initial_labels[known_labels, v]))
       is_overfitted <- (K[v] > K_fix)
-      mcmc_output$Overfitted[v] <- is_overfitted
-    }
-    if (gp_used[v]) {
-      hypers <- vector("list", 3)
-      names(hypers) <- c("amplitude", "length", "noise")
-      hypers$amplitude <- mcmc_output$hypers[[v]][, seq(1, K[v]), drop = FALSE]
-      hypers$length <- mcmc_output$hypers[[v]][, seq(K[v] + 1, 2 * K[v]), drop = FALSE]
-      hypers$noise <- mcmc_output$hypers[[v]][, seq(2 * K[v] + 1, 3 * K[v]), drop = FALSE]
-      mcmc_output$hypers[[v]] <- hypers
-    } else {
-      mcmc_output$hypers[[v]] <- NA
+      run_details$Overfitted[v] <- is_overfitted
     }
   }
   
   # Record how long the algorithm took
-  mcmc_output$Time <- time_taken
-
-  mcmc_output
+  run_details$Time <- time_taken
+  
+  # Where are the samples saved to
+  run_details$Save_dir <- dir_path
+  
+  run_details
 }
