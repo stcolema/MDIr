@@ -211,7 +211,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
         .out_prev <- .outliers
         .out_current <- .curr_chain$outliers[, , v, drop = TRUE]
-        merged_outputs$allocations[[v]] <- .outliers <- rbind(.out_prev, .out_current)
+        merged_outputs$outliers[[v]] <- .outliers <- rbind(.out_prev, .out_current)
 
         .n_k_prev <- .n_k
         .n_k_current <- t(.curr_chain$N_k[, v, , drop = TRUE])
