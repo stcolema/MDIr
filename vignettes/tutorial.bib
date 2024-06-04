@@ -1,0 +1,46 @@
+@article{Coleman2022,
+  author={Coleman, Stephen D.
+    and Kirk, Paul D. W.
+    and Wallace, Chris},
+  title={Consensus clustering for Bayesian mixture models},
+  journal={BMC Bioinformatics},
+  year={2022},
+  month={Jul},
+  day={21},
+  volume={23},
+  number={1},
+  pages={290},
+  abstract={Cluster analysis is an integral part of precision medicine and systems biology, used to define groups of patients or biomolecules. Consensus clustering is an ensemble approach that is widely used in these areas, which combines the output from multiple runs of a non-deterministic clustering algorithm. Here we consider the application of consensus clustering to a broad class of heuristic clustering algorithms that can be derived from Bayesian mixture models (and extensions thereof) by adopting an early stopping criterion when performing sampling-based inference for these models. While the resulting approach is non-Bayesian, it inherits the usual benefits of consensus clustering, particularly in terms of computational scalability and providing assessments of clustering stability/robustness.},
+  issn={1471-2105},
+  doi={10.1186/s12859-022-04830-8},
+  url={https://doi.org/10.1186/s12859-022-04830-8}
+}
+
+@article {Coleman2024,
+  author = {Stephen D. Coleman and Lisa Breckels and Ross F Waller and Kathryn S Lilley and Chris Wallace and Paul D.W. Kirk and Oliver M Crook},
+  title = {Semi-supervised Bayesian integration of multiple spatial proteomics datasets},
+  elocation-id = {2024.02.08.579519},
+  year = {2024},
+  doi = {10.1101/2024.02.08.579519},
+  publisher = {Cold Spring Harbor Laboratory},
+  abstract = {The subcellular localisation of proteins is a key determinant of their function. High-throughput analyses of these localisations can be performed using mass spectrometry-based spatial proteomics, which enables us to examine the localisation and relocalisation of proteins. Furthermore, complementary data sources can provide additional sources of functional or localisation information. Examples include protein annotations and other high-throughput {\textquoteright}omic assays. Integrating these modalities can provide new insights as well as additional confidence in results, but existing approaches for integrative analyses of spatial proteomics datasets are limited in the types of data they can integrate and do not quantify uncertainty. Here we propose a semi-supervised Bayesian approach to integrate spatial proteomics datasets with other data sources, to improve the inference of protein sub-cellular localisation. We demonstrate our approach outperforms other transfer-learning methods and has greater flexibility in the data it can model. To demonstrate the flexibility of our approach, we apply our method to integrate spatial proteomics data generated for the parasite Toxoplasma gondii with time-course gene expression data generated over its cell cycle. Our findings suggest that proteins linked to invasion organelles are associated with expression programs that peak at the end of the first cell-cycle. Furthermore, this integrative analysis divides the dense granule proteins into heterogeneous populations suggestive of potentially different functions. Our method is disseminated via the mdir R package available on the lead author{\textquoteright}s Github.Competing Interest StatementCW receives funding from MSD and GSK and is a part-time employee of GSK. These companies had no involvement in the work presented here.},
+  URL = {https://www.biorxiv.org/content/early/2024/04/02/2024.02.08.579519},
+  eprint = {https://www.biorxiv.org/content/early/2024/04/02/2024.02.08.579519.full.pdf},
+  journal = {bioRxiv}
+}
+
+@article{Kirk2012,
+  author = {Kirk, Paul D.W. and Griffin, Jim E. and Savage, Richard S. and Ghahramani, Zoubin and Wild, David L.},
+  title = "{Bayesian correlated clustering to integrate multiple datasets}",
+  journal = {Bioinformatics},
+  volume = {28},
+  number = {24},
+  pages = {3290-3297},
+  year = {2012},
+  month = {10},
+  abstract = "{Motivation: The integration of multiple datasets remains a key challenge in systems biology and genomic medicine. Modern high-throughput technologies generate a broad array of different data types, providing distinct—but often complementary—information. We present a Bayesian method for the unsupervised integrative modelling of multiple datasets, which we refer to as MDI (Multiple Dataset Integration). MDI can integrate information from a wide range of different datasets and data types simultaneously (including the ability to model time series data explicitly using Gaussian processes). Each dataset is modelled using a Dirichlet-multinomial allocation (DMA) mixture model, with dependencies between these models captured through parameters that describe the agreement among the datasets.Results: Using a set of six artificially constructed time series datasets, we show that MDI is able to integrate a significant number of datasets simultaneously, and that it successfully captures the underlying structural similarity between the datasets. We also analyse a variety of real Saccharomyces cerevisiae datasets. In the two-dataset case, we show that MDI’s performance is comparable with the present state-of-the-art. We then move beyond the capabilities of current approaches and integrate gene expression, chromatin immunoprecipitation–chip and protein–protein interaction data, to identify a set of protein complexes for which genes are co-regulated during the cell cycle. Comparisons to other unsupervised data integration techniques—as well as to non-integrative approaches—demonstrate that MDI is competitive, while also providing information that would be difficult or impossible to extract using other methods.Availability: A Matlab implementation of MDI is available from http://www2.warwick.ac.uk/fac/sci/systemsbiology/research/software/.Contact:  D.L.Wild@warwick.ac.ukSupplementary information:  Supplementary data are available at Bioinformatics online.}",
+  issn = {1367-4803},
+  doi = {10.1093/bioinformatics/bts595},
+  url = {https://doi.org/10.1093/bioinformatics/bts595},
+  eprint = {https://academic.oup.com/bioinformatics/article-pdf/28/24/3290/48874650/bioinformatics\_28\_24\_3290.pdf},
+}

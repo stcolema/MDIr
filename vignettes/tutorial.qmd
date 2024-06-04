@@ -1,0 +1,138 @@
+---
+title: "mdir: multimodal clustering and classification"
+format:
+  html:
+    toc: true
+    toc-depth: 4
+editor: visual
+
+bibliography: tutorial.bib
+---
+```{r generatePhiFunc}
+
+generateMDIDataLabels <- function(N, M, K, gammas, phis, n_iter = 10) {
+  iter_inds <- seq(1, n_iter)
+  data_inds <- seq(1, N)
+  modality_inds <- seq(1, M)
+
+  labels <- matrix(0, N, M)
+
+  # We iterate over the process to encourage phi
+  for(ii in iter_inds) {
+    for (n in data_inds) {
+      for (m in modality_inds) {
+        modality_comparison_inds <- modality_inds[-m]
+        comps <- seq(1, K[m])
+        weights <- gammas[comps, m]
+          if(ii > 1) {
+            for (l in modality_comparison_inds) {
+              label_in_lth_modality <- labels[n, l]
+              if(label_in_lth_modality <= K[m]) {
+                weights[label_in_lth_modality] <- weights[label_in_lth_modality] * (1.0 + phis[m, l])
+              }
+            }
+          }
+        weights <- weights / sum(weights)
+        labels[n, m] <- sample(comps, prob = weights, size = 1)
+      }
+    }
+  }
+  labels
+}
+```
+
+
+```{r logPoissonFunc}
+generateLogPoissonData <- function(lambdas, N, P, labels,
+                                   row_names = paste0("Person_", seq(1, N)),
+                                   col_names = paste0("Gene_", seq(1, P))) {
+  classes <- unique(labels)
+  gen_data <- matrix(0, N, P)
+  for (p in seq(1, P)) {
+    lambdas_p <- sample(lambdas)
+    for (k in classes) {
+      class_inds <- which(labels == k)
+      n_k <- length(class_inds)
+      gen_data[class_inds, p] <- log(1.0 + rpois(n_k, lambdas_p[k])) + rnorm(n_k)
+    }
+  }
+  row.names(gen_data) <- row_names
+  colnames(gen_data) <- col_names
+  gen_data <- scale(gen_data)
+  gen_data
+}
+```
+
+## Introduction
+
+Multiple Dataset Integration (MDI) is a Bayesian multi-omics or multimodal clustering model proposed by @Kirk2012. It is unique among such integrative models in avoiding assumptions of a common shared latent space or clustering, instead considering how information is shared across each pair of modalities being considered. For example, if one is modelling a transcriptomic, methylomic and LOPIT modalities for a common set of genes, MDI jointly learns a clustering / classification for the genes in each modality informed by the clustering that emerges in the other modalities - specifically through the $\phi$ parameters which represent how strongly the partitions align across modalities. In our example we would have three $\phi$ parameters, $\phi_{(1, 2)}, \phi_{(1, 3)}$ and $\phi_{(2, 3)}$. $\phi_{(1, 2)}$ and $\phi_{(1, 3)}$ describe how much the clustering in the first modality is informed by and similar to the clustering in the second and third modalities resepectively. This formulation allows different modalities to more strongly or more weakly inform other modalities in contrast to mapping to a common latent space or across-modality clustering. It also allows us to learn if any modalities are uninformed by any other modality - in our example if we had large values for $\phi_{(1,2)}$ but small values for $\phi_{(1, 3)}$ and $\phi_{(2, 3)}$ we might conclude that the transcriptomic and methylomic modalities are related but the proteomic modality is independent of these. This offers some resilience to the inclusion of modalities or auxiliary datasets for which we are uncertain of the relevance to our problem and wish to explore.
+
+This document is meant to show how to use MDI as implemented in the `mdir` package to infer a clustering or classification in a set of modalities/datasets. We will simulate this data to measure our ability to uncover the ground truth, but for more ambitious uses of this model in real data please see @Kirk2012, @Coleman2022 and @Coleman2024 for various applications to bulk 'omics data.
+
+First we define the dimensions of the
+
+```{r data_parameters}
+library(mdir)
+set.seed(1024)
+
+# The number of datapoints / samples / cells / etc.
+N <- 300
+data_inds <- seq(1, N)
+
+# The number of modalities
+M <- 5
+modality_inds <- seq(1, M)
+
+# The number of measurements containing information relevant to the clustering/classification
+P <- c(25, 200, 1000, 100, 35)
+
+# The number of noise / irrelevant measurements
+P_n <- c(0, 100, 3000, 400, 10)
+
+# The number of classes / groups in each modality (note that MDI can have flexibility in this)
+K <- c(12, 8, 25, 18, 10)
+
+# We use K_max to define the size of the cluster number matrix as an input to MDI
+K_max <- max(K)
+
+# Our cluster weights
+cluster_weights <- matrix(c(
+  5.0, 5.0, 10.0, 3.0, 8.0, 8.0, 2.0, 5.0, 2.0, 10.0, 1.0, 15.0, rep(0, K_max - K[1]),
+  7.0, 4.0, 12.0, 7.0, 5.0, 5.0, 1.0, 4.0, rep(0, K_max - K[2]),
+  rep(5, K[3]) + rnorm(K[3], sd=2), rep(0, K_max - K[3]),
+  rep(8, K[4]) + rnorm(K[4], sd=4), rep(0, K_max - K[4]),
+  1.0, 9.0, 3.0, 10., 1.0, 5.0, 2.0, 10.0, 8.0, 1.0, rep(0, K_max - K[5])
+), K_max, M)
+cluster_weights <- apply(cluster_weights, 
+  c(1, 2), 
+  function(x) {
+    if(x != 0){
+      x <- max(x, 1.0)
+      } 
+    x
+  }
+)
+
+# The degree of similarity between the clusterings in each pair of datasets
+# We have 5 datasets, therefore 5! / (2! * (5 - 2)!) = 10 pairings
+phis <- c(30, 25, 10, 0, 20, 35, 0, 30, 0, 0)
+
+```
+
+We will model 300 data points in 5 different modalities with varying numbers of clusters/classes present - MDI allows us to model different numbers of classes in each modality. We have chosen $\phi$ such that the first four modalities all share information to differing degrees and the fifth modality is independent.
+
+We will generate categorical data, some Gaussian data and some log-Poisson data to have a variety of data types present and some degree of model misspecification.
+
+```{r data_gen}
+
+# The list holding the observed data (which we will generate - but in real applications the input data should be a list of matrices of the observed data)
+X <- vector('list', M)
+
+# The true labels used to generate the datasets
+true_labels <- matrix(0, N, M)
+modality_inds <- seq(1, M)
+true_labels <- generateMDIDataLabels(N, M, K, cluster_weights, phis)
+
+```
+
+We will assume we have some observed classes in the first modality (similar to the LOPIT data analysed in @Coleman2024), but this will come into play in 
