@@ -50,7 +50,26 @@ public:
 
   // Calculate the likelihood of each item being an outlier
   virtual void calculateAllLogLikelihoods();
-  virtual double calculateItemLogLikelihood(vec x) = 0;
+  
+  
+  // Reference to missing patterns (shared with density)
+  const arma::field<arma::uvec>* missing_indices_ref = nullptr;   
+  const arma::field<arma::uvec>* observed_indices_ref = nullptr;  
+  const arma::umat* has_missing_ref = nullptr;
+  
+  // Virtual missing value methods
+  virtual void initializeMissingValues() = 0;
+  virtual void sampleMissingForObservation(arma::uword n) = 0;
+  virtual double calculateItemLogLikelihood(arma::uword n) = 0; // Modified signature
+  
+  // Set references to missing patterns (called by mixtureModel)
+  void setMissingPatterns(const arma::field<arma::uvec>& miss_idx, 
+                          const arma::field<arma::uvec>& obs_idx,
+                          const arma::umat& has_miss) {
+    missing_indices_ref = &miss_idx;
+    observed_indices_ref = &obs_idx; 
+    has_missing_ref = &has_miss;
+  }
   
   // Update the outlier weights
   void updateWeights(uvec non_outliers, uvec outliers);

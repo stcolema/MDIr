@@ -42,7 +42,9 @@ public:
   virtual ~mvt() { };
   
   // Calculate the likelihood of each item being an outlier
-  double calculateItemLogLikelihood(arma::vec x) override;
+  void initializeMissingValues() override;
+  void sampleMissingForObservation(arma::uword n) override;
+  double calculateItemLogLikelihood(arma::uword n) override; 
   
   arma::mat findInvertibleGlobalCov(double threshold = DBL_EPSILON);
   

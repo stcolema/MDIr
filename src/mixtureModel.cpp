@@ -85,6 +85,16 @@ mixtureModel::mixtureModel(
   // Initialise the outlier component (default is empty)
   initialiseOutlierComponent(outlier_type);
   
+  // Share missing patterns with outlier component after both are initialized
+  outlierComponent_ptr->setMissingPatterns(
+      density_ptr->missing_indices,
+      density_ptr->observed_indices, 
+      density_ptr->has_missing
+  );
+  
+  // Initialize missing values in outlier component
+  outlierComponent_ptr->initializeMissingValues();
+  
   acceptance_count.set_size(0);
   hypers.set_size(0);
   if(mixture_type == 3) {
@@ -95,20 +105,109 @@ mixtureModel::mixtureModel(
   }
   density_ptr->acceptance_count = acceptance_count;
   density_ptr->hypers = hypers;
-  
 };
 
-void mixtureModel::updateItemAllocation(
-    uword n, 
-    vec log_weights, 
-    vec log_upweigths
-  ) {
+// void mixtureModel::updateItemAllocation(
+//     uword n, 
+//     vec log_weights, 
+//     vec log_upweigths
+//   ) {
+//   double u = 0.0;
+//   uvec uniqueK;
+//   vec comp_prob(K), ll(K);
+//   
+//   // The mixture-specific log likelihood for each observation in each class
+//   ll = itemLogLikelihood(X_t.col(n));
+//   
+//   // Update with weights
+//   comp_prob = ll + log_weights + log_upweigths;
+//   
+//   // Record the likelihood - this is used to calculate the observed likelihood
+//   observed_likelihood_vec(n) = accu(comp_prob);
+//   
+//   if(fixed(n) == 0) {
+//     // Handle overflow problems and then normalise to convert to probabilities
+//     comp_prob = exp(comp_prob - max(comp_prob));
+//     comp_prob = comp_prob / sum(comp_prob);
+//     
+//     // Save the allocation probabilities
+//     alloc.row(n) = comp_prob.t();
+//     
+//     // Prediction and update
+//     u = randu<double>( );
+//     
+//     labels(n) = sum(u > cumsum(comp_prob));
+//     outliers(n) = sampleOutlier(ll(labels(n)), outlier_likelihood(n));
+//   }
+//   
+//   // Update the complete likelihood based on the new labelling
+//   // complete_likelihood += ll(labels(n));
+//   complete_likelihood_vec(n) = ll(labels(n));
+//   
+// };
+  
+// void mixtureModel::updateAllocation(
+//   arma::vec log_weights, 
+//   arma::mat log_upweigths
+// ) {
+//   uvec uniqueK;
+//   vec comp_prob(K);
+//   
+//   complete_likelihood = 0.0;
+//   observed_likelihood = 0.0;
+//   
+//   // Update the outlier weights - if no outlier component is being modelled, 
+//   // this does nothing
+//   updateOutlierWeights();
+//   
+//   // for (auto& n : unfixed_ind) {
+//   std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
+//     updateItemAllocation(n, log_weights, log_upweigths.col(n));
+//   }
+//   );
+//   
+//   observed_likelihood = accu(observed_likelihood_vec);
+//   complete_likelihood = accu(complete_likelihood_vec);
+//   
+//   // Number of occupied components (used in BIC calculation)
+//   uniqueK = unique(labels);
+//   K_occ = uniqueK.n_elem;
+// };
+
+void mixtureModel::updateAllocation(arma::vec log_weights, arma::mat log_upweigths) {
+  uvec uniqueK;
+  vec comp_prob(K);
+  
+  complete_likelihood = 0.0;
+  observed_likelihood = 0.0;
+  
+  // 1. Update outlier weights
+  updateOutlierWeights();
+  
+  // 2. Update cluster assignments using current missing value imputations
+  std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
+    updateItemAllocation(n, log_weights, log_upweigths.col(n));
+  });
+  
+  // 3. Sample missing values using NEW allocations and outlier assignments
+  sampleAllMissingValues();
+  
+  // 4. Aggregate likelihoods (will be recalculated next iteration)
+  observed_likelihood = accu(observed_likelihood_vec);
+  complete_likelihood = accu(complete_likelihood_vec);
+  
+  // 5. Update component counts
+  uniqueK = unique(labels);
+  K_occ = uniqueK.n_elem;
+}  
+
+void mixtureModel::updateItemAllocation(uword n, vec log_weights, vec log_upweigths) {
   double u = 0.0;
   uvec uniqueK;
   vec comp_prob(K), ll(K);
   
-  // The mixture-specific log likelihood for each observation in each class
-  ll = itemLogLikelihood(X_t.col(n));
+  // Use new signature for likelihood functions
+  ll = density_ptr->itemLogLikelihood(n);
   
   // Update with weights
   comp_prob = ll + log_weights + log_upweigths;
@@ -134,37 +233,26 @@ void mixtureModel::updateItemAllocation(
   // Update the complete likelihood based on the new labelling
   // complete_likelihood += ll(labels(n));
   complete_likelihood_vec(n) = ll(labels(n));
-  
-};
-  
-void mixtureModel::updateAllocation(
-  arma::vec log_weights, 
-  arma::mat log_upweigths
-) {
-  uvec uniqueK;
-  vec comp_prob(K);
-  
-  complete_likelihood = 0.0;
-  observed_likelihood = 0.0;
-  
-  // Update the outlier weights - if no outlier component is being modelled, 
-  // this does nothing
-  updateOutlierWeights();
-  
-  // for (auto& n : unfixed_ind) {
-  std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
-    updateItemAllocation(n, log_weights, log_upweigths.col(n));
+}
+
+void mixtureModel::sampleAllMissingValues() {
+  for(uword n = 0; n < N; n++) {
+    if(density_ptr->missing_indices(n).n_elem > 0) {
+      if(outliers(n) == 1 && fixed(n) == 0) {
+        // Sample from outlier component
+        outlierComponent_ptr->sampleMissingForObservation(n);
+      } else {
+        // Sample from mixture component
+        density_ptr->sampleMissingForObservation(n);
+      }
+    }
   }
-  );
-  
-  observed_likelihood = accu(observed_likelihood_vec);
-  complete_likelihood = accu(complete_likelihood_vec);
-  
-  // Number of occupied components (used in BIC calculation)
-  uniqueK = unique(labels);
-  K_occ = uniqueK.n_elem;
-};
-  
+  // Single coordinated update of transpose
+  X_t = X.t();
+  density_ptr->X_t = X_t;
+  outlierComponent_ptr->X_t = X_t;
+}
+
 void mixtureModel::initialiseDensity(arma::uword type) {
   
   densityFactory my_factory;
@@ -189,13 +277,22 @@ void mixtureModel::sampleParameters() {
 void mixtureModel::calcBIC() {
   BIC = 2 * complete_likelihood - (n_param + 1) * K_occ * std::log(N);
 }
-arma::vec mixtureModel::itemLogLikelihood(arma::vec x) {
-  return density_ptr->itemLogLikelihood(x);
+// arma::vec mixtureModel::itemLogLikelihood(arma::vec x) {
+//   return density_ptr->itemLogLikelihood(x);
+// };
+
+arma::vec mixtureModel::itemLogLikelihood(arma::uword n) {
+  return density_ptr->itemLogLikelihood(n);
 };
 
-double mixtureModel::logLikelihood(arma::vec x, arma::uword k) {
-  return density_ptr->logLikelihood(x, k);
+// double mixtureModel::logLikelihood(arma::vec x, arma::uword k) {
+//   return density_ptr->logLikelihood(x, k);
+// };
+
+double mixtureModel::logLikelihood(arma::uword n, arma::uword k) {
+  return density_ptr->logLikelihood(n, k);
 };
+
 
 void mixtureModel::initialiseOutlierComponent(uword type) {
   
@@ -242,7 +339,8 @@ void mixtureModel::initialiseMixture(
   for (uword n = 0; n < N; n++) {
     
     // The mixture-specific log likelihood for each observation in each class
-    ll = itemLogLikelihood(X_t.col(n));
+    // ll = itemLogLikelihood(X_t.col(n));
+    ll = itemLogLikelihood(n);
     
     // Update with weights
     comp_prob = ll + log_weights + log_upweigths.col(n);
@@ -281,3 +379,22 @@ void mixtureModel::updateOutlierWeights() {
   non_outliers = 1 - outliers;
   outlierComponent_ptr->updateWeights(non_outliers, outliers);
 }
+
+// void mixtureModel::sampleMissingData() {
+//   umat data_mask = ones(N, P);
+//   mat X_inferred = X;
+//   field<umat> missing_idx(N);
+//   
+//   for(uword n = 0; n < N; n++) {
+//     missing_idx.row(n) = find(data_mask.row(n) == 1);
+//     
+//   // std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
+//     X_inferred(n, missing_idx) = sampleMissingDataPoint(
+//       X.row(n).t(), 
+//       labels(n), 
+//       missing_idx.row(n).t()
+//     ).t();
+//   // }
+//   // );
+//   }
+// };

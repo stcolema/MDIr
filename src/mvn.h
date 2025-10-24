@@ -32,6 +32,12 @@ using namespace arma ;
 //' }
 class mvn : virtual public density
 {
+private:
+  // Pre-allocated working matrices
+  mutable arma::mat temp_cov_obs, temp_cov_miss, temp_cov_cross, temp_L;
+  mutable arma::vec temp_mu_miss, temp_mu_obs, temp_residual;
+  mutable arma::mat temp_solve_matrix;
+  mutable arma::vec temp_solve_vector;
   
 public:
   
@@ -66,12 +72,13 @@ public:
   // Update the common matrix manipulations to avoid recalculating N times
   void matrixCombinations();
   
-  // The log likelihood of a item belonging to each cluster
-  arma::vec itemLogLikelihood(arma::vec item);
+  // Missing value methods
+  void initializeMissingValues() override;
+  void sampleMissingForObservation(arma::uword n) override;
   
-  // The log likelihood of a item belonging to a specific cluster
-  double logLikelihood(arma::vec item, arma::uword k);
-  
+  // Modified likelihood functions
+  arma::vec itemLogLikelihood(arma::uword n) override;
+  double logLikelihood(arma::uword n, arma::uword k) override;
   
 };
 

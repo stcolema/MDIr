@@ -29,7 +29,12 @@ public:
   
   // The likelihood of a given item
   void calculateAllLogLikelihoods();
-  double calculateItemLogLikelihood(arma::vec x);
+  
+  // Missing value methods
+  void initializeMissingValues() override;
+  void sampleMissingForObservation(arma::uword n) override;
+  
+  double calculateItemLogLikelihood(arma::uword n) override;
   
   // Update the outlier weights
   void updateWeights(uvec non_outliers, uvec outliers);

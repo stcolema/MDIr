@@ -86,10 +86,22 @@ public:
   ) = 0;
   
   virtual void sampleParameters(arma::umat members, arma::uvec non_outliers);
-  virtual arma::vec itemLogLikelihood(arma::vec x) = 0;
-  virtual double logLikelihood(arma::vec x, arma::uword k) = 0;
+  virtual arma::vec itemLogLikelihood(arma::uword n) = 0;
+  virtual double logLikelihood(arma::uword n, arma::uword k) = 0;
 
   virtual void receiveHyperParametersProposalWindows(vec proosal_windows) {};
+  
+  // Missing value storage (common to all densities)
+  arma::field<arma::uvec> missing_indices;   
+  arma::field<arma::uvec> observed_indices;  
+  arma::umat has_missing;                    
+  
+  // Non-virtual: same logic for all density types
+  void identifyMissingValues();
+  
+  // Virtual: density-specific implementations required
+  virtual void initializeMissingValues() = 0;
+  virtual void sampleMissingForObservation(arma::uword n) = 0;
   
 };
 

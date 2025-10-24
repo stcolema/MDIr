@@ -29,13 +29,18 @@ outlierComponent::outlierComponent(arma::uvec _fixed, arma::mat _X) {
   updateWeights(non_outliers, outliers);
 };
 
-
 void outlierComponent::calculateAllLogLikelihoods() {
-  
   for(uword n = 0; n < N; n++) {
-    outlier_likelihood(n) = calculateItemLogLikelihood(X_t.col(n));
+    outlier_likelihood(n) = calculateItemLogLikelihood(n); // Pass index, not vector
   }
 }
+
+// void outlierComponent::calculateAllLogLikelihoods() {
+//   
+//   for(uword n = 0; n < N; n++) {
+//     outlier_likelihood(n) = calculateItemLogLikelihood(X_t.col(n));
+//   }
+// }
   
 void outlierComponent::updateWeights(uvec non_outliers, uvec outliers) {
 

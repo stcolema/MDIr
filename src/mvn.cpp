@@ -44,6 +44,9 @@ mvn::mvn(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   // Empirical Bayesian hyperparameters for the mean and covariance
   empiricalBayesHyperparameters();
   
+  // Identify and initialize the missing values
+  identifyMissingValues();
+  initializeMissingValues();
 };
 
 
@@ -113,35 +116,39 @@ void mvn::matrixCombinations() {
   }
 };
 
-// The log likelihood of a item belonging to each cluster.
-arma::vec mvn::itemLogLikelihood(arma::vec item) {
-  arma::vec ll(K), dist_to_mean(P);
-  ll.zeros();
-  dist_to_mean.zeros();
-  
-  for(arma::uword k = 0; k < K; k++){
-    // Normal log likelihood
-    ll(k) = logLikelihood(item, k);
-  }
-  return(ll);
-};
+// // Modified likelihood function
+// double mvn::logLikelihood(arma::uword n, arma::uword k) {
+//   arma::uvec obs_idx = observed_indices(n);
+//   
+//   if(obs_idx.n_elem == P) {
+//     // Complete data - fast path
+//     return pNorm(X.row(n).t(), mu.col(k), cov.slice(k), true);
+//   } else {
+//     // Missing data - marginal likelihood on observed dimensions
+//     arma::vec x_obs = X.row(n).elem(obs_idx).t();
+//     arma::vec mu_obs = mu.col(k).elem(obs_idx);
+//     arma::mat cov_obs = cov.slice(k).submat(obs_idx, obs_idx);
+//     return pNorm(x_obs, mu_obs, cov_obs, true);
+//   }
+// }
 
-// The log likelihood of a item belonging to a specific cluster.
-double mvn::logLikelihood(arma::vec item, arma::uword k) {
-  
-  double exponent = 0.0, ll = 0.0;
-  arma::vec dist_to_mean(P);
-  dist_to_mean.zeros();
-  
-  // The exponent part of the MVN pdf
-  dist_to_mean = item - mu.col(k);
-  exponent = arma::as_scalar(dist_to_mean.t() * cov_inv.slice(k) * dist_to_mean);
-  
-  // Normal log likelihood
-  ll = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
-  
-  return(ll);
-};
+// // The log likelihood of a item belonging to a specific cluster.
+// double mvn::logLikelihood(arma::vec item, arma::uword k) {
+//   
+//   double exponent = 0.0, ll = 0.0;
+//   arma::vec dist_to_mean(P);
+//   dist_to_mean.zeros();
+//   
+//   // The exponent part of the MVN pdf
+//   dist_to_mean = item - mu.col(k);
+//   exponent = arma::as_scalar(dist_to_mean.t() * cov_inv.slice(k) * dist_to_mean);
+//   
+//   // Normal log likelihood
+//   ll = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
+//   
+//   return(ll);
+// };
+
 void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   
   // for(uword k = 0; k < K; k++) {
@@ -241,3 +248,99 @@ double mvn::posteriorPredictive(arma::vec x, arma::uvec indices) {
   
   return mvtLogLikelihood(x, mu_n, scale_n / (kappa_n * nu_n_rel), nu_n_rel);
 };
+
+
+
+void mvn::initializeMissingValues() {
+  for(uword n = 0; n < N; n++) {
+    if(missing_indices(n).n_elem > 0) {
+      arma::uvec miss_idx = missing_indices(n);
+      for(uword idx : miss_idx) {
+        arma::vec col_data = X.col(idx);
+        arma::uvec finite_indices = arma::find_finite(col_data);
+        if(finite_indices.n_elem > 0) {
+          X(n, idx) = arma::mean(col_data.elem(finite_indices));
+        } else {
+          X(n, idx) = arma::randn() * 0.1;
+        }
+      }
+    }
+  }
+  X_t = X.t();
+}
+
+void mvn::sampleMissingForObservation(arma::uword n) {
+  if(missing_indices(n).n_elem > 0) {
+    uword k = labels(n);
+    arma::uvec miss_idx = missing_indices(n);
+    arma::uvec obs_idx = observed_indices(n);
+    
+    if(obs_idx.n_elem > 0) {
+      // CORRECT: Get full vectors first, then extract elements
+      arma::vec x_n_full = X.row(n).t();              // Full observation n as column vector
+      arma::vec mu_k_full = mu.col(k);            // Full component k parameters as column vector
+      
+      arma::vec x_obs = x_n_full.elem(obs_idx);       // Extract observed elements
+      arma::vec mu_obs = mu_k_full.elem(obs_idx);     // Extract observed parameters
+      arma::vec mu_miss = mu_k_full.elem(miss_idx);   // Extract missing parameters
+      
+      arma::mat cov_miss = cov.slice(k).submat(miss_idx, miss_idx);
+      arma::mat cov_obs = cov.slice(k).submat(obs_idx, obs_idx);
+      arma::mat cov_cross = cov.slice(k).submat(miss_idx, obs_idx);
+      
+      arma::vec conditional_mean = mu_miss + cov_cross * arma::solve(cov_obs, x_obs - mu_obs);
+      arma::mat conditional_cov = cov_miss - cov_cross * arma::solve(cov_obs, cov_cross.t());
+      
+      // Numerical safety
+      arma::vec eigval = arma::eig_sym(conditional_cov);
+      if(eigval.min() < 1e-8) {
+        conditional_cov += 1e-6 * arma::eye(conditional_cov.n_rows, conditional_cov.n_cols);
+      }
+      
+      arma::vec sampled = arma::mvnrnd(conditional_mean, conditional_cov);
+      
+      // Update missing values
+      for(uword i = 0; i < miss_idx.n_elem; i++) {
+        X(n, miss_idx(i)) = sampled(i);
+      }
+    } else {
+      // All missing
+      arma::vec mu_k_full = mu.col(k);
+      arma::vec mu_miss = mu_k_full.elem(miss_idx);
+      arma::mat cov_miss = cov.slice(k).submat(miss_idx, miss_idx);
+      arma::vec sampled = arma::mvnrnd(mu_miss, cov_miss);
+      for(uword i = 0; i < miss_idx.n_elem; i++) {
+        X(n, miss_idx(i)) = sampled(i);
+      }
+    }
+  }
+}
+
+double mvn::logLikelihood(arma::uword n, arma::uword k) {
+  arma::uvec obs_idx = observed_indices(n);
+  
+  if(obs_idx.n_elem == P) {
+    // Complete data
+    return pNorm(X.row(n).t(), mu.col(k), cov.slice(k), true);
+  } else if(obs_idx.n_elem > 0) {
+    // CORRECT: Get full vectors first, then extract elements
+    arma::vec x_n_full = X.row(n).t();
+    arma::vec mu_k_full = mu.col(k);
+    
+    arma::vec x_obs = x_n_full.elem(obs_idx);
+    arma::vec mu_obs = mu_k_full.elem(obs_idx);
+    arma::mat cov_obs = cov.slice(k).submat(obs_idx, obs_idx);
+    
+    return pNorm(x_obs, mu_obs, cov_obs, true);
+  } else {
+    return 0.0;
+  }
+}
+
+arma::vec mvn::itemLogLikelihood(arma::uword n) {
+  arma::vec ll(K);
+  for(uword k = 0; k < K; k++) {
+    ll(k) = logLikelihood(n, k);
+  }
+  return ll;
+}

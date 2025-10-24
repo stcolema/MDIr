@@ -59,13 +59,14 @@ public:
   // void sampleParameters(arma::umat members, arma::uvec non_outliers);
   void initialiseParameters();
   
-  // The log likelihood of a item belonging to each cluster
-  arma::vec itemLogLikelihood(arma::vec item);
   
-  // The log likelihood of a item belonging to a specific cluster
-  double logLikelihood(arma::vec item, arma::uword k);
-  // double posteriorPredictive(arma::vec x, arma::uvec indices);
+  // Missing value methods
+  void initializeMissingValues() override;
+  void sampleMissingForObservation(arma::uword n) override;
   
+  // Modified likelihood functions
+  arma::vec itemLogLikelihood(arma::uword n) override;
+  double logLikelihood(arma::uword n, arma::uword k) override;
   
 };
 

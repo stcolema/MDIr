@@ -45,6 +45,9 @@ gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   // Empirical Bayesian hyperparameters for the mean and covariance
   empiricalBayesHyperparameters();
   
+  identifyMissingValues();
+  initializeMissingValues();
+  
 };
 
 
@@ -105,32 +108,84 @@ void gaussian::sampleFromPriors() {
 };
 
 // The log likelihood of a item belonging to each cluster.
-arma::vec gaussian::itemLogLikelihood(arma::vec item) {
+arma::vec gaussian::itemLogLikelihood(arma::uword n) {
   arma::vec ll(K);
-  ll.zeros();
-  for(arma::uword k = 0; k < K; k++){
-    ll(k) = logLikelihood(item, k);
+  for(uword k = 0; k < K; k++) {
+    ll(k) = logLikelihood(n, k);
   }
-  return(ll);
-};
+  return ll;
+}
 
-// The log likelihood of a item belonging to a specific cluster.
-double gaussian::logLikelihood(arma::vec item, arma::uword k) {
-  
-  double exponent = 0.0, ll = 0.0, dist_to_mean = 0.0;
-  
-  // The exponent part of the gaussian pdf
-  for(uword p = 0; p < P; p++) {
-    // ll += pNorm(item(p), mu(p, k), std_devs(p, k));
-    dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
-    exponent = dist_to_mean * precisions(p, k);
+// // The log likelihood of a item belonging to a specific cluster.
+// double gaussian::logLikelihood(arma::uword n, arma::uword k) {
+//   arma::uvec obs_idx = observed_indices(n);
+//   
+//   if(obs_idx.n_elem == P) {
+//     // Complete data - use existing fast calculation
+//     arma::vec x_full = X.row(n).t();
+//     arma::vec mu_k = mu.row(k).t();
+//     arma::vec precision_k = precisions.row(k).t();
+//     
+//     // Diagonal covariance likelihood: sum of independent normal densities
+//     double ll = 0.0;
+//     for(uword p = 0; p < P; p++) {
+//       double diff = x_full(p) - mu_k(p);
+//       ll += -0.5 * (std::log(2.0 * M_PI) - std::log(precision_k(p)) + precision_k(p) * diff * diff);
+//     }
+//     return ll;
+//     
+//   } else if(obs_idx.n_elem > 0) {
+//     // Missing data - sum over observed dimensions only
+//     double ll = 0.0;
+//     for(uword i = 0; i < obs_idx.n_elem; i++) {
+//       uword p = obs_idx(i);
+//       double x_val = X(n, p);
+//       double mu_val = mu(k, p);
+//       double precision_val = precisions(k, p);
+//       
+//       double diff = x_val - mu_val;
+//       ll += -0.5 * (std::log(2.0 * M_PI) - std::log(precision_val) + precision_val * diff * diff);
+//     }
+//     return ll;
+//   } else {
+//     // All missing
+//     return 0.0;
+//   }
+// }
 
-    // Normal log likelihood
-    ll -= 0.5 *(log_std_devs(p, k) + exponent); 
+// In gaussian.cpp - use direct indexing for diagonal covariance
+double gaussian::logLikelihood(arma::uword n, arma::uword k) {
+  arma::uvec obs_idx = observed_indices(n);
+  
+  if(obs_idx.n_elem == P) {
+    // Complete data - use existing calculation
+    arma::vec x_full = X.row(n).t();
+    arma::vec mu_k = mu.col(k);
+    arma::vec precision_k = precisions.col(k);
+    
+    double ll = 0.0;
+    for(uword p = 0; p < P; p++) {
+      double diff = x_full(p) - mu_k(p);
+      ll += -0.5 * (std::log(2.0 * M_PI) - std::log(precision_k(p)) + precision_k(p) * diff * diff);
+    }
+    return ll;
+  } else if(obs_idx.n_elem > 0) {
+    // Missing data - loop over observed indices only
+    double ll = 0.0;
+    for(uword i = 0; i < obs_idx.n_elem; i++) {
+      uword p = obs_idx(i);
+      double x_val = X(n, p);           // Direct access
+      double mu_val = mu(p, k);         // Direct access
+      double precision_val = precisions(p, k);  // Direct access
+      
+      double diff = x_val - mu_val;
+      ll += -0.5 * (std::log(2.0 * M_PI) - std::log(precision_val) + precision_val * diff * diff);
+    }
+    return ll;
+  } else {
+    return 0.0;
   }
-  ll -= 0.5 * (double) P * log(2.0 * M_PI);
-  return(ll);
-};
+}
 
 void gaussian::sampleKthComponentParameters(
     uword k,
@@ -235,15 +290,33 @@ void gaussian::sampleKthComponentParameters(
   }
 };
 
-// void gaussian::sampleParameters(arma::umat members, arma::uvec non_outliers) {
-// 
-//   // for (arma::uword k = 0; k < K; k++) {
-//   std::for_each(
-//     std::execution::par,
-//     K_inds.begin(),
-//     K_inds.end(),
-//     [&](uword k) {
-//       sampleKthComponentParameters(k, members, non_outliers);
-//     }
-//   );
-// };
+void gaussian::initializeMissingValues() {
+  // Same as MVN - use column means
+  for(uword n = 0; n < N; n++) {
+    if(missing_indices(n).n_elem > 0) {
+      arma::uvec miss_idx = missing_indices(n);
+      for(uword idx : miss_idx) {
+        arma::vec col_data = X.col(idx);
+        arma::uvec finite_indices = arma::find_finite(col_data);
+        if(finite_indices.n_elem > 0) {
+          X(n, idx) = arma::mean(col_data.elem(finite_indices));
+        } else {
+          X(n, idx) = arma::randn() * 0.1;
+        }
+      }
+    }
+  }
+  X_t = X.t();
+}
+
+void gaussian::sampleMissingForObservation(arma::uword n) {
+  if(missing_indices(n).n_elem > 0) {
+    uword k = labels(n);
+    arma::uvec miss_idx = missing_indices(n);
+    
+    // Independent sampling for diagonal covariance
+    for(uword idx : miss_idx) {
+      X(n, idx) = arma::randn() * std_devs(idx, k) + mu(idx, k);
+    }
+  }
+}

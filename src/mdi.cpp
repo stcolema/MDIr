@@ -634,7 +634,7 @@ double mdi::samplePhiShape(arma::uword l, arma::uword m, double rate) {
 }
 
 void mdi::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
-  int N_lm = 0;
+  uword N_lm = 0;
   uvec rel_inds_l(N), rel_inds_m(N);
   vec log_weights, weights, phis_vec;
   
