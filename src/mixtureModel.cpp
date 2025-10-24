@@ -184,13 +184,14 @@ void mixtureModel::updateAllocation(arma::vec log_weights, arma::mat log_upweigt
   // 1. Update outlier weights
   updateOutlierWeights();
   
-  // 2. Update cluster assignments using current missing value imputations
+  
+  // 2. Sample missing values
+  sampleAllMissingValues();
+  
+  // 3. Update cluster assignments using current missing value imputations
   std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
     updateItemAllocation(n, log_weights, log_upweigths.col(n));
   });
-  
-  // 3. Sample missing values using NEW allocations and outlier assignments
-  sampleAllMissingValues();
   
   // 4. Aggregate likelihoods (will be recalculated next iteration)
   observed_likelihood = accu(observed_likelihood_vec);
