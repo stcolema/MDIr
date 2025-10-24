@@ -37,22 +37,22 @@ mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
   
 };
 
-double mvt::calculateItemLogLikelihood(arma::vec x) {
-  
-  return mvtLogLikelihood(x, global_mean, global_cov, df);
-
-  // double exponent = 0.0, ll = 0.0;
-  // 
-  // vec diff_with_mean = x - global_mean;
-  // 
-  // exponent = as_scalar( diff_with_mean.t() * global_cov_inv * diff_with_mean );
-  // 
-  // // The T likelihood constant is calculated a member of the TAGM class
-  // ll = t_likelihood_const
-  //   - 0.5 * (df + (double) P) * std::log(1.0 + (1.0 / df) * exponent);
-  // 
-  // return ll;
-};
+// double mvt::calculateItemLogLikelihood(arma::vec x) {
+//   
+//   return mvtLogLikelihood(x, global_mean, global_cov, df);
+// 
+//   // double exponent = 0.0, ll = 0.0;
+//   // 
+//   // vec diff_with_mean = x - global_mean;
+//   // 
+//   // exponent = as_scalar( diff_with_mean.t() * global_cov_inv * diff_with_mean );
+//   // 
+//   // // The T likelihood constant is calculated a member of the TAGM class
+//   // ll = t_likelihood_const
+//   //   - 0.5 * (df + (double) P) * std::log(1.0 + (1.0 / df) * exponent);
+//   // 
+//   // return ll;
+// };
 
 arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   
@@ -83,3 +83,76 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   
   return global_cov;
 };
+
+void mvt::initializeMissingValues() {
+  if(missing_indices_ref == nullptr) return;
+  
+  for(uword n = 0; n < N; n++) {
+    if((*missing_indices_ref)(n).n_elem > 0) {
+      arma::uvec miss_idx = (*missing_indices_ref)(n);
+      for(uword idx : miss_idx) {
+        X(n, idx) = global_mean(idx);  // Initialize with global mean
+      }
+    }
+  }
+  X_t = X.t();
+}
+
+
+void mvt::sampleMissingForObservation(arma::uword n) {
+  if(missing_indices_ref == nullptr || (*missing_indices_ref)(n).n_elem == 0) return;
+  
+  arma::uvec miss_idx = (*missing_indices_ref)(n);
+  arma::uvec obs_idx = (*observed_indices_ref)(n);
+  
+  if(obs_idx.n_elem > 0) {
+    // CORRECT: Use .elem() on full vectors
+    arma::vec x_n_full = X.row(n).t();
+    
+    arma::vec x_obs = x_n_full.elem(obs_idx);
+    arma::vec mu_obs = global_mean.elem(obs_idx);
+    arma::vec mu_miss = global_mean.elem(miss_idx);
+    
+    arma::mat cov_miss = global_cov.submat(miss_idx, miss_idx);
+    arma::mat cov_obs = global_cov.submat(obs_idx, obs_idx);
+    arma::mat cov_cross = global_cov.submat(miss_idx, obs_idx);
+    
+    arma::vec conditional_mean = mu_miss + cov_cross * arma::solve(cov_obs, x_obs - mu_obs);
+    arma::mat conditional_cov = cov_miss - cov_cross * arma::solve(cov_obs, cov_cross.t());
+    
+    arma::vec sampled = arma::mvnrnd(conditional_mean, conditional_cov);
+    for(uword i = 0; i < miss_idx.n_elem; i++) {
+      X(n, miss_idx(i)) = sampled(i);
+    }
+  } else {
+    // All missing
+    arma::vec mu_miss = global_mean.elem(miss_idx);
+    arma::mat cov_miss = global_cov.submat(miss_idx, miss_idx);
+    arma::vec sampled = arma::mvnrnd(mu_miss, cov_miss);
+    for(uword i = 0; i < miss_idx.n_elem; i++) {
+      X(n, miss_idx(i)) = sampled(i);
+    }
+  }
+}
+  
+double mvt::calculateItemLogLikelihood(arma::uword n) {
+  if(observed_indices_ref == nullptr) {
+    return mvtLogLikelihood(X.row(n).t(), global_mean, global_cov, df);
+  }
+  
+  arma::uvec obs_idx = (*observed_indices_ref)(n);
+  
+  if(obs_idx.n_elem == P) {
+    return mvtLogLikelihood(X.row(n).t(), global_mean, global_cov, df);
+  } else if(obs_idx.n_elem > 0) {
+    // CORRECT: Use .elem() on full vectors
+    arma::vec x_n_full = X.row(n).t();
+    arma::vec x_obs = x_n_full.elem(obs_idx);
+    arma::vec mu_obs = global_mean.elem(obs_idx);
+    arma::mat cov_obs = global_cov.submat(obs_idx, obs_idx);
+    
+    return mvtLogLikelihood(x_obs, mu_obs, cov_obs, df);
+  } else {
+    return 0.0;
+  }
+}

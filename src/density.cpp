@@ -40,7 +40,7 @@ density::density(
   // Log likelihood (individual and model)
   ll = zeros<vec>(K);
   likelihood = zeros<vec>(N);
-
+  
 };
 
 void density::sampleParameters(arma::umat members, arma::uvec non_outliers) {
@@ -54,3 +54,18 @@ void density::sampleParameters(arma::umat members, arma::uvec non_outliers) {
     }
   );
 };
+
+void density::identifyMissingValues() {
+  has_missing.set_size(N, P);
+  has_missing.zeros();
+  missing_indices.set_size(N);
+  observed_indices.set_size(N);
+  
+  for(uword n = 0; n < N; n++) {
+    for(uword p = 0; p < P; p++) {
+      has_missing(n, p) = !arma::is_finite(X(n, p)) ? 1 : 0;
+    }
+    missing_indices(n) = arma::find(has_missing.row(n) == 1);
+    observed_indices(n) = arma::find(has_missing.row(n) == 0);
+  }
+}
