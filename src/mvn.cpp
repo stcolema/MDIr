@@ -290,6 +290,7 @@ void mvn::sampleMissingForObservation(arma::uword n) {
       
       arma::vec conditional_mean = mu_miss + cov_cross * arma::solve(cov_obs, x_obs - mu_obs);
       arma::mat conditional_cov = cov_miss - cov_cross * arma::solve(cov_obs, cov_cross.t());
+      conditional_cov = 0.5 * (conditional_cov + conditional_cov.t());
       
       // Numerical safety
       arma::vec eigval = arma::eig_sym(conditional_cov);

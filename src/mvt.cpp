@@ -119,6 +119,7 @@ void mvt::sampleMissingForObservation(arma::uword n) {
     
     arma::vec conditional_mean = mu_miss + cov_cross * arma::solve(cov_obs, x_obs - mu_obs);
     arma::mat conditional_cov = cov_miss - cov_cross * arma::solve(cov_obs, cov_cross.t());
+    conditional_cov = 0.5 * (conditional_cov + conditional_cov.t());
     
     arma::vec sampled = arma::mvnrnd(conditional_mean, conditional_cov);
     for(uword i = 0; i < miss_idx.n_elem; i++) {
