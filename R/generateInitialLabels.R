@@ -56,13 +56,13 @@ generateInitialLabels <- function(labels, fixed, K, alpha,
         checkLabels(labels_v, K_v)
         labels_v <- generateInitialSemiSupervisedLabels(labels_v, fixed_v)
 
-        # Check the labels are all contiguous, i.e. all values in the range 0 to K-1
-        # are represented
-        non_contiguous_labels <- max(labels_v) != (length(unique(labels_v)))
-
-        if (non_contiguous_labels) {
-          stop("initial labels are not all contiguous integers.")
-        }
+        # # Check the labels are all contiguous, i.e. all values in the range 0 to K-1
+        # # are represented
+        # non_contiguous_labels <- max(labels_v) != (length(unique(labels_v)))
+        # 
+        # if (non_contiguous_labels) {
+        #   stop("initial labels are not all contiguous integers.")
+        # }
       } else {
         labels_v <- generateInitialUnsupervisedLabels(N, alpha_v, K_v)
       }
