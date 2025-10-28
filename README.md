@@ -40,7 +40,7 @@ data_list <- list(X1, X2)
 
 ### Set up semi-supervised learning
 
-Only a subset of proteins have experimentally validated localizations ("markers"). These act as anchor points—the model must assign them to their known compartments while inferring labels for unmarked proteins.
+Only a subset of proteins have experimentally validated localizations ("markers"). These act as anchor points — the model must assign them to their known compartments while inferring labels for unmarked proteins.
 
 ```r
 # Extract marker information from both datasets
@@ -107,7 +107,7 @@ head(discordant)
 
 ### Assess integration strength
 
-The parameter φ (phi) quantifies coupling between datasets. Values near 1 indicate strong agreement (datasets consistently cluster proteins together), while values near 0 suggest independent structure.
+The parameter φ (phi) quantifies coupling between datasets. High values indicate strong agreement (datasets consistently cluster proteins together), while values near 0 suggest independent structure.
 
 ```r
 phi_samples <- processed_mdi$phis
@@ -124,7 +124,7 @@ abline(v = median(phi_samples), col = "red", lwd = 2)
 
 ### Visualize co-clustering patterns
 
-Posterior similarity matrices (PSMs) show the probability each protein pair belongs to the same organelle. Proteins in the same compartment form dark blocks along the diagonal.
+Posterior similarity matrices (PSMs) show the probability each pair of items (here, gene products) belongs to the same organelle. Proteins in the same compartment form dark blocks along the diagonal.
 
 ```r
 library(pheatmap)
@@ -233,13 +233,13 @@ ggplot(phi_traces, aes(x = phi, fill = factor(chain))) +
 
 **What to look for:**
 - **Overlapping traces**: Chains agree on parameter range (good)
-- **Chains stuck at different values**: Model hasn't converged, run longer or check data
+- **Chains stuck at different values**: Model hasn't converged, run longer or consider consensus clustering (see below)
 - **Trends up/down**: Burn-in too short, discard more iterations
 - **Similar posterior densities**: Robust inference across initializations
 
 ### Consensus clustering: handling local modes
 
-When chains become trapped in different local modes (common in high-dimensional clustering), consensus clustering offers a pragmatic solution. Rather than attempting to run a single very long chain that may never reach the global mode, consensus clustering runs many short chains from different initializations and aggregates their results—an ensemble approach that explores multiple regions of the posterior.
+When chains become trapped in different local modes (common in high-dimensional clustering), consensus clustering offers a pragmatic solution. Rather than attempting to run a single very long chain that may never reach the global mode, consensus clustering runs many short chains from different initializations and aggregates their results — an ensemble approach that explores multiple regions of the posterior (and thus with enough chains should capture the global mode and a better description of the uncertainty in the data than a single chain).
 
 ```r
 # If chains are trapped in local modes, run many short chains
@@ -273,9 +273,8 @@ consensus_result <- compileConsensusClustering(consensus_chains)
 
 ## Interpreting Results
 
-- **High φ + concordant predictions**: Datasets agree, high confidence in integrated labels
-- **High φ + discordant predictions**: Biological heterogeneity or batch effects
-- **Low φ**: Datasets capture independent biological variation, analyze separately
+- **High φ**: Datasets agree in underlying structure
+- **Low φ**: Datasets capture independent biological variation, consider analyzing separately
 - **PSM blocks**: Well-separated compartments; diffuse PSMs suggest overlapping biology or noise
 - **Poor chain mixing**: Re-run with more iterations or check for data quality issues
 - **Chains in local modes**: Consider consensus clustering to explore multiple posterior regions
