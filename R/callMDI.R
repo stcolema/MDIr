@@ -127,6 +127,8 @@ callMDI <- function(X,
     fixed,
     proposal_windows
   )
+  
+  mcmc_output$sample_ids <- row.names(X[[1]])
 
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0
