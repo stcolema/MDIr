@@ -135,8 +135,11 @@ public:
   void sampleFromPriors();
   void sampleParameters();
   void calcBIC();
-  arma::vec itemLogLikelihood(arma::vec x);
-  double logLikelihood(arma::vec x, arma::uword k);
+  arma::vec itemLogLikelihood(arma::uword n);
+  double logLikelihood(arma::uword n, arma::uword k);
+  
+  // New method for coordinated missing value sampling
+  void sampleAllMissingValues();
   
 };
 

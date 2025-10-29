@@ -120,6 +120,19 @@ bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 //' @return Vector of the column means of X.
 arma::vec sampleMean(arma::mat X);
 
+
+//' @title Sample mean
+//' @description calculate the sample mean of a matrix X accounting for missing values.
+//' @param X Matrix
+//' @return Vector of the column means of X.
+arma::vec sampleMeanRobust(const arma::mat& X);
+
+//' @title Compute covariance
+//' @description calculate the sample covariance of a matrix X accounting for missing values.
+//' @param X Matrix
+//' @return Covariance matrix of X.
+arma::mat computeCovarianceRobust(const arma::mat& X);
+  
 //' @title Calculate sample covariance
 //' @description Returns the unnormalised sample covariance. Required as
 //' arma::cov() does not work for singletons.

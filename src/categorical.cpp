@@ -23,6 +23,9 @@ categorical::categorical(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   
   Y = conv_to<umat>::from(X);
   
+  identifyMissingValues();
+  initializeMissingValues();
+  
   // Initialise some of the more awkward parameters
   initialiseParameters();
 
@@ -162,24 +165,134 @@ void categorical::sampleKthComponentParameters(
 //   // }
 // };
 
-double categorical::logLikelihood(arma::vec item, arma::uword k) {
-  
-  double ll = 0.0;
-  uword x_p = 0;
-  
-  for(uword p = 0; p < P; p++) {
-    x_p = item(p);
-    ll += std::log(category_probabilities(p)(x_p, k));
-  }
-  
-  return ll;
-};
+// double categorical::logLikelihood(arma::vec item, arma::uword k) {
+//   
+//   double ll = 0.0;
+//   uword x_p = 0;
+//   
+//   for(uword p = 0; p < P; p++) {
+//     x_p = item(p);
+//     ll += std::log(category_probabilities(p)(x_p, k));
+//   }
+//   
+//   return ll;
+// };
+// 
+// arma::vec categorical::itemLogLikelihood(arma::vec item) {
+//   vec ll(K);
+//   
+//   for(uword k = 0; k < K; k++) {
+//     ll(k) = logLikelihood(item, k);
+//   }
+//   return ll;
+// };
 
-arma::vec categorical::itemLogLikelihood(arma::vec item) {
-  vec ll(K);
-  
+arma::vec categorical::itemLogLikelihood(arma::uword n) {
+  arma::vec ll(K);
   for(uword k = 0; k < K; k++) {
-    ll(k) = logLikelihood(item, k);
+    ll(k) = logLikelihood(n, k);
   }
   return ll;
-};
+}
+
+double categorical::logLikelihood(arma::uword n, arma::uword k) {
+  arma::uvec obs_idx = observed_indices(n);
+  
+  if(obs_idx.n_elem == P) {
+    // Complete data - use all features
+    double ll = 0.0;
+    for(uword p = 0; p < P; p++) {
+      uword category = Y(n, p);  // Integer category value
+      
+      // Safety check for valid category
+      if(category < category_probabilities(p).n_rows) {
+        double prob = category_probabilities(p)(category, k);
+        // Add small epsilon to avoid log(0)
+        ll += std::log(prob + 1e-10);
+      } else {
+        // Invalid category - assign very low probability
+        ll += std::log(1e-10);
+      }
+    }
+    return ll;
+    
+  } else if(obs_idx.n_elem > 0) {
+    // Missing data - use observed features only
+    double ll = 0.0;
+    for(uword i = 0; i < obs_idx.n_elem; i++) {
+      uword p = obs_idx(i);
+      uword category = Y(n, p);
+      
+      if(category < category_probabilities(p).n_rows) {
+        double prob = category_probabilities(p)(category, k);
+        ll += std::log(prob + 1e-10);
+      } else {
+        ll += std::log(1e-10);
+      }
+    }
+    return ll;
+  } else {
+    // All missing
+    return 0.0;
+  }
+}
+
+
+void categorical::initializeMissingValues() {
+  for(uword n = 0; n < N; n++) {
+    if(missing_indices(n).n_elem > 0) {
+      arma::uvec miss_idx = missing_indices(n);
+      for(uword idx : miss_idx) {
+        arma::vec col_data = X.col(idx);
+        arma::uvec finite_indices = arma::find_finite(col_data);
+        if(finite_indices.n_elem > 0) {
+          // Find mode (most frequent category)
+          arma::vec observed_values = col_data.elem(finite_indices);
+          arma::vec unique_vals = arma::unique(observed_values);
+          uword mode_val = 0;
+          uword max_count = 0;
+          for(uword i = 0; i < unique_vals.n_elem; i++) {
+            uword count = arma::sum(observed_values == unique_vals(i));
+            if(count > max_count) {
+              max_count = count;
+              mode_val = static_cast<uword>(unique_vals(i));
+            }
+          }
+          X(n, idx) = static_cast<double>(mode_val);
+        } else {
+          X(n, idx) = 0.0;
+        }
+      }
+    }
+  }
+  
+  // Update integer matrix Y
+  for(uword n = 0; n < N; n++) {
+    for(uword p = 0; p < P; p++) {
+      Y(n, p) = static_cast<uword>(X(n, p));
+    }
+  }
+  X_t = X.t();
+}
+
+void categorical::sampleMissingForObservation(arma::uword n) {
+  if(missing_indices(n).n_elem > 0) {
+    uword k = labels(n);
+    arma::uvec miss_idx = missing_indices(n);
+    
+    for(uword idx : miss_idx) {
+      arma::vec probs = category_probabilities(idx).col(k);
+      double u = arma::randu();
+      arma::vec cumprobs = arma::cumsum(probs);
+      uword sampled_category = 0;
+      for(uword cat = 0; cat < cumprobs.n_elem; cat++) {
+        if(u <= cumprobs(cat)) {
+          sampled_category = cat;
+          break;
+        }
+      }
+      X(n, idx) = static_cast<double>(sampled_category);
+      Y(n, idx) = sampled_category;
+    }
+  }
+}

@@ -128,12 +128,18 @@ processMCMCChain <- function(mcmc_output, burn,
         )
 
       new_output$prob[[v]] <- apply(.alloc_prob, 1, max)
+      names(new_output$prob[[v]]) <- new_output$sample_ids
+      
       new_output$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     } else {
       new_output$pred[[v]] <- suppressWarnings(salso::salso(new_output$allocations[, , v]))
     }
+    names(new_output$pred[[v]]) <- new_output$sample_ids
+    
     if (construct_psm) {
-      new_output$psms[[v]] <- createSimilarityMat(new_output$allocations[, , v])
+      .psm <- createSimilarityMat(new_output$allocations[, , v])
+      row.names(.psm) <- colnames(.psm) <- new_output$sample_ids
+      new_output$psms[[v]] <- .psm
     }
     if (gp_used[v]) {
       new_output$hypers[[v]]$amplitude <- new_output$hypers[[v]]$amplitude[-dropped_indices, ]

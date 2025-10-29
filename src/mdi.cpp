@@ -147,10 +147,6 @@ mdi::mdi(
     
   }
   
-  // Rcpp::Rcout << "K_fixed:\n" << K_fixed.t();
-  // Rcpp::Rcout << "K_fixed:\n" << K_unfixed.t();
-  
-  
   complete_likelihood_vec = zeros< vec >(L);
   
   // Declare the view-specific mixtures
@@ -219,8 +215,6 @@ void mdi::initialisePhis() {
   // // component in each dataset, similarly for the last row).
   // phi_indicator.set_size(n_combinations, LC2);
   // phi_indicator.zeros();
-  
-  // Rcpp::Rcout << "\n\nPhi indicator declared.";
   
   // Map between a dataset pair and the column index. This will be a lower
   // triangular matrix of unsigned ints
@@ -382,10 +376,7 @@ double mdi::calcWeightRateNaive(uword kstar, uword lstar) {
   // This is the number of summations to perform
   K_comb = prod(K_rel);
   
-  // Rcpp::Rcout << "\n\nWEIGHT RATE\nView: " << l << "\nComponent: " << k << "\n";
   for(uword ii = 0; ii < K_comb; ii++) {
-    // Rcpp::Rcout << "\n\ni: " << ii;
-    // Rcpp::Rcout << "\nWeight indices:\n " << weight_ind.t();
     rate += calcWeightRateNaiveSingleIteration(kstar, lstar, weight_ind);
     for(uword jj = 0; jj < (L - 1); jj++) {
       // Which view is actually being updated (skipping the vth)
@@ -457,21 +448,17 @@ double mdi::calcPhiRateNaive(uword view_i, uword view_j) {
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
   
-  // Rcpp::Rcout << "\n\nPHI RATE\nview i: " << view_i << "\nview j: " << view_j << "\n";
   for(uword ii = 0; ii < K_comb; ii++) {
-    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
     
     // We have to hold the index for view_i and view_j the same
     for(uword jj = 0; jj < (L - 1); jj++) {
       weight_updated = false;
       l = for_loop_inds(jj);
-      // Rcpp::Rcout << "\nl: " << l;
       if(jj == 0) {
         weight_ind(l)++;
         weight_updated = true;
       } else {
-        // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
         if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
           weight_ind(l)++;
           weight_updated = true;
@@ -557,7 +544,6 @@ void mdi::updateWeightsViewL(uword l) {
   double shape = 0.0, rate = 0.0, posterior_shape = 0.0, posterior_rate = 0.0;
   uvec members_lk(N);
   
-  // Rcpp::Rcout << "\n\nl: " << l;
   for(uword k = 0; k < K(l); k++) {
     
     // Find how many labels have the value of k. We used to consider which
@@ -634,7 +620,7 @@ double mdi::samplePhiShape(arma::uword l, arma::uword m, double rate) {
 }
 
 void mdi::averagePhiUpdate(arma::uword l, arma::uword m, double rate) {
-  int N_lm = 0;
+  uword N_lm = 0;
   uvec rel_inds_l(N), rel_inds_m(N);
   vec log_weights, weights, phis_vec;
   
@@ -802,10 +788,7 @@ void mdi::updateNormalisingConstantNaive() {
   K_comb = prod(K_rel);
   Z = 0.0;
   
-  // Rcpp::Rcout << "\n\nNORMALISING CONSTANT\n";
   for(uword ii = 0; ii < K_comb; ii++) {
-    // Rcpp::Rcout << "\n\ni: " << ii;
-    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     Z += calcNormalisingConstNaiveSingleIteration(weight_ind);
     for(uword l = 0; l < L; l++) {
       if(l == 0) {
@@ -965,8 +948,10 @@ mat mdi::calculateUpweights(uword lstar) {
 void mdi::initialiseDatasetL(uword l) {
   vec log_weights(K(l));
   mat log_upweights(K(l), N);
+
   log_upweights = calculateUpweights(l);
   log_weights = log(w(span(0, K(l) - 1), l));
+  mixtures[l]->sampleAllMissingValues();
   mixtures[l]->initialiseMixture(log_weights, log_upweights);
   labels.col(l) = mixtures[l]->labels;
   non_outliers.col(l) = mixtures[l]->non_outliers;
@@ -1071,20 +1056,12 @@ arma::umat mdi::swapLabels(arma::uword lstar, arma::uword kstar, arma::uword k_p
   cluster_k = find(loc_labs == kstar);
   cluster_k_prime = find(loc_labs == k_prime);
   
-  // Rcpp::Rcout << "\n\nLabels before swapping:\n" << dummy_labels;
-  // Rcpp::Rcout << "\nk: " << kstar << "\nk': " << k_prime;
-  // Rcpp::Rcout << "\nk cluster indices:\n" << cluster_k.t();
-  // Rcpp::Rcout << "\n\nk' cluster indices:\n" << cluster_k_prime.t();
-  // Rcpp::Rcout << "\nlabels before update:\n" << loc_labs.t();
-
   // Swap the label associated with the two clusters
   loc_labs.elem(cluster_k).fill(k_prime);
   loc_labs.elem(cluster_k_prime).fill(kstar);
 
   
   dummy_labels.col(lstar) = loc_labs;
-  // Rcpp::Rcout << "\nlabels after update:\n" << loc_labs.t();
-  // Rcpp::Rcout << "\n\nLabels after swapping:\n" << dummy_labels;
   
   return dummy_labels;
 }
@@ -1168,18 +1145,12 @@ void mdi::updateLabelsViewL(uword lstar) {
     // The log acceptance probability
     log_acceptance_prob = proposed_score - current_score;
 
-    // Rcpp::Rcout << "\ncurr prob: " << exp(current_score);
-    // Rcpp::Rcout << "\nalt prob: " << exp(proposed_score);
-    // Rcpp::Rcout << "\nlog acceptance: " << log_acceptance_prob;
-
     acceptance_prob = std::min(1.0, std::exp(log_acceptance_prob));
     accept = metropolisAcceptanceStep(acceptance_prob);
     
     // If we accept the label swap, update labels, weights and score
     if(accept) {
       acceptance_count++;
-      // Rcpp::Rcout << "\n\nLabels before swapping:\n" << labels;
-      // Rcpp::Rcout << "\n\nLabels after swapping:\n" << swapped_labels;
       
       // Update the current score
       current_score = proposed_score;

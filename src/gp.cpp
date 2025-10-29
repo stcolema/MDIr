@@ -39,8 +39,8 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   time_diff_mat.set_size(P, P);
   time_diff_mat.zeros();
   
-  for(int ii = 0; ii < P; ii++) {
-    for(int jj = ii + 1; jj < P; jj++) {
+  for(uword ii = 0; ii < P; ii++) {
+    for(uword jj = ii + 1; jj < P; jj++) {
       time_diff_mat(ii, jj) = - 0.5 * std::pow((double) (jj - ii), 2.0);
       time_diff_mat(jj, ii) = time_diff_mat(ii, jj);
     }
@@ -65,15 +65,16 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   flattened_component_data.set_size(K);
   
   t_inds = arma::linspace< uvec >(0, P - 1, P);
-  time_difference_mat.set_size(P, P);
-  time_difference_mat.zeros();
-  for(uword ii = 0; ii < (P - 1); ii++) {
-    for(uword jj = (ii + 1); jj < P; jj++) {
-      time_difference_mat(ii, jj) = jj - ii;
-      time_difference_mat(jj, ii) = jj - ii;
-    }
-  }
-  time_difference_mat = arma::pow(time_difference_mat, 2.0);
+  
+  // time_difference_mat.set_size(P, P);
+  // time_difference_mat.zeros();
+  // for(uword ii = 0; ii < (P - 1); ii++) {
+  //   for(uword jj = (ii + 1); jj < P; jj++) {
+  //     time_difference_mat(ii, jj) = jj - ii;
+  //     time_difference_mat(jj, ii) = jj - ii;
+  //   }
+  // }
+  // time_difference_mat = arma::pow(time_difference_mat, 2.0);
   
   // These will hold vertain matrix operations to avoid computational burden
   // The log determinant of each cluster covariance
@@ -94,6 +95,9 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   acceptance_count.set_size(3 * K);
   acceptance_count.zeros();
   
+  // Missing value handling
+  identifyMissingValues();
+  initializeMissingValues();
 };
 
 double gp::noisePriorLogDensity(double x, bool logNorm) {
@@ -219,8 +223,13 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude,
   mat sub_block(P, P);
   sub_block.zeros();
   
-  sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
-  sub_block = exp(sub_block);
+  // sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
+  // sub_block = exp(sub_block);
+  sub_block = amplitude * exp(-0.5 * time_diff_mat / length);
+  if(kernel_subblock_threshold > 0.0) {
+    sub_block.elem(find(sub_block < kernel_subblock_threshold)).zeros();
+  }
+  
   
   // for(uword ii = 0; ii < P; ii++) {
   //   sub_block(ii, ii) = amplitude;
@@ -727,25 +736,86 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data, double threshold) {
 };
 
 // === Log-likelihoods =========================================================
-// The log likelihood of a item belonging to each cluster.
-arma::vec gp::itemLogLikelihood(arma::vec item) {
-  arma::vec ll(K);
-  ll.zeros();
-  for(uword k = 0; k < K; k++) {  
-    ll(k) = logLikelihood(item, k);
+// // The log likelihood of a item belonging to each cluster.
+// arma::vec gp::itemLogLikelihood(arma::vec item) {
+//   arma::vec ll(K);
+//   ll.zeros();
+//   for(uword k = 0; k < K; k++) {  
+//     ll(k) = logLikelihood(item, k);
+//   }
+//   return(ll);
+// };
+// 
+// The log likelihood of a item belonging to a specific cluster.
+double gp::logLikelihood(arma::uword n, arma::uword k) {
+  double ll = 0.0;
+  // Normal log likelihood
+  arma::uvec obs_idx = observed_indices(n);
+  // The exponent part of the Gaussian pdf
+  for(uword i = 0; i < obs_idx.n_elem; i++) {
+    uword p = obs_idx(i);
+    double x_val = X(n, p);
+    double mu_val = mu(p, k);  // mu(feature, component)
+    
+    ll -= 0.5 * std::pow(x_val - mu_val, 2.0);
   }
+  ll *= 1.0 / noise(k);
+  ll -= 0.5 * (double) obs_idx.n_elem * (log(2.0 * M_PI) + log(noise(k)));
   return(ll);
 };
 
-// The log likelihood of a item belonging to a specific cluster.
-double gp::logLikelihood(arma::vec item, arma::uword k) {
-  double ll = 0.0;
-  // Normal log likelihood
-  // The exponent part of the gaussian pdf
-  for(uword p = 0; p < P; p++) {
-    ll -= 0.5 * std::pow(item(p) - mu(p, k), 2.0);
+arma::vec gp::itemLogLikelihood(arma::uword n) {
+  arma::vec ll(K);
+  for(uword k = 0; k < K; k++) {
+    ll(k) = logLikelihood(n, k);
   }
-  ll *= 1.0 / noise(k);
-  ll -= 0.5 * (double) P * (log(2.0 * M_PI) + log(noise(k)));
-  return(ll);
-};
+  return ll;
+}
+
+void gp::sampleMissingForObservation(arma::uword n) {
+  if(missing_indices(n).n_elem > 0) {
+    uword k = labels(n);
+    arma::uvec miss_idx = missing_indices(n);
+    
+    // Simple independent sampling (diagonal covariance)
+    for(uword i = 0; i < miss_idx.n_elem; i++) {
+      uword p = miss_idx(i);
+      double mean_val = mu(p, k);          // Component mean for feature p
+      double std_val = std::sqrt(noise(k)); // Shared noise standard deviation
+      
+      X(n, p) = arma::randn() * std_val + mean_val;
+    }
+  }
+}
+
+void gp::initializeMissingValues() {
+  // Same as Gaussian - use column means
+  for(uword n = 0; n < N; n++) {
+    if(missing_indices(n).n_elem > 0) {
+      arma::uvec miss_idx = missing_indices(n);
+      for(uword i = 0; i < miss_idx.n_elem; i++) {
+        uword p = miss_idx(i);
+        arma::vec col_data = X.col(p);
+        arma::uvec finite_indices = arma::find_finite(col_data);
+        if(finite_indices.n_elem > 0) {
+          X(n, p) = arma::mean(col_data.elem(finite_indices));
+        } else {
+          X(n, p) = arma::randn() * 0.1;
+        }
+      }
+    }
+  }
+  X_t = X.t();
+}
+
+// // Keep original for backwards compatibility
+// double gp::logLikelihood(arma::vec item, arma::uword k) {
+//   // Original implementation unchanged
+//   double ll = 0.0;
+//   for(uword p = 0; p < P; p++) {
+//     ll -= 0.5 * std::pow(item(p) - mu(p, k), 2.0);
+//   }
+//   ll *= 1.0 / noise(k);
+//   ll -= 0.5 * (double) P * (log(2.0 * M_PI) + log(noise(k)));
+//   return ll;
+// }

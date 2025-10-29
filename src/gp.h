@@ -70,7 +70,7 @@ public:
   
   vec amplitude, length, noise, cov_log_det, zero_vec;
   umat density_members;
-  mat scale, mu, cov_comb_log_det, time_difference_mat, I_p, time_diff_mat;
+  mat scale, mu, cov_comb_log_det, I_p, time_diff_mat;
   cube kernel_sub_block;
   field < uvec > repeated_time_indices;
   field < vec > repeated_mean_vector, flattened_component_data;
@@ -114,7 +114,7 @@ public:
   // Update the common matrix manipulations to avoid recalculating N times
   // void matrixCombinations();
   
-  // Sampling and calculations related to the covarianc function/matrix
+  // Sampling and calculations related to the covariance function/matrix
   void sampleHyperParameters();
   mat calculateKthComponentKernelSubBlock(double amplitude, double length,
     double kernel_subblock_threshold = 1e-9
@@ -192,11 +192,14 @@ public:
       double threshold = 1e-6
   );
   
-  // The log likelihood of a item belonging to each cluster
-  vec itemLogLikelihood(vec item);
+  // Missing value methods
+  void initializeMissingValues() override;
+  void sampleMissingForObservation(arma::uword n) override;
   
-  // The log likelihood of a item belonging to a specific cluster
-  double logLikelihood(arma::vec item, arma::uword k);
+  // Modified likelihood functions
+  arma::vec itemLogLikelihood(arma::uword n) override;
+  double logLikelihood(arma::uword n, arma::uword k) override;
+  // double logLikelihood(arma::vec x, arma::uword k);
   
   // Initialise the kernel function - allows for different choices
   // std::unique_ptr<kernel> initialiseKernel(uword kernel_type);
