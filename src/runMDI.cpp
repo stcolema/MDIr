@@ -36,9 +36,8 @@ Rcpp::List runMDI(
     X(l) = Y(l);
   }
   
-  // mdiModel my_mdi(X, mixture_types, K, labels, fixed);
   mdi my_mdi(X, mixture_types, outlier_types, K, labels, fixed);
-  
+
   for(uword l = 0; l < L; l++) {
     if(mixture_types[l] == 3) {
       my_mdi.mixtures[l]->density_ptr->receiveHyperParametersProposalWindows(proposal_windows[l]);
@@ -104,7 +103,6 @@ Rcpp::List runMDI(
       hyper_record(l).row(save_ind) = my_mdi.mixtures[l]->density_ptr->hypers.t();
       // acceptance_count(l) = my_mdi.mixtures[l]->density_ptr->acceptance_count.t();
     }
-    
   }
   
   likelihood_record(save_ind) = my_mdi.complete_likelihood;
@@ -113,11 +111,11 @@ Rcpp::List runMDI(
   N_k_record.slice(save_ind) = my_mdi.N_k;
   
   for(uword r = 0; r < R; r++) {
-    
     Rcpp::checkUserInterrupt();
     
     // Should the current MCMC iteration be saved?
     save_this_iteration = ((r + 1) % thin == 0);
+    
     my_mdi.updateNormalisingConstantNaive();
     my_mdi.sampleStrategicLatentVariable();
     my_mdi.updateMassParameters();
