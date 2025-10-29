@@ -259,6 +259,7 @@ void mdi::initialisePhis() {
 void mdi::initialiseMixtures() {
 
   // Initialise the collection of mixtures
+  Rcpp::Rcout << "\nMixtures.";
   mixtures.reserve(L);
   for(uword l = 0; l < L; l++) {
     mixtures.push_back(
@@ -967,17 +968,23 @@ void mdi::initialiseDatasetL(uword l) {
   mat log_upweights(K(l), N);
   log_upweights = calculateUpweights(l);
   log_weights = log(w(span(0, K(l) - 1), l));
+  mixtures[l]->sampleAllMissingValues();
   mixtures[l]->initialiseMixture(log_weights, log_upweights);
   labels.col(l) = mixtures[l]->labels;
   non_outliers.col(l) = mixtures[l]->non_outliers;
 }
 
 void mdi::initialiseMDI() {
+  Rcpp::Rcout << "\nInitialize mixtures.";
   initialiseMixtures();
+  Rcpp::Rcout << "\nSample from Priors.";
   sampleFromPriors();
+  
+  Rcpp::Rcout << "\nInitialize datasets.";
   for(uword l = 0; l < L; l++) {
     initialiseDatasetL(l);
   }
+  Rcpp::Rcout << "\nInitialization complete.";
 };
 
 void mdi::updateAllocationViewL(uword l) {

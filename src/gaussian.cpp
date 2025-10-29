@@ -52,36 +52,101 @@ gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X) :
 
 
 arma::vec gaussian::empiricalMean() {
-  arma::vec mu_0;
-  arma::mat mean_mat;
-  mean_mat = arma::mean(X, 0).t();
-  mu_0 = mean_mat.col(0);
+  arma::vec mu_0(P);
+  
+  // Compute mean for each column using only finite values
+  for(arma::uword p = 0; p < P; p++) {
+    arma::vec col_data = X.col(p);
+    arma::uvec finite_indices = arma::find_finite(col_data);
+    
+    if(finite_indices.n_elem > 0) {
+      mu_0(p) = arma::mean(col_data.elem(finite_indices));
+    } else {
+      // If no finite values in this column, default to 0
+      mu_0(p) = 0.0;
+    }
+  }
+  
   return mu_0;
 };
 
 arma::mat gaussian::empiricalScaleVector() {
   double scale_entry = 0.0;
   arma::vec diag_entries(P);
-  arma::mat scale_param, global_cov_loc, Psi;
   
+  // Compute variances using only complete observations
+  arma::uvec complete_obs;
+  arma::mat X_complete;
   
-  // Empirical Bayes for a diagonal covariance matrix
-  scale_param = X.each_row() - xi.t();
-  global_cov_loc = arma::cov(X);
+  // Find rows with all finite values
+  arma::uvec has_complete = arma::zeros<arma::uvec>(N);
+  for(arma::uword n = 0; n < N; n++) {
+    if(arma::all(arma::find_finite(X.row(n)))) {
+      has_complete(n) = 1;
+    }
+  }
+  complete_obs = arma::find(has_complete);
   
-  // The entries of the diagonal of the empirical scale matrix all have this 
-  // value
-  scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
+  if(complete_obs.n_elem > 1) {
+    // Use complete observations for covariance
+    X_complete = X.rows(complete_obs);
+    arma::mat global_cov_loc = arma::cov(X_complete);
+    
+    // The entries of the diagonal of the empirical scale vector
+    scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
+  } else {
+    // Fallback: compute variance for each column separately using available data
+    arma::vec col_vars(P);
+    for(arma::uword p = 0; p < P; p++) {
+      arma::vec col_data = X.col(p);
+      arma::uvec finite_indices = arma::find_finite(col_data);
+      
+      if(finite_indices.n_elem > 1) {
+        col_vars(p) = arma::var(col_data.elem(finite_indices));
+      } else {
+        col_vars(p) = 1.0; // Default variance
+      }
+    }
+    scale_entry = arma::mean(col_vars) / std::pow(K, 2.0 / (double) P);
+  }
   
-  // Fill the vector that corresponds to the diagonal entries of the scale matrix
+  // Fill the vector
   diag_entries.fill(scale_entry);
-
+  
   return diag_entries;
 };
 
+// arma::vec gaussian::empiricalMean() {
+//   arma::vec mu_0;
+//   arma::mat mean_mat;
+//   mean_mat = arma::mean(X, 0).t();
+//   mu_0 = mean_mat.col(0);
+//   return mu_0;
+// };
+// 
+// arma::mat gaussian::empiricalScaleVector() {
+//   double scale_entry = 0.0;
+//   arma::vec diag_entries(P);
+//   arma::mat scale_param, global_cov_loc, Psi;
+//   
+//   
+//   // Empirical Bayes for a diagonal covariance matrix
+//   scale_param = X.each_row() - xi.t();
+//   global_cov_loc = arma::cov(X);
+//   
+//   // The entries of the diagonal of the empirical scale matrix all have this 
+//   // value
+//   scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
+//   
+//   // Fill the vector that corresponds to the diagonal entries of the scale matrix
+//   diag_entries.fill(scale_entry);
+// 
+//   return diag_entries;
+// };
+
 void gaussian::empiricalBayesHyperparameters() {
-  xi = zeros< vec >(P); // empiricalMean();
-  scale = ones< vec >(P); // empiricalScaleVector();
+  xi = empiricalMean();
+  scale = empiricalScaleVector();
 }
 
 void gaussian::sampleStdDevPrior() {
@@ -298,10 +363,14 @@ void gaussian::initializeMissingValues() {
       for(uword idx : miss_idx) {
         arma::vec col_data = X.col(idx);
         arma::uvec finite_indices = arma::find_finite(col_data);
-        if(finite_indices.n_elem > 0) {
-          X(n, idx) = arma::mean(col_data.elem(finite_indices));
+        if(finite_indices.n_elem > 1) {
+          double col_mean = arma::mean(col_data.elem(finite_indices));
+          double col_sd = arma::stddev(col_data.elem(finite_indices));
+          X(n, idx) = col_mean + arma::randn() * col_sd * 0.5;  // ADD JITTER
+        } else if(finite_indices.n_elem == 1) {
+          X(n, idx) = col_data(finite_indices(0)) + arma::randn() * 0.1;
         } else {
-          X(n, idx) = arma::randn() * 0.1;
+          X(n, idx) = arma::randn();
         }
       }
     }
