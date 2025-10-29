@@ -180,6 +180,73 @@ arma::vec sampleMean(arma::mat X) {
   return mu_t.row(0).t();
 };
 
+// Compute mean robustly with missing values
+arma::vec sampleMeanRobust(const arma::mat& X) {
+  arma::uword P = X.n_cols;
+  arma::vec means(P);
+  
+  for(arma::uword p = 0; p < P; p++) {
+    arma::vec col_data = X.col(p);
+    arma::uvec finite_indices = arma::find_finite(col_data);
+    
+    if(finite_indices.n_elem > 0) {
+      means(p) = arma::mean(col_data.elem(finite_indices));
+    } else {
+      means(p) = 0.0; // Default if all missing
+    }
+  }
+  
+  return means;
+}
+
+// Compute covariance robustly with missing values
+arma::mat computeCovarianceRobust(const arma::mat& X) {
+  arma::uword N = X.n_rows;
+  arma::uword P = X.n_cols;
+  
+  // Find rows with all finite values (complete observations)
+  arma::uvec complete_rows;
+  arma::uvec has_complete = arma::zeros<arma::uvec>(N);
+  
+  for(arma::uword n = 0; n < N; n++) {
+    arma::rowvec row_n = X.row(n);
+    bool all_finite = true;
+    for(arma::uword p = 0; p < P; p++) {
+      if(!arma::is_finite(row_n(p))) {
+        all_finite = false;
+        break;
+      }
+    }
+    if(all_finite) {
+      has_complete(n) = 1;
+    }
+  }
+  complete_rows = arma::find(has_complete);
+  
+  if(complete_rows.n_elem > 1) {
+    // Use complete observations for covariance calculation
+    arma::mat X_complete = X.rows(complete_rows);
+    return arma::cov(X_complete);
+  } else {
+    // Fallback: compute diagonal covariance from column-wise variances
+    arma::mat empirical_cov(P, P, arma::fill::zeros);
+    
+    for(arma::uword p = 0; p < P; p++) {
+      arma::vec col_data = X.col(p);
+      arma::uvec finite_indices = arma::find_finite(col_data);
+      
+      if(finite_indices.n_elem > 1) {
+        empirical_cov(p, p) = arma::var(col_data.elem(finite_indices));
+      } else if(finite_indices.n_elem == 1) {
+        empirical_cov(p, p) = 1.0; // Default variance
+      } else {
+        empirical_cov(p, p) = 1.0; // Default variance
+      }
+    }
+    return empirical_cov;
+  }
+}
+
 // title Calculate sample covariance
 // description Returns the unnormalised sample covariance. Required as
 // arma::cov() does not work for singletons.

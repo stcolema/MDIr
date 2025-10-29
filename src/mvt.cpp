@@ -18,7 +18,10 @@ mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
   
   // for use in the outlier distribution
   global_cov = findInvertibleGlobalCov();
-  global_mean = sampleMean(X);
+  // global_mean = sampleMean(X);
+  
+  global_mean = sampleMeanRobust(X);
+  
 
   // Functions of the covariance relevant to the likelihood
   global_log_det = log_det(global_cov).real();
@@ -65,7 +68,7 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   small_identity *= 1e-10;
   
   // for use in the outlier distribution
-  global_cov = 0.5 * arma::cov(X);
+  global_cov = 0.5 * computeCovarianceRobust(X);
   
   // Do we need to add a very little to the diagonal to ensure we can inverse 
   // the dataset covariance matrix?
@@ -106,7 +109,6 @@ void mvt::sampleMissingForObservation(arma::uword n) {
   arma::uvec obs_idx = (*observed_indices_ref)(n);
   
   if(obs_idx.n_elem > 0) {
-    // CORRECT: Use .elem() on full vectors
     arma::vec x_n_full = X.row(n).t();
     
     arma::vec x_obs = x_n_full.elem(obs_idx);
