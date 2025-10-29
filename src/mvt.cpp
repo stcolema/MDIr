@@ -65,7 +65,7 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   small_identity.zeros(), global_cov.zeros();
   
   small_identity.eye(P, P);
-  small_identity *= 1e-10;
+  small_identity *= 1e-6;
   
   // for use in the outlier distribution
   global_cov = 0.5 * computeCovarianceRobust(X);
@@ -75,13 +75,12 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   // uword count_here = 0;
   
   vec eigval = eig_sym( global_cov );
-  
   not_invertible = min(eigval) < threshold;
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
-  if(not_invertible) {
-    global_cov = 0.5 * arma::cov(X) + small_identity;
+  if(not_invertible || min(eigval) < 1e-4) {
+    global_cov += small_identity * std::max(1e-4, threshold * 10.0);
   }
   
   return global_cov;

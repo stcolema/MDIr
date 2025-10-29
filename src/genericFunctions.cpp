@@ -268,8 +268,10 @@ arma::mat calcSampleCov(arma::mat data,
   // If n > 0 (as this would crash for empty clusters), and for n = 1 the
   // sample covariance is 0
   if(N > 1){
-    data.each_row() -= sample_mean.t();
-    sample_covariance = data.t() * data;
+    // Make explicit copy before centering
+    arma::mat centered_data = data;
+    centered_data.each_row() -= sample_mean.t();
+    sample_covariance = centered_data.t() * centered_data;
     // sample_covariance = ((double) N - 1.0) * cov(data);
   }
   return sample_covariance;

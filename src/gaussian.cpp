@@ -298,20 +298,13 @@ void gaussian::sampleKthComponentParameters(
     sample_mean = mean(component_data).t();
     
     mu_n = (xi * kappa + (double) n_k * sample_mean) / (kappa + (double) n_k);
-    
-    // Rcpp::Rcout << "\nIs this the issue?";
+
     diff_from_mean = component_data.each_row() - sample_mean.t();
-    
-    // Rcpp::Rcout << "\nEntering internal loop.";
     for(uword p = 0; p < P; p++) {
       kappa_n = kappa + (double) n_k;
       nu_n = nu + (double) n_k;
-      
-      // Rcpp::Rcout << "\nDist from mean.";
       dist_from_mean = arma::pow(diff_from_mean.col(p), 2.0);
-      
-      
-      // Rcpp::Rcout << "\nDist from prior.";
+
       // Calculate the distance of the sample mean from the prior
       dist_from_prior = std::pow(sample_mean(p) - xi(p), 2.0);
       
@@ -322,13 +315,6 @@ void gaussian::sampleKthComponentParameters(
         + ((double) n_k * kappa / (kappa_n)) * dist_from_prior
       );
       
-      // if( (0.5 * nu_n < 1e-6) || (1.0 / (0.5 * scale_np) < 1e-6) ) { 
-      //   Rcpp::Rcout << "\nGaussian standarddeviation parameters below safe threshold.\n";
-      //   Rcpp::Rcout << "\nnu: " << nu_n;
-      //   Rcpp::Rcout << "\nscale_np: " << scale_np;
-      //   Rcpp::Rcout << "\nReciprocal of scale_np: " << 1.0 / scale_np;
-      // }
-      
       // Sample the new precision
       precisions(p, k) = randg(distr_param(0.5 * nu_n, 1.0 / (0.5 * scale_np)));
       std_devs(p, k) = 1.0 / precisions(p, k);
@@ -337,9 +323,6 @@ void gaussian::sampleKthComponentParameters(
       // sample the new component mean in this measurement
       mu(p, k) = (randn() *  std_devs(p, k) / kappa_n) + mu_n(p);
     }
-    // Rcpp::Rcout << "\nSampled mean:\n" << mu.col(k).t();
-    // Rcpp::Rcout << "\nSampled std dev:\n" << std_devs.col(k).t();
-    
     
     
   } else{
