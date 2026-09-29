@@ -14,8 +14,9 @@ runMDI(
   labels,
   fixed,
   proposal_windows,
-  save_parameters = TRUE,
-  save_imputed = FALSE
+  save_parameters,
+  save_imputed,
+  prior
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ iteration (needed for posterior predictive checks).}
 
 \item{save_imputed}{Record the imputed values of missing entries at each 
 saved iteration.}
+
+\item{prior}{Optional vector of MDI-level prior hyperparameters (mass shape, 
+mass rate, weight rate, phi shape, phi rate). Empty for the defaults.}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

@@ -1,0 +1,6 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^README\.md$
+^vignettes/tutorial_files$
+^vignettes/tutorial\.html$

@@ -17,7 +17,8 @@ runMCMCChains(
   initial_labels_as_intended = FALSE,
   proposal_windows = NULL,
   save_parameters = TRUE,
-  save_imputed = FALSE
+  save_imputed = FALSE,
+  prior = mdiPrior()
 )
 }
 \arguments{
@@ -53,7 +54,7 @@ view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
 
-\item{save_parameters, save_imputed}{See ``callMDI``.}
+\item{save_parameters, save_imputed, prior}{See ``callMDI``.}
 }
 \value{
 A named list containing the sampled partitions, component weights and

@@ -158,18 +158,32 @@ Rcpp::List simulatePosteriorPredictiveCpp(
 
 // Test hooks for the exact normalising-constant calculations ------------------
 
+//' @title Test hook: MDI normalising constant
+//' @description Exact normalising constant Z of the MDI model (test hook).
+//' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+//' @return Z.
 //' @keywords internal
 // [[Rcpp::export]]
 double mdiNormalisingConstantCpp(arma::mat w, arma::uvec K, arma::mat phi) {
   return mdiPartitionSum(w, K, phi);
 }
 
+//' @title Test hook: rate of a weight conditional
+//' @description dZ/dw for one weight (test hook).
+//' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
+//' @param lstar View (0-based). @param kstar Component (0-based).
+//' @return The derivative.
 //' @keywords internal
 // [[Rcpp::export]]
 double mdiWeightRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword lstar, arma::uword kstar) {
   return mdiWeightRate(w, K, phi, lstar, kstar);
 }
 
+//' @title Test hook: rate of a phi conditional
+//' @description dZ/dphi for one pair of views (test hook).
+//' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
+//' @param l,m Views (0-based).
+//' @return The derivative.
 //' @keywords internal
 // [[Rcpp::export]]
 double mdiPhiRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m) {

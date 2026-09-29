@@ -7,7 +7,8 @@
 plotLikelihoods(mcmc_outputs, colour_by_chain = TRUE)
 }
 \arguments{
-\item{mcmc_outputs}{The output from ``runMCMCChains``.}
+\item{mcmc_outputs}{The output from ``runMCMCChains`` (or a list of
+processed chains).}
 
 \item{colour_by_chain}{Logical indcating if plots should be coloured by chain
 or all the same colour. Defaults to ``TRUE``.}

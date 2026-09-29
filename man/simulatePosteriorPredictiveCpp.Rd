@@ -11,7 +11,8 @@ simulatePosteriorPredictiveCpp(
   outlier_types,
   parameters,
   allocations,
-  outliers
+  outliers,
+  prior
 )
 }
 \arguments{
@@ -26,9 +27,11 @@ simulatePosteriorPredictiveCpp(
 \item{parameters}{For each view, a matrix with a row per draw holding the 
 flattened component parameters.}
 
-\item{allocations}{Cube (draws x N x L) of sampled labels.}
+\item{allocations}{Cube (draws x N x L) of sampled labels (as doubles).}
 
 \item{outliers}{Cube (draws x N x L) of sampled outlier indicators.}
+
+\item{prior}{Optional MDI-level prior vector (see `runMDI`).}
 }
 \value{
 A list with one entry per view: a cube (draws x N x P) of replicates.

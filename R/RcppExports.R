@@ -299,16 +299,30 @@ simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, p
     .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior)
 }
 
+#' @title Test hook: MDI normalising constant
+#' @description Exact normalising constant Z of the MDI model (test hook).
+#' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+#' @return Z.
 #' @keywords internal
 mdiNormalisingConstantCpp <- function(w, K, phi) {
     .Call(`_mdir_mdiNormalisingConstantCpp`, w, K, phi)
 }
 
+#' @title Test hook: rate of a weight conditional
+#' @description dZ/dw for one weight (test hook).
+#' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
+#' @param lstar View (0-based). @param kstar Component (0-based).
+#' @return The derivative.
 #' @keywords internal
 mdiWeightRateCpp <- function(w, K, phi, lstar, kstar) {
     .Call(`_mdir_mdiWeightRateCpp`, w, K, phi, lstar, kstar)
 }
 
+#' @title Test hook: rate of a phi conditional
+#' @description dZ/dphi for one pair of views (test hook).
+#' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
+#' @param l,m Views (0-based).
+#' @return The derivative.
 #' @keywords internal
 mdiPhiRateCpp <- function(w, K, phi, l, m) {
     .Call(`_mdir_mdiPhiRateCpp`, w, K, phi, l, m)
@@ -367,8 +381,25 @@ runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, p
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
-NULL
-
+#' @description C++ function to perform MCMC sampling for MDI, writing samples
+#' to file rather then saving to memory.
+#' @param R The number of iterations to run for.
+#' @param thin thinning factor for samples recorded.
+#' @param Y The list of data matrices to perform integrative clustering upon 
+#' with items to cluster in rows.
+#' @param K Vector of the number of components to model in each view. This is the upper 
+#' limit on the number of clusters that can be found.
+#' @param mixture_types Character vector of densities used in each view
+#' @param outlier_types Character vector of outlier components used in each 
+#' view ('MVT' or 'None').
+#' @param labels Matrix item labels to initialise from. Rows correspond to the
+#' items being clustered, columns to views.
+#' @param fixed Binary matrix of the items that are fixed in their initial
+#' label.
+#' @param proposal_windows List/field of vectors
+#' @param save_dir Directory to save MCMC samples to
+#' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
+#' @return Nothing; one binary file per saved sample is written to `save_dir`.
 runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior) {
     invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior))
 }

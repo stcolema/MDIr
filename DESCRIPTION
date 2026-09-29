@@ -2,8 +2,8 @@ Package: mdir
 Type: Package
 Title: Bayesian Model-Based Clustering of Multi-Modal Data
 License: GPL-3
-Version: 0.9.0
-Date: 2023-05-16
+Version: 0.10.0
+Date: 2026-09-29
 Authors@R: c(person(given = "Stephen", family = "Coleman",
                     email = "stcolema@tcd.ie",
                     role = c("aut","cre")),
