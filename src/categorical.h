@@ -33,42 +33,48 @@ class categorical : virtual public density
   
 public:
   
-  // The number of categories in each measurement
+  // The number of categories in each measurement (categories are coded 0, 1, ...)
   uvec n_cat;
   
-  // This will hold the data converted to a matrix of integers
+  // The data converted to a matrix of integers (missing entries hold their 
+  // current imputation)
   umat Y;
   
-  // The prior probability of being in a given category in each measurement
+  // The prior concentration of each category in each measurement: the observed 
+  // category frequencies, so the Dirichlet prior on each component's category 
+  // probabilities has total concentration 1 (floored for absent categories)
   field<vec> cat_prior_probability;
   
-  // The probability of each class within category; it will be a N_cat x K x P
-  // array
+  // The probability of each category within each component; entry p is a 
+  // n_cat(p) x K matrix
   arma::field<arma::mat> category_probabilities;
-  
-  using density::density;
   
   categorical(arma::uword _K, arma::uvec _labels, arma::mat _X);
   
-  // Destructor
   virtual ~categorical() { };
   
-  // Sampling from priors
-  void sampleFromPriors();
-  void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
-  // void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  void sampleFromPriors() override;
+  void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
   void initialiseParameters();
   
-  
-  // Missing value methods
   void initializeMissingValues() override;
   void sampleMissingForObservation(arma::uword n) override;
   
-  // Modified likelihood functions
   arma::vec itemLogLikelihood(arma::uword n) override;
   double logLikelihood(arma::uword n, arma::uword k) override;
   
+  void swapComponents(uword k, uword kprime) override;
+  
+  // Layout: category_probabilities(0), category_probabilities(1), ..., each 
+  // n_cat(p) x K column-major
+  arma::vec parameters() const override;
+  void setParameters(const arma::vec& theta) override;
+  arma::vec simulate(arma::uword k) const override;
+  
+  Rcpp::List hyperparameterList() const override;
+  
+private:
+  void normaliseColumns(uword p);
 };
-
 
 #endif /* CATEGORICAL_H */

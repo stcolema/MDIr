@@ -134,7 +134,10 @@ callMDIWritingToFile <- function(X,
   run_details <- list()
   
   run_details$n_samples <- floor(R / thin) + 1
-  run_details$n_param <- N * V + sum(K) + V + choose(V, 2);
+  run_details$n_param <- N * V + sum(K) + V + choose(V, 2) + 2
+  run_details$N <- N
+  run_details$V <- V
+  run_details$K <- K
   
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0

@@ -48,8 +48,8 @@ double invGammaLogLikelihood(double x, double shape, double scale);
 //' @param V - matrix; the scale of the Wishart distribution.
 //' @param n - double; the degrees of freedom for the Wishart distribution.
 //' @param P - unsigned integer; the dimension of X.
-//' @return the unnormalised log-likelihood of X in a Wishart with parameters V 
-//' and n.
+//' @return the normalised log-density of X in a Wishart with scale V and
+//' n degrees of freedom.
 // [[Rcpp::export]]
 double wishartLogLikelihood(arma::mat X, arma::mat V, double n, arma::uword P);
 
@@ -60,8 +60,8 @@ double wishartLogLikelihood(arma::mat X, arma::mat V, double n, arma::uword P);
 //' @param Psi - matrix; the scale of the inverse-Wishart distribution.
 //' @param nu - double; the degrees of freedom for the inverse-Wishart distribution.
 //' @param P - unsigned integer; the dimension of X.
-//' @return the unnormalised log-likelihood of X in a inverse-Wishart with parameters Psi 
-//' and nu.
+//' @return the normalised log-density of X in an inverse-Wishart with scale 
+//' Psi and nu degrees of freedom.
 // [[Rcpp::export]]
 double invWishartLogLikelihood(arma::mat X, arma::mat Psi, double nu, arma::uword P);
 
@@ -95,7 +95,7 @@ double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd = true);
 //' Gaussian distribution.
 //' @param x - double; the sample to calculate the log likelihood of.
 //' @param mu - double; the mean parameter of the Gaussian distribution.
-//' @param sigma_2 - double; the standard deviation of the Gaussian distribution.
+//' @param sigma_2 - double; the variance of the Gaussian distribution.
 //' @return the normalised log-likelihood of x in a Gaussian distribution with 
 //' parameters mu, sigma_2.
 double pNorm(double x, double mu, double sigma_2);
@@ -108,7 +108,7 @@ double pNorm(double x, double mu, double sigma_2);
 //' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
 //' @return the normalised log-likelihood of x in a Gaussian distribution with 
 //' parameters mu, sigma_2.
-double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev);
+double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec variance);
 
 
 //' @title The Half-Cauchy Distribution

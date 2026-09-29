@@ -118,8 +118,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
-RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed);
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -132,7 +132,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
     Rcpp::traits::input_parameter< arma::field< arma::vec > >::type proposal_windows(proposal_windowsSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows));
+    Rcpp::traits::input_parameter< bool >::type save_parameters(save_parametersSEXP);
+    Rcpp::traits::input_parameter< bool >::type save_imputed(save_imputedSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -165,7 +167,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_mvtLogLikelihood", (DL_FUNC) &_mdir_mvtLogLikelihood, 4},
     {"_mdir_pNorm", (DL_FUNC) &_mdir_pNorm, 4},
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
-    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 9},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 11},
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 10},
     {NULL, NULL, 0}
 };

@@ -13,74 +13,58 @@
 using namespace arma ;
 
 // =============================================================================
-// virtual mvn class
-
-//' @name mvn
-//' @title Multivariate Normal density
-//' @description Class for the MVN density.
-//' @field new Constructor \itemize{
-//' \item Parameter: K - the number of components to model
-//' \item Parameter: labels - the initial clustering of the data
-//' \item Parameter: X - the data to model
-//' }
-//' @field sampleFromPrior Sample from the priors for the multivariate normal
-//' density.
-//' @field calcBIC Calculate the BIC of the model.
-//' @field logLikelihood Calculate the likelihood of a given data point in each
-//' component. \itemize{
-//' \item Parameter: point - a data point.
-//' }
+// mvn class
+//
+// Multivariate normal components with a conjugate normal-inverse-Wishart prior,
+//   Sigma_k ~ IW(scale, nu),  mu_k | Sigma_k ~ N(xi, Sigma_k / kappa).
+// xi is the column mean of the observed data and scale = (mean marginal
+// variance) / K^{2/P} * I; kappa = 0.01 and nu = P + 2 are fixed (see
+// hyperparameterList()).
 class mvn : virtual public density
 {
-private:
-  // Pre-allocated working matrices
-  mutable arma::mat temp_cov_obs, temp_cov_miss, temp_cov_cross, temp_L;
-  mutable arma::vec temp_mu_miss, temp_mu_obs, temp_residual;
-  mutable arma::mat temp_solve_matrix;
-  mutable arma::vec temp_solve_vector;
-  
 public:
-  
+
   // Parameters and hyperparameters
   double kappa, nu;
-  
+
   arma::vec xi, cov_log_det;
-  arma::mat scale, mu, cov_comb_log_det;
+  arma::mat scale, mu;
   arma::cube cov, cov_inv;
-  
-  using density::density;
-  
+
   mvn(arma::uword _K, arma::uvec _labels, arma::mat _X);
-  
-  // Destructor
+
   virtual ~mvn() { };
-  
-  // Calculate the empirical hyperparameters 
+
+  // Data-driven hyperparameters
   arma::vec empiricalMean();
   arma::mat empiricalScaleMatrix();
   void empiricalBayesHyperparameters();
-  
+
   // Sampling from priors
   void sampleCovPrior();
   void sampleMuPrior();
-  void sampleFromPriors();
-  
-  void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
-  void sampleParameters(arma::umat members, arma::uvec non_outliers);
-  double posteriorPredictive(arma::vec x, arma::uvec indices);
-  
-  // Update the common matrix manipulations to avoid recalculating N times
+  void sampleFromPriors() override;
+
+  void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
+
+  // Cache the inverse and log determinant of every component covariance
   void matrixCombinations();
-  
-  // Missing value methods
-  void initializeMissingValues() override;
+
+  // Missing values
   void sampleMissingForObservation(arma::uword n) override;
-  
-  // Modified likelihood functions
+
+  // Likelihood of the observed entries
   arma::vec itemLogLikelihood(arma::uword n) override;
   double logLikelihood(arma::uword n, arma::uword k) override;
-  
-};
 
+  void swapComponents(uword k, uword kprime) override;
+
+  // Layout: mu (P x K), then cov (P x P x K), each column-major
+  arma::vec parameters() const override;
+  void setParameters(const arma::vec& theta) override;
+  arma::vec simulate(arma::uword k) const override;
+
+  Rcpp::List hyperparameterList() const override;
+};
 
 #endif /* MVN_H */
