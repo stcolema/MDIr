@@ -1,0 +1,95 @@
+---
+title: "A Bayesian workflow with mdir"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A Bayesian workflow with mdir}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 3.5)
+options(mdir.quiet = TRUE)
+```
+
+This vignette walks through the steps recommended before trusting an `mdir`
+analysis: choosing and checking priors, fitting several chains, checking
+convergence and checking that the fitted model reproduces the data. The data are
+simulated, and the chains are far shorter than you would use in practice.
+
+```{r data}
+library(mdir)
+set.seed(1)
+
+N <- 60
+truth <- rep(1:2, each = N / 2)
+make_view <- function(P, separation) {
+  x <- matrix(rnorm(N * P, mean = ifelse(truth == 1, 0, separation)), N, P)
+  rownames(x) <- seq_len(N)
+  x
+}
+X <- list(make_view(3, 3), make_view(2, 2.5))
+
+# Data may contain missing values; they are imputed within the sampler
+X[[1]][sample(length(X[[1]]), 15)] <- NA
+mean(is.na(X[[1]]))
+```
+
+## Priors
+
+The MDI-level priors (concentration of the component weights and the strength of
+association between views) are set with `mdiPrior()`, the priors of the component
+densities with `densityPrior()`. See their help pages for what each prior means
+and how to choose it.
+
+```{r priors}
+mdiPrior()
+densityPrior()
+```
+
+A prior predictive check shows the data and the cluster agreement between views
+that the priors imply before the data are seen.
+
+```{r prior-predictive}
+types <- c("MVN", "G")
+K <- c(4, 4)
+prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 30)
+plotPredictiveCheck(X, prior_sims, view = 1, column = 1)
+```
+
+## Fitting and convergence
+
+```{r fit}
+chains <- runMCMCChains(X, n_chains = 3, R = 1500, thin = 5, types = types, K = K)
+assessConvergence(chains, burn = 750)
+```
+
+The diagnostics are the rank-normalised split R-hat and bulk and tail effective
+sample sizes of Vehtari et al. (2021), computed for quantities that do not depend
+on how the clusters are labelled. Short chains such as these usually fail the
+criteria; use more iterations for real analyses.
+
+## Posterior predictive check
+
+```{r posterior-predictive}
+post_sims <- simulatePosteriorPredictive(chains, X, n_draws = 50, burn = 750)
+plotPredictiveCheck(X, post_sims, view = 1, column = 1)
+predictiveCheck(X, post_sims, function(m) sd(m[, 1], na.rm = TRUE), view = 1)$p_value
+```
+
+Posterior predictive p-values are conservative, because the data are used both to
+fit and to check the model: values near 0 or 1 indicate misfit, while values
+in the middle do not prove that the model fits.
+
+## Point estimates
+
+```{r predict}
+pooled <- predictFromMultipleChains(chains, burn = 750)
+table(pooled$pred[[1]], truth)
+```
+
+## References
+
+Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and Burkner, P.-C. (2021).
+Rank-normalization, folding, and localization: an improved R-hat for assessing
+convergence of MCMC. *Bayesian Analysis*, 16(2), 667-718.

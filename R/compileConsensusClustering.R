@@ -29,15 +29,15 @@
 #' V <- length(data_modelled)
 #'
 #' # This R is much too low for real applications
-#' R <- 1000
-#' thin <- 100
+#' R <- 300
+#' thin <- 30
 #'
-#' K_max <- 50
+#' K_max <- 10
 #' K <- rep(K_max, V)
 #'
 #' types <- rep("G", V)
 #'
-#' n_chains <- 500
+#' n_chains <- 5
 #' mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 #' cc <- compileConsensusClustering(mcmc_lst)
 #' }

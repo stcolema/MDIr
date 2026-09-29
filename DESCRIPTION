@@ -2,7 +2,7 @@ Package: mdir
 Type: Package
 Title: Bayesian Model-Based Clustering of Multi-Modal Data
 License: GPL-3
-Version: 0.10.1
+Version: 0.10.2
 Date: 2026-09-29
 Authors@R: c(person(given = "Stephen", family = "Coleman",
                     email = "stcolema@tcd.ie",
@@ -19,18 +19,19 @@ Authors@R: c(person(given = "Stephen", family = "Coleman",
 Description: Integrative clustering and semi-supervised prediction.
   This package includes a 'C++' implementation of both semi-supervised and
   unsupervised Multiple Dataset Integration (MDI; Kirk et al., 2012
-  <https://doi-org.ezp.lib.cam.ac.uk/10.1093/bioinformatics/bts595>), an
+  <doi:10.1093/bioinformatics/bts595>), an
   extension of Bayesian mixture models to the integrative (multiple dataset or
   multi-modal) setting such as multi-omics analysis. The package also includes 
   Bayesian mixture models. Densities allowed within MDI and the mixture model
-  are Gaussian with full and diagonal covariance matrices, categorical, Gaussian
-  with a Gaussian process (GP) prior on the mean parameter. The GP model
-  implemented canonly handle data with common time points of equal separation.
+  are Gaussian with full and diagonal covariance matrices, categorical, and
+  Gaussian with a Gaussian process (GP) prior on the mean parameter. The GP model
+  implemented can only handle data with common time points of equal separation.
   The Gaussian and GP models can be augmented with a global multivariate t
   distribution to handle outliers.
 Imports: Rcpp (>= 1.0.6), ggplot2, rlang, stringr, tidyr, salso, stats, utils
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: testthat (>= 3.0.0), posterior, xml2
+Suggests: testthat (>= 3.0.0), posterior, knitr, rmarkdown, xml2
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
 URL: https://github.com/stcolema/mdir

@@ -1,3 +1,21 @@
+# mdir 0.10.2
+
+## CRAN readiness
+
+* The package was archived on CRAN (2023-05-31) for installation failures on
+  macOS and Fedora/clang and a GNU make `SystemRequirements` note. Both stemmed
+  from the parallel build (C++17 `<execution>`, RcppParallel/TBB, `$(shell ...)`
+  in `Makevars`), which is removed. See `cran-comments.md`.
+* Vignettes: the Quarto tutorial, which needs Bioconductor data, moved to
+  `articles/` (not built by CRAN). A new knitr vignette, "A Bayesian workflow
+  with mdir", runs on simulated data.
+* Examples: several were broken (undefined objects, a missing function, a wrong
+  column mapping) or very slow (500 chains); all 42 now run, in under five
+  seconds each.
+* `DESCRIPTION`: institutional proxy DOI replaced, typo fixed. `aes_string()`
+  (deprecated) and the native pipe (which needs R >= 4.1) are no longer used.
+* The package help page is now `?mdir-package`.
+
 # mdir 0.10.1
 
 ## Partial pooling and guarded Gaussian process priors
