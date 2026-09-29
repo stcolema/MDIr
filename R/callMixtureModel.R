@@ -23,6 +23,7 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
+#' @param save_parameters,save_imputed,prior See ``callMDI``.
 #' @return A named list containing the sampled partitions, component weights,
 #' and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -49,7 +50,10 @@ callMixtureModel <- function(X,
                              fixed = NULL,
                              alpha = NULL,
                              initial_labels_as_intended = FALSE,
-                             proposal_windows = NULL) {
+                             proposal_windows = NULL,
+                             save_parameters = TRUE,
+                             save_imputed = FALSE,
+                             prior = mdiPrior()) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -59,6 +63,7 @@ callMixtureModel <- function(X,
   if (!inputDataValid) {
     stop("Data must be a matrix.")
   }
+  checkDataCorrectInput(list(X), type)
 
   # The number of items modelled
   N <- nrow(X)
@@ -113,7 +118,10 @@ callMixtureModel <- function(X,
     outlier_type,
     initial_labels,
     fixed,
-    proposal_windows
+    proposal_windows,
+    save_parameters,
+    save_imputed,
+    as.numeric(prior)
   )
 
   t_1 <- Sys.time()
@@ -127,7 +135,14 @@ callMixtureModel <- function(X,
   mcmc_output$outliers <- mcmc_output$outliers[, , 1]
   mcmc_output$allocation_probabilities <- mcmc_output$allocation_probabilities[[1]]
   mcmc_output$N_k <- mcmc_output$N_k[, 1, ]
-  mcmc_output$complete_likelihood <- mcmc_output$complete_likelihood[, 1]
+  mcmc_output$complete_likelihood <- as.numeric(mcmc_output$complete_likelihood)
+  mcmc_output$observed_likelihood <- as.numeric(mcmc_output$observed_likelihood)
+  mcmc_output$evidence <- NULL
+  mcmc_output$parameters <- mcmc_output$parameters[[1]]
+  mcmc_output$imputed <- mcmc_output$imputed[[1]]
+  mcmc_output$missing_cells <- mcmc_output$missing_cells[[1]]
+  mcmc_output$outlier_weights <- mcmc_output$outlier_weights[, 1]
+  mcmc_output$mass <- mcmc_output$mass[, 1]
 
 
   # Record details of model run to output

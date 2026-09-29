@@ -29,7 +29,7 @@ checkFixedInput <- function(fixed, N, V) {
 
   wrong_number_of_columns <- V != V_in_fixed
   wrong_number_of_rows <- N != N_in_fixed
-  wrong_dimensions <- wrong_number_of_columns & wrong_number_of_rows
+  wrong_dimensions <- wrong_number_of_columns | wrong_number_of_rows
   if (wrong_dimensions) {
     err_message <- paste(
       "``fixed`` must have a column for each dataset in ``X`` and the same",

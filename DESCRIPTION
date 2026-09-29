@@ -28,11 +28,11 @@ Description: Integrative clustering and semi-supervised prediction.
   implemented canonly handle data with common time points of equal separation.
   The Gaussian and GP models can be augmented with a global multivariate t
   distribution to handle outliers.
-Imports: Rcpp (>= 1.0.6), ggplot2, stringr, tidyr, salso, stats, utils
+Imports: Rcpp (>= 1.0.6), ggplot2, rlang, stringr, tidyr, salso, stats, utils
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: testthat (>= 3.0.0), posterior, xml2
 Config/testthat/edition: 3
 Encoding: UTF-8
 URL: https://github.com/stcolema/mdir
 BugReports: https://github.com/stcolema/mdir/issues
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

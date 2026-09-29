@@ -23,8 +23,19 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
+#' @param save_parameters Logical. Record the component parameters (means,
+#' covariances, category probabilities, ...) at every saved iteration. These are
+#' needed for posterior predictive checks (see ``simulatePosteriorPredictive``).
+#' Set to ``FALSE`` to save memory for large models.
+#' @param prior MDI-level prior hyperparameters, created by
+#' \code{\link{mdiPrior}}. See its documentation for the defaults and how to
+#' check them with \code{\link{simulatePriorPredictive}}.
+#' @param save_imputed Logical. Record the imputed value of every missing entry
+#' at every saved iteration (``FALSE`` by default).
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
+#' Missing data (``NA`` entries in ``X``) are treated as missing at random and
+#' imputed within the sampler.
 #' @examples
 #'
 #' N <- 100
@@ -57,13 +68,16 @@ callMDI <- function(X,
                     fixed = NULL,
                     alpha = NULL,
                     initial_labels_as_intended = FALSE,
-                    proposal_windows = NULL) {
+                    proposal_windows = NULL,
+                    save_parameters = TRUE,
+                    save_imputed = FALSE,
+                    prior = mdiPrior()) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
 
   # Check inputs and translate to C++ inputs
-  checkDataCorrectInput(X)
+  checkDataCorrectInput(X, types)
 
   # The number of items modelled
   N <- nrow(X[[1]])
@@ -125,9 +139,16 @@ callMDI <- function(X,
     outlier_types,
     initial_labels,
     fixed,
-    proposal_windows
+    proposal_windows,
+    save_parameters,
+    save_imputed,
+    as.numeric(prior)
   )
   
+  # Traces are returned as one-column matrices; use plain vectors
+  for (nm in c("complete_likelihood", "observed_likelihood", "evidence", "mass_acceptance_rate")) {
+    mcmc_output[[nm]] <- as.numeric(mcmc_output[[nm]])
+  }
   mcmc_output$sample_ids <- row.names(X[[1]])
 
   t_1 <- Sys.time()
@@ -142,6 +163,9 @@ callMDI <- function(X,
   # Density choice
   mcmc_output$types <- types
 
+  # Proportion of missing entries in each view
+  mcmc_output$missing_proportion <- vapply(X, function(x) mean(is.na(x)), numeric(1))
+
   # Dimensions of data
   mcmc_output$P <- P
   mcmc_output$N <- N
@@ -152,6 +176,7 @@ callMDI <- function(X,
 
   # Record hyperparameter choice
   mcmc_output$alpha <- alpha
+  mcmc_output$prior <- prior
 
   # Indicate if the model was semi-supervised or unsupervised
   mcmc_output$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))

@@ -251,6 +251,83 @@ pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
     .Call(`_mdir_pNorm`, x, mu, Sigma, is_sympd)
 }
 
+#' @title Data-driven prior hyperparameters of a density
+#' @description Constructs the density for the data `X` and returns the
+#' hyperparameters of its priors (which for most densities are set from `X`).
+#' @param X Data matrix. Non-finite entries are treated as missing.
+#' @param K Number of components.
+#' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).
+#' @return A named list of hyperparameters.
+#' @keywords internal
+densityHyperparameters <- function(X, K, mixture_type) {
+    .Call(`_mdir_densityHyperparameters`, X, K, mixture_type)
+}
+
+#' @title Simulate datasets from the prior predictive distribution
+#' @description Draws the MDI parameters (masses, phis, weights), the labels 
+#' and the component parameters from their priors, then simulates every view.
+#' @param X List of data matrices; used only to set data-driven hyperparameters
+#' and the dimensions. Non-finite entries are ignored.
+#' @param K Number of components in each view.
+#' @param mixture_types Integer density codes.
+#' @param outlier_types Integer outlier component codes.
+#' @param n_datasets Number of datasets to simulate.
+#' @param prior Optional MDI-level prior vector (see `runMDI`).
+#' @return A list with one entry per dataset holding `data` (list of matrices), 
+#' `labels`, `outliers`, `mass`, `phis` and `weights`.
+#' @keywords internal
+simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_datasets, prior) {
+    .Call(`_mdir_simulatePriorPredictiveCpp`, X, K, mixture_types, outlier_types, n_datasets, prior)
+}
+
+#' @title Simulate replicate datasets from the posterior predictive distribution
+#' @description For each saved MCMC draw, loads that draw's component
+#' parameters and simulates a replicate of every item from its sampled 
+#' component (or the outlier distribution if it was sampled as an outlier).
+#' @param X List of the observed data matrices (used to rebuild the densities).
+#' @param K Number of components in each view.
+#' @param mixture_types Integer density codes.
+#' @param outlier_types Integer outlier component codes.
+#' @param parameters For each view, a matrix with a row per draw holding the 
+#' flattened component parameters.
+#' @param allocations Cube (draws x N x L) of sampled labels (as doubles).
+#' @param outliers Cube (draws x N x L) of sampled outlier indicators.
+#' @param prior Optional MDI-level prior vector (see `runMDI`).
+#' @return A list with one entry per view: a cube (draws x N x P) of replicates.
+#' @keywords internal
+simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior) {
+    .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior)
+}
+
+#' @keywords internal
+mdiNormalisingConstantCpp <- function(w, K, phi) {
+    .Call(`_mdir_mdiNormalisingConstantCpp`, w, K, phi)
+}
+
+#' @keywords internal
+mdiWeightRateCpp <- function(w, K, phi, lstar, kstar) {
+    .Call(`_mdir_mdiWeightRateCpp`, w, K, phi, lstar, kstar)
+}
+
+#' @keywords internal
+mdiPhiRateCpp <- function(w, K, phi, l, m) {
+    .Call(`_mdir_mdiPhiRateCpp`, w, K, phi, l, m)
+}
+
+#' @title Test hook: impute from the outlier distribution
+#' @description Draws `n_rep` observations from the multivariate t outlier 
+#' distribution defined by `X`, hides the entries `missing_cols` (1-based) and 
+#' re-imputes them from their exact conditional. If the imputation is exact, 
+#' the returned matrix has the same distribution as the direct draws in `direct`.
+#' @param X Data defining the t location and scale (finite entries).
+#' @param missing_cols 1-based columns to hide and impute.
+#' @param n_rep Number of replicates.
+#' @return List with `direct` and `imputed` matrices (n_rep x P).
+#' @keywords internal
+mvtImputationCheckCpp <- function(X, missing_cols, n_rep) {
+    .Call(`_mdir_mvtImputationCheckCpp`, X, missing_cols, n_rep)
+}
+
 #' @title Read MCMC Samples
 #' @description C++ function to read the files saved from 
 #' `runMDIWriteToFile.cpp` to disk and compile them into a matrix.
@@ -282,15 +359,17 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' iteration (needed for posterior predictive checks).
 #' @param save_imputed Record the imputed values of missing entries at each 
 #' saved iteration.
+#' @param prior Optional vector of MDI-level prior hyperparameters (mass shape, 
+#' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters = TRUE, save_imputed = FALSE) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
 NULL
 
-runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir) {
-    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir))
+runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior) {
+    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior))
 }
 

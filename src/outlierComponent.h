@@ -72,6 +72,9 @@ public:
   // Update the outlier weight from the current indicators
   virtual void updateWeights(const uvec& non_outliers, const uvec& outliers);
   
+  // Draw the outlier weight from its Beta prior
+  virtual void sampleFromPrior();
+  
 };
 
 #endif /* OUTLIERCOMPONENT_H */

@@ -22,6 +22,7 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
+#' @param save_parameters,save_imputed,prior See ``callMDI``.
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
 #' @examples
@@ -58,7 +59,10 @@ runMCMCChains <- function(X,
                           fixed = NULL,
                           alpha = NULL,
                           initial_labels_as_intended = FALSE,
-                          proposal_windows = NULL) {
+                          proposal_windows = NULL,
+                          save_parameters = TRUE,
+                          save_imputed = FALSE,
+                          prior = mdiPrior()) {
   mcmc_lst <- vector("list", n_chains)
 
   mcmc_lst <- lapply(mcmc_lst, function(x) {
@@ -71,7 +75,10 @@ runMCMCChains <- function(X,
       fixed = fixed,
       alpha = alpha,
       initial_labels_as_intended = initial_labels_as_intended,
-      proposal_windows = proposal_windows
+      proposal_windows = proposal_windows,
+      save_parameters = save_parameters,
+      save_imputed = save_imputed,
+      prior = prior
     )
   })
 

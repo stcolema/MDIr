@@ -33,3 +33,5 @@ arma::vec noOutliers::simulate() const {
 }
 
 void noOutliers::updateWeights(const uvec& non_outliers, const uvec& outliers) { }
+
+void noOutliers::sampleFromPrior() { }

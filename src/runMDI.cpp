@@ -18,7 +18,8 @@ Rcpp::List runMDI(
     arma::umat fixed,
     arma::field< arma::vec > proposal_windows,
     bool save_parameters,
-    bool save_imputed
+    bool save_imputed,
+    arma::vec prior
 ) {
   
   if(thin < 1) {
@@ -28,7 +29,7 @@ Rcpp::List runMDI(
   const uword L = Y.n_elem, n_saved = R / thin + 1;
   uword save_ind = 0;
   
-  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed);
+  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior);
   
   for(uword l = 0; l < L; l++) {
     // Only Gaussian process views use proposal windows

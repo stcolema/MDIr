@@ -21,9 +21,11 @@ mdi::mdi(
   uvec _outlier_types,
   arma::uvec _K,
   arma::umat _labels,
-  arma::umat _fixed
+  arma::umat _fixed,
+  arma::vec _prior
 ) {
 
+  setPrior(_prior);
   mixture_types = _mixture_types;
   outlier_types = _outlier_types;
 
@@ -112,6 +114,20 @@ mdi::mdi(
 
   initialiseMDI();
 };
+
+void mdi::setPrior(const arma::vec& prior) {
+  if(prior.n_elem == 0) {
+    return;
+  }
+  if(prior.n_elem != 5 || !all(prior > 0.0) || !prior.is_finite()) {
+    Rcpp::stop("The prior must hold five positive values: mass shape and rate, weight rate, phi shape and rate.");
+  }
+  mass_shape_prior = prior(0);
+  mass_rate_prior = prior(1);
+  w_rate_prior = prior(2);
+  phi_shape_prior = prior(3);
+  phi_rate_prior = prior(4);
+}
 
 arma::mat mdi::phiMatrix() const {
   arma::mat phi_mat(L, L, arma::fill::zeros);
@@ -335,6 +351,47 @@ void mdi::sweep(uword iteration) {
   if((iteration + 1) % 10 == 0) {
     updateLabels();
   }
+}
+
+arma::umat mdi::samplePriorLabels(uword n_items) const {
+  double n_combinations = 1.0;
+  for(uword l = 0; l < L; l++) {
+    n_combinations *= (double) K(l);
+  }
+  if(n_combinations > 5e6) {
+    Rcpp::stop("Too many joint component combinations (%g) to enumerate.", n_combinations);
+  }
+  const uword n_comb = (uword) n_combinations;
+  
+  arma::umat combinations(n_comb, L);
+  arma::vec log_prob(n_comb);
+  const arma::mat phi_mat = phiMatrix();
+  for(uword i = 0; i < n_comb; i++) {
+    uword remainder = i;
+    for(uword l = 0; l < L; l++) {
+      combinations(i, l) = remainder % K(l);
+      remainder /= K(l);
+    }
+    double lp = 0.0;
+    for(uword l = 0; l < L; l++) {
+      lp += std::log(w(combinations(i, l), l));
+    }
+    for(uword l = 0; l + 1 < L; l++) {
+      for(uword m = l + 1; m < L; m++) {
+        if(combinations(i, l) == combinations(i, m)) {
+          lp += std::log1p(phi_mat(l, m));
+        }
+      }
+    }
+    log_prob(i) = lp;
+  }
+  const arma::vec prob = arma::exp(log_prob - logSumExp(log_prob));
+  
+  arma::umat out(n_items, L);
+  for(uword n = 0; n < n_items; n++) {
+    out.row(n) = combinations.row(sampleCategorical(prob));
+  }
+  return out;
 }
 
 void mdi::initialiseMDI() {
