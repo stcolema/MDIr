@@ -78,14 +78,17 @@ processMCMCChain <- function(mcmc_output, burn,
     stop("Wrong point estimate method given. Must be one of 'mean' or 'median'")
   }
 
-  # We burn the floor of burn / thin of these
+  # The initial state (saved sample 1) is always dropped, then floor(burn / thin)
+  # further saved samples
   eff_burn <- floor(burn / thin) + 1
-
-  # We record only the floor of R / thin samples
-  eff_R <- floor(R / thin) - eff_burn
+  n_saved <- floor(R / thin) + 1
+  if (eff_burn >= n_saved) {
+    stop("The burn in (", burn, ") leaves no saved samples; ", n_saved - 1,
+         " iterations were saved (R = ", R, ", thin = ", thin, ").")
+  }
 
   # The indices dropped as part of the burn in
-  dropped_indices <- seq(1, eff_burn)
+  dropped_indices <- seq_len(eff_burn)
 
   new_output <- mcmc_output
 
@@ -98,7 +101,21 @@ processMCMCChain <- function(mcmc_output, burn,
 
   # The model fit
   new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices] # , , drop = F]
-  new_output$evidence <- mcmc_output$evidence[-dropped_indices[-eff_burn]]
+  new_output$evidence <- mcmc_output$evidence[-dropped_indices]
+  if (!is.null(mcmc_output$observed_likelihood)) {
+    new_output$observed_likelihood <- mcmc_output$observed_likelihood[-dropped_indices]
+  }
+  if (!is.null(mcmc_output$outlier_weights)) {
+    new_output$outlier_weights <- mcmc_output$outlier_weights[-dropped_indices, , drop = FALSE]
+  }
+  for (v in view_inds) {
+    if (!is.null(mcmc_output$parameters) && length(mcmc_output$parameters[[v]]) > 0) {
+      new_output$parameters[[v]] <- mcmc_output$parameters[[v]][-dropped_indices, , drop = FALSE]
+    }
+    if (!is.null(mcmc_output$imputed) && length(mcmc_output$imputed[[v]]) > 0) {
+      new_output$imputed[[v]] <- mcmc_output$imputed[[v]][-dropped_indices, , drop = FALSE]
+    }
+  }
 
   # The allocations and outliers
   new_output$allocations <- mcmc_output$allocations[-dropped_indices, , , drop = F]

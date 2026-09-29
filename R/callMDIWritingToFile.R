@@ -25,6 +25,7 @@
 #' third is for the noise. These are not used in other mixture types.
 #' @param dir_path A string for the directory to save samples to. This cannot be
 #' a shorthand containing the `~` symbol.
+#' @param prior MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -59,13 +60,14 @@ callMDIWritingToFile <- function(X,
                     alpha = NULL,
                     initial_labels_as_intended = FALSE,
                     proposal_windows = NULL,
-                    dir_path = tempdir()) {
+                    dir_path = tempdir(),
+                    prior = mdiPrior()) {
   
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
   
   # Check inputs and translate to C++ inputs
-  checkDataCorrectInput(X)
+  checkDataCorrectInput(X, types)
   
   # The number of items modelled
   N <- nrow(X[[1]])
@@ -128,7 +130,8 @@ callMDIWritingToFile <- function(X,
     initial_labels,
     fixed,
     proposal_windows,
-    dir_path
+    dir_path,
+    as.numeric(prior)
   )
   
   run_details <- list()
