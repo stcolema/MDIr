@@ -95,6 +95,19 @@ processMixtureModelChain <- function(mcmc_output,
     mcmc_output$types <- mcmc_output$type
   }
   
+  # Traces recorded per view are stored as vectors for a single view
+  if (!is.matrix(mcmc_output$mass)) {
+    mcmc_output$mass <- matrix(mcmc_output$mass, ncol = 1)
+  }
+  if (!is.null(mcmc_output$outlier_weights) && !is.matrix(mcmc_output$outlier_weights)) {
+    mcmc_output$outlier_weights <- matrix(mcmc_output$outlier_weights, ncol = 1)
+  }
+  for (nm in c("parameters", "imputed", "missing_cells")) {
+    if (!is.null(mcmc_output[[nm]]) && !is.list(mcmc_output[[nm]])) {
+      mcmc_output[[nm]] <- list(mcmc_output[[nm]])
+    }
+  }
+
   # Process using existing function
   processed <- processMCMCChain(
     mcmc_output,
