@@ -73,8 +73,7 @@ for (ii in seq(1, n_chains)) {
 }
 
 plot_df <- prepSimilarityMatricesForGGplot(psms_v1)
-plot_df |>
-  ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+ggplot2::ggplot(plot_df, ggplot2::aes(x = x, y = y, fill = Entry)) +
   ggplot2::geom_tile() +
   ggplot2::facet_wrap(~Chain) +
   ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")

@@ -70,8 +70,12 @@ prepDataForggHeatmap <- function(X,
   Y[[y_axis]] <- factor(row.names(X), levels = row.names(X))
   
   # Pivot longer, from wide format to long
-  Y_long <- Y |> 
-    tidyr::pivot_longer(-tidyr::any_of(y_axis), values_to = "Entry", names_to = x_axis)
+  Y_long <- tidyr::pivot_longer(
+    Y,
+    -tidyr::any_of(y_axis),
+    values_to = "Entry",
+    names_to = x_axis
+  )
   
   # Make sure the features have the correct ordering
   Y_long[[x_axis]] <- factor(Y_long[[x_axis]], levels = col_names)

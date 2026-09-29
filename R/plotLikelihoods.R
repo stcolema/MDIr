@@ -5,7 +5,7 @@
 #' @param colour_by_chain Logical indcating if plots should be coloured by chain
 #' or all the same colour. Defaults to ``TRUE``.
 #' @return A ggplot2 object. Line plot of likelihood across iteration.
-#' @importFrom ggplot2 ggplot aes_string geom_line facet_wrap label_both
+#' @importFrom ggplot2 ggplot aes geom_line facet_wrap label_both
 #' @export
 plotLikelihoods <- function(mcmc_outputs,
                             colour_by_chain = TRUE) {
@@ -22,20 +22,20 @@ plotLikelihoods <- function(mcmc_outputs,
   if (colour_by_chain) {
     p <- ggplot2::ggplot(
       data = lkl_df,
-      mapping = ggplot2::aes_string(
-        x = "iteration",
-        y = "log_likelihood",
-        colour = "chain"
+      mapping = ggplot2::aes(
+        x = .data$iteration,
+        y = .data$log_likelihood,
+        colour = .data$chain
       )
     ) +
       ggplot2::geom_line()
   } else {
     p <- ggplot2::ggplot(
       data = lkl_df,
-      mapping = ggplot2::aes_string(
-        x = "iteration",
-        y = "log_likelihood",
-        group = "chain"
+      mapping = ggplot2::aes(
+        x = .data$iteration,
+        y = .data$log_likelihood,
+        group = .data$chain
       )
     ) +
       ggplot2::geom_line()

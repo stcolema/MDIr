@@ -16,7 +16,7 @@
 #' chains are ordered from one to the number of chains present) and `View`.
 #' @examples
 #' \donttest{
-#' N <- 500
+#' N <- 100
 #' K <- 4
 #' P <- 10
 #'
@@ -28,19 +28,19 @@
 #'
 #' data_modelled <- list(X$data, Y$data, Z$data)
 #'
-#' n_chains <- 4
-#' R <- 10000
-#' thin <- 25
+#' # These settings are much too small for real applications
+#' n_chains <- 3
+#' R <- 300
+#' thin <- 10
 #' types <- c("G", "G", "G")
-#' K <- c(10, 10, 10)
+#' K <- c(6, 6, 6)
 #' mcmc <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
 #'
-#' burn <- 2500
+#' burn <- 100
 #' mcmc <- processMCMCChains(mcmc, burn, construct_psm = TRUE)
 #' psm_df <- comparePSMsAcrossChains(mcmc)
 #'
-#' psm_df |>
-#'   ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+#' ggplot2::ggplot(psm_df,ggplot2::aes(x = x, y = y, fill = Entry)) +
 #'   ggplot2::geom_tile() +
 #'   ggplot2::facet_grid(View ~ Chain, labeller = ggplot2::label_both) +
 #'   ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4") +

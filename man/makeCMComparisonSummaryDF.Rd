@@ -30,14 +30,18 @@ matrices.
 }
 \examples{
 \donttest{
+set.seed(1)
 model_description_df <- data.frame(
   "Depth" = rep(c(100, 500, 1000), 3),
   "Width" = c(rep(50, 3), rep(100, 3), rep(200, 3))
 )
 n_models <- nrow(model_description_df)
+
+# Toy consensus matrices built from random partitions of 20 items
 cms <- vector("list", n_models)
 for (ii in seq(1, n_models)) {
-  cms[[ii]] <- makeSimilarityMat(mcmc[[ii]]$allocations)
+  allocations <- matrix(sample(seq(0, 2), 10 * 20, replace = TRUE), 10, 20)
+  cms[[ii]] <- createSimilarityMat(allocations)
 }
 mean_abs_diff_df <- makeCMComparisonSummaryDF(cms, model_description_df)
 }

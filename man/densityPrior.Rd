@@ -93,5 +93,5 @@ Gelman, A. (2006). Prior distributions for variance parameters in
 hierarchical models. \emph{Bayesian Analysis}, 1(3), 515-534.
 
 Betancourt, M. (2017). Robust Gaussian process modeling. Stan case study,
-\url{https://mc-stan.org/users/documentation/case-studies/gp_part3/}.
+\url{https://betanalpha.github.io/assets/case_studies/gp_part3/part3.html}.
 }
