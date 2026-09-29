@@ -1,5 +1,8 @@
 ar1_chains <- function(n, m, rho, shift = 0) {
-  sapply(seq_len(m), function(j) as.numeric(stats::arima.sim(list(ar = rho), n)) + shift * (j - 1))
+  sapply(seq_len(m), function(j) {
+    x <- if (rho == 0) stats::rnorm(n) else as.numeric(stats::arima.sim(list(ar = rho), n))
+    x + shift * (j - 1)
+  })
 }
 
 test_that("Rhat and ESS agree with the posterior package", {
