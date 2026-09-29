@@ -11,6 +11,7 @@
 #' @examples
 #' class_map <- createClassMap(c("A", "B", "C", "D", "E"))
 #' class_map$name_to_num["C"] # Returns 3
+#' @importFrom stats setNames
 createClassMap <- function(class_names, start_index = 1) {
   
   if (!is.character(class_names)) {

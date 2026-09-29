@@ -4,7 +4,14 @@
 \alias{simulatePriorPredictiveCpp}
 \title{Simulate datasets from the prior predictive distribution}
 \usage{
-simulatePriorPredictiveCpp(X, K, mixture_types, outlier_types, n_datasets)
+simulatePriorPredictiveCpp(
+  X,
+  K,
+  mixture_types,
+  outlier_types,
+  n_datasets,
+  prior
+)
 }
 \arguments{
 \item{X}{List of data matrices; used only to set data-driven hyperparameters
@@ -17,6 +24,8 @@ and the dimensions. Non-finite entries are ignored.}
 \item{outlier_types}{Integer outlier component codes.}
 
 \item{n_datasets}{Number of datasets to simulate.}
+
+\item{prior}{Optional MDI-level prior vector (see `runMDI`).}
 }
 \value{
 A list with one entry per dataset holding `data` (list of matrices), 

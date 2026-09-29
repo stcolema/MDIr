@@ -87,3 +87,14 @@ test_that("input validation gives informative errors", {
   expect_error(callMDI(Xd, R = 10, thin = 1, types = c("MVN", "C"), K = c(3, 3)), "non-negative integers")
   expect_error(mdiPrior(phi_rate = -1), "positive")
 })
+
+test_that("likelihood traces are extracted and plotted", {
+  d <- two_view_data()
+  chains <- runMCMCChains(d$X, 2, R = 100, thin = 5, types = c("MVN", "MVN"), K = c(3, 3))
+  df <- getLikelihood(chains[[1]])
+  expect_equal(sort(unique(df$type)), c("complete", "observed"))
+  expect_equal(range(df$iteration), c(0, 100))
+  expect_s3_class(plotLikelihoods(chains), "ggplot")
+  proc <- processMCMCChain(chains[[1]], burn = 50)
+  expect_equal(min(getLikelihood(proc)$iteration), 55)
+})

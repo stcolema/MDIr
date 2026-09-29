@@ -42,6 +42,7 @@ importFrom(stats, median)
 importFrom(stats, rnorm)
 importFrom(stats, sd)
 importFrom(stats, rbeta)
+importFrom(stats, setNames)
 
 ## stringr
 importFrom(stringr,str_extract)

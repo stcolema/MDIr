@@ -1,33 +1,32 @@
 #' @title Get likelihood
-#' @description Extracts the model fit score from the mixture model output.
-#' @param mcmc_output The output from the mixture model.
-#' @return A data.frame containing the model log-likelihood and the associated
-#' iteration.
+#' @description Extracts the model fit traces from the output of ``callMDI`` (or
+#' a processed chain): the complete-data log-likelihood (the likelihood of the
+#' data given the sampled allocations, summed over views) and the observed-data
+#' log-likelihood (each view's items marginalised over their component under the
+#' view's own normalised weights; the cross-view coupling is not part of a
+#' single view's likelihood).
+#' @param mcmc_output The output from ``callMDI`` or ``processMCMCChain``.
+#' @return A data.frame with the log-likelihood (``log_likelihood``), its
+#' ``type`` and the MCMC ``iteration`` at which it was recorded.
 #' @export
 getLikelihood <- function(mcmc_output) {
   R <- mcmc_output$R
   thin <- mcmc_output$thin
-  burn <- mcmc_output$burn
-  first_recorded_iter <- burn
 
-  iters <- seq(first_recorded_iter, R, by = thin)
-
-  V <- mcmc_output$V
-  view_indices <- seq(1, V)
-
-  for (v in view_indices) {
-    .l_df <- data.frame(
-      "log_likelihood" = mcmc_output$complete_likelihood[, v],
-      "view" = v,
-      "iteration" = iters
-    )
-
-    if (v == 1) {
-      lkl_df <- .l_df
-    } else {
-      lkl_df <- rbind(lkl_df, .l_df)
-    }
+  traces <- list(complete = mcmc_output$complete_likelihood)
+  if (!is.null(mcmc_output$observed_likelihood)) {
+    traces$observed <- mcmc_output$observed_likelihood
   }
 
-  lkl_df
+  do.call(rbind, lapply(names(traces), function(type) {
+    trace <- as.numeric(traces[[type]])
+    n <- length(trace)
+    # Saved samples are at iterations 0, thin, 2 thin, ..., R; a burn in removes
+    # the earliest ones
+    data.frame(
+      log_likelihood = trace,
+      type = type,
+      iteration = seq(R - (n - 1) * thin, R, by = thin)
+    )
+  }))
 }

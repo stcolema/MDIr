@@ -16,7 +16,8 @@ callMDI(
   initial_labels_as_intended = FALSE,
   proposal_windows = NULL,
   save_parameters = TRUE,
-  save_imputed = FALSE
+  save_imputed = FALSE,
+  prior = mdiPrior()
 )
 }
 \arguments{
@@ -59,6 +60,10 @@ Set to ``FALSE`` to save memory for large models.}
 
 \item{save_imputed}{Logical. Record the imputed value of every missing entry
 at every saved iteration (``FALSE`` by default).}
+
+\item{prior}{MDI-level prior hyperparameters, created by
+\code{\link{mdiPrior}}. See its documentation for the defaults and how to
+check them with \code{\link{simulatePriorPredictive}}.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

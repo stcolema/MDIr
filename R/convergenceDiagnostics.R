@@ -258,6 +258,10 @@ assessConvergence <- function(mcmc_chains,
   out
 }
 
+#' @rdname assessConvergence
+#' @param x An \code{mdir_convergence} object.
+#' @param digits Significant digits to print.
+#' @param ... Unused.
 #' @export
 print.mdir_convergence <- function(x, digits = 3, ...) {
   cat("MDI convergence diagnostics (", attr(x, "n_chains"), " chain(s), burn = ", attr(x, "burn"),

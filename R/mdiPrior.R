@@ -90,6 +90,9 @@ mdiPrior <- function(mass_shape = 2,
   structure(prior, class = "mdir_prior")
 }
 
+#' @rdname mdiPrior
+#' @param x An \code{mdir_prior} object.
+#' @param ... Unused.
 #' @export
 print.mdir_prior <- function(x, ...) {
   cat("MDI prior hyperparameters\n")
