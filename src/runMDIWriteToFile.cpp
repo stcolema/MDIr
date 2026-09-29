@@ -18,14 +18,15 @@ void runMDIWriteToFile(
     arma::umat labels,
     arma::umat fixed,
     arma::field< arma::vec > proposal_windows,
-    std::string save_dir
+    std::string save_dir,
+    arma::vec prior
 ) {
   
   if(thin < 1) {
     Rcpp::stop("thin must be a positive integer.");
   }
   
-  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed);
+  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior);
   const uword L = my_mdi.L, N = my_mdi.N, LC2 = my_mdi.LC2, K_sum = accu(K);
   const std::string gen_filename = save_dir + "/MDIMcmcSample";
   

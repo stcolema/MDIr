@@ -37,6 +37,8 @@ using namespace arma ;
 //' iteration (needed for posterior predictive checks).
 //' @param save_imputed Record the imputed values of missing entries at each 
 //' saved iteration.
+//' @param prior Optional vector of MDI-level prior hyperparameters (mass shape, 
+//' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -49,8 +51,9 @@ Rcpp::List runMDI(
   arma::umat labels,
   arma::umat fixed,
   arma::field< arma::vec > proposal_windows,
-  bool save_parameters = true,
-  bool save_imputed = false
+  bool save_parameters,
+  bool save_imputed,
+  arma::vec prior
 );
 
 #endif /* RUNMDI_H */

@@ -40,3 +40,8 @@ void outlierComponent::updateWeights(const uvec& non_outliers, const uvec& outli
   non_outlier_weight = rBeta(tau_1 + outlier_prior_b, tau_2 + outlier_prior_a);
   outlier_weight = 1.0 - non_outlier_weight;
 };
+
+void outlierComponent::sampleFromPrior() {
+  outlier_weight = rBeta(outlier_prior_a, outlier_prior_b);
+  non_outlier_weight = 1.0 - outlier_weight;
+}

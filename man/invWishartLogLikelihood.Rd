@@ -16,8 +16,8 @@ invWishartLogLikelihood(X, Psi, nu, P)
 \item{P}{- unsigned integer; the dimension of X.}
 }
 \value{
-the unnormalised log-likelihood of X in a inverse-Wishart with parameters Psi 
-and nu.
+the normalised log-density of X in an inverse-Wishart with scale 
+Psi and nu degrees of freedom.
 }
 \description{
 Used in calculating model probability in Metropolis-Hastings 

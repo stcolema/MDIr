@@ -14,7 +14,9 @@ callMDI(
   fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE,
-  proposal_windows = NULL
+  proposal_windows = NULL,
+  save_parameters = TRUE,
+  save_imputed = FALSE
 )
 }
 \arguments{
@@ -49,10 +51,20 @@ sampling of Gaussian process hyperparameters. Each entry corresponds to a
 view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
+
+\item{save_parameters}{Logical. Record the component parameters (means,
+covariances, category probabilities, ...) at every saved iteration. These are
+needed for posterior predictive checks (see ``simulatePosteriorPredictive``).
+Set to ``FALSE`` to save memory for large models.}
+
+\item{save_imputed}{Logical. Record the imputed value of every missing entry
+at every saved iteration (``FALSE`` by default).}
 }
 \value{
 A named list containing the sampled partitions, component weights,
 phi and mass parameters, model fit measures and some details on the model call.
+Missing data (``NA`` entries in ``X``) are treated as missing at random and
+imputed within the sampler.
 }
 \description{
 Runs a MCMC chain of the integrative clustering method,

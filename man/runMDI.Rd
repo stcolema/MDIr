@@ -13,7 +13,9 @@ runMDI(
   outlier_types,
   labels,
   fixed,
-  proposal_windows
+  proposal_windows,
+  save_parameters = TRUE,
+  save_imputed = FALSE
 )
 }
 \arguments{
@@ -22,7 +24,7 @@ runMDI(
 \item{thin}{thinning factor for samples recorded.}
 
 \item{Y}{The list of data matrices to perform integrative clustering upon 
-with items to cluster in rows.}
+with items to cluster in rows. Non-finite entries are treated as missing.}
 
 \item{K}{Vector of the number of components to model in each view. This is the upper 
 limit on the number of clusters that can be found.}
@@ -39,6 +41,12 @@ items being clustered, columns to views.}
 label.}
 
 \item{proposal_windows}{List/field of vectors}
+
+\item{save_parameters}{Record the component parameters at each saved 
+iteration (needed for posterior predictive checks).}
+
+\item{save_imputed}{Record the imputed values of missing entries at each 
+saved iteration.}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

@@ -28,6 +28,7 @@ public:
   arma::vec sampleMissingValues(arma::uword n) const override;
   arma::vec simulate() const override;
   void updateWeights(const uvec& non_outliers, const uvec& outliers) override;
+  void sampleFromPrior() override;
 };
 
 #endif /* NOOUTLIERS_H */

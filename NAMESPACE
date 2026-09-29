@@ -54,3 +54,10 @@ importFrom(tidyr, pivot_longer)
 importFrom(salso, salso)
 
 useDynLib(mdir)
+
+## S3 methods
+S3method(print, mdir_convergence)
+S3method(print, mdir_prior)
+
+## rlang pronoun used in ggplot2 aesthetics
+importFrom(rlang, .data)

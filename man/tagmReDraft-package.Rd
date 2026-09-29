@@ -2,6 +2,8 @@
 % Please edit documentation in R/tagmReDraft-package.R
 \docType{package}
 \name{tagmReDraft-package}
+\alias{mdir}
+\alias{mdir-package}
 \alias{tagmReDraft-package}
 \alias{tagmmdiReDraft}
 \alias{tagmReDraft}
@@ -9,6 +11,14 @@
 \description{
 Bayesian integrative clustering/classification. Model estimated
 via a Gibbs sampler implemented in C++.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/stcolema/mdir}
+  \item Report bugs at \url{https://github.com/stcolema/mdir/issues}
+}
+
 }
 \author{
 Stephen Coleman <stcolema@tcd.ie>, Paul D.W. Kirk, Chris Wallace,

@@ -47,7 +47,8 @@ void runMDIWriteToFile(
      arma::umat labels,
      arma::umat fixed,
      arma::field< arma::vec > proposal_windows,
-     std::string save_dir
+     std::string save_dir,
+     arma::vec prior
  );
 
 #endif /* RUNMDIWRITETOFILE_H */

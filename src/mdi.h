@@ -110,10 +110,16 @@ public:
     uvec _outlier_types,
     arma::uvec _K,
     arma::umat _labels,
-    arma::umat _fixed
+    arma::umat _fixed,
+    arma::vec _prior = arma::vec()
   ) ;
 
   virtual ~mdi() { };
+  
+  // Set the MDI-level prior hyperparameters from a vector ordered as
+  // (mass_shape, mass_rate, weight_rate, phi_shape, phi_rate); an empty vector 
+  // keeps the defaults.
+  void setPrior(const arma::vec& prior);
 
   // === Normalising constant, weights and phis ================================
 
@@ -165,6 +171,10 @@ public:
   // draw followed by the imputation of missing values, and every tenth sweep a
   // label swap move within views.
   void sweep(uword iteration);
+  
+  // Draw the labels of n items jointly across views from p(c | w, phi) by 
+  // enumerating all K_1 x ... x K_L combinations (used for prior predictive draws)
+  arma::umat samplePriorLabels(uword n_items) const;
   
   void initialiseMDI();
   void initialiseDatasetL(uword l);

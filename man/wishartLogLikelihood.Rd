@@ -16,8 +16,8 @@ wishartLogLikelihood(X, V, n, P)
 \item{P}{- unsigned integer; the dimension of X.}
 }
 \value{
-the unnormalised log-likelihood of X in a Wishart with parameters V 
-and n.
+the normalised log-density of X in a Wishart with scale V and
+n degrees of freedom.
 }
 \description{
 Used in calculating model probability in Metropolis-Hastings 
