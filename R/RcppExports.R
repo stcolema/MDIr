@@ -150,7 +150,7 @@ NULL
 #' Gaussian distribution.
 #' @param x - double; the sample to calculate the log likelihood of.
 #' @param mu - double; the mean parameter of the Gaussian distribution.
-#' @param sigma_2 - double; the standard deviation of the Gaussian distribution.
+#' @param sigma_2 - double; the variance of the Gaussian distribution.
 #' @return the normalised log-likelihood of x in a Gaussian distribution with 
 #' parameters mu, sigma_2.
 NULL
@@ -205,8 +205,8 @@ invGammaLogLikelihood <- function(x, shape, scale) {
 #' @param V - matrix; the scale of the Wishart distribution.
 #' @param n - double; the degrees of freedom for the Wishart distribution.
 #' @param P - unsigned integer; the dimension of X.
-#' @return the unnormalised log-likelihood of X in a Wishart with parameters V 
-#' and n.
+#' @return the normalised log-density of X in a Wishart with scale V and
+#' n degrees of freedom.
 wishartLogLikelihood <- function(X, V, n, P) {
     .Call(`_mdir_wishartLogLikelihood`, X, V, n, P)
 }
@@ -218,8 +218,8 @@ wishartLogLikelihood <- function(X, V, n, P) {
 #' @param Psi - matrix; the scale of the inverse-Wishart distribution.
 #' @param nu - double; the degrees of freedom for the inverse-Wishart distribution.
 #' @param P - unsigned integer; the dimension of X.
-#' @return the unnormalised log-likelihood of X in a inverse-Wishart with parameters Psi 
-#' and nu.
+#' @return the normalised log-density of X in an inverse-Wishart with scale 
+#' Psi and nu degrees of freedom.
 invWishartLogLikelihood <- function(X, Psi, nu, P) {
     .Call(`_mdir_invWishartLogLikelihood`, X, Psi, nu, P)
 }
@@ -267,7 +267,7 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' @param R The number of iterations to run for.
 #' @param thin thinning factor for samples recorded.
 #' @param Y The list of data matrices to perform integrative clustering upon 
-#' with items to cluster in rows.
+#' with items to cluster in rows. Non-finite entries are treated as missing.
 #' @param K Vector of the number of components to model in each view. This is the upper 
 #' limit on the number of clusters that can be found.
 #' @param mixture_types Character vector of densities used in each view
@@ -278,9 +278,13 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' @param fixed Binary matrix of the items that are fixed in their initial
 #' label.
 #' @param proposal_windows List/field of vectors
+#' @param save_parameters Record the component parameters at each saved 
+#' iteration (needed for posterior predictive checks).
+#' @param save_imputed Record the imputed values of missing entries at each 
+#' saved iteration.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters = TRUE, save_imputed = FALSE) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File

@@ -15,19 +15,19 @@ using namespace arma ;
 
 // =============================================================================
 // mixtureModel class
-
+//
+// One view of the MDI model: a finite mixture of K components of a chosen
+// density, optionally with a global outlier component. The MDI class supplies
+// the component weights and the cross-view upweights that enter the allocation.
 class mixtureModel {
-  
-private:
   
 public:
   
   uword 
-    
-    // The type of density modelled, must be 1 or 2
+    // The type of density modelled
     mixture_type,
     
-    // The type of outlier component modelled, must be 0 or 1
+    // The type of outlier component modelled, 0 (none) or 1 (multivariate t)
     outlier_type = 0,
     
     // The number of components modelled
@@ -47,63 +47,33 @@ public:
   double complete_likelihood = 0.0, observed_likelihood = 0.0, BIC = 0.0;
   
   uvec 
-    
     // The cluster/class labels
     labels, 
     
     // The number of items in each class
     N_k, 
     
-    // Vector of ones used ocasionally
-    vec_of_ones,
+    // Indicators of items with an observed label
     fixed,
-    fixed_ind,
-    unfixed_ind,
     
-    // Outlier vectors (not really used here, declared so can be accessed in MDI class)
+    // Outlier indicators
     outliers,
-    non_outliers,
-    
-    // Used for looping over data indices
-    N_inds,
-    
-    // Acceptance count of MH sampled parameters
-    acceptance_count;
+    non_outliers;
   
   vec 
-    // Concentration hyperparameter for ocmponent weights
-    concentration, 
-    
-    // Component weights
-    w,
-    
-    // The log-likelihood of an item in each component
-    ll, 
-    
-    // The contribution of each item to the complete log likelihood
+    // The contribution of each item to the complete-data and observed-data 
+    // log-likelihoods
     complete_likelihood_vec, 
-    
-    // The contribution of each item to the observed log likelihood
-    observed_likelihood_vec, 
-    
-    likelihood, 
-    
-    // Log-likelihood of being non-outlier or outlier
-    outlier_likelihood,
-    
-    // Used in recording GP hyperparameters
-    hypers;
+    observed_likelihood_vec;
   
   umat members;
-  mat X, X_t, alloc;
   
-  // Create a unique_ptr 
-  // std::unique_ptr<density> density_ptr = std::make_unique<density>();
-  // std::unique_ptr<outlierComponent> outlierComponent_ptr = std::make_unique<outlierComponent>();
+  // Allocation probabilities of each item to each component
+  mat alloc;
+  
   std::unique_ptr<density> density_ptr;
   std::unique_ptr<outlierComponent> outlierComponent_ptr;
   
-  // Parametrised class
   mixtureModel(
     arma::uword _mixture_type,
     arma::uword _outlier_type,
@@ -112,34 +82,32 @@ public:
     arma::uvec _fixed,
     arma::mat _X);
   
-  
-  // Destructor
   virtual ~mixtureModel() { };
   
-  void updateAllocation(arma::vec log_weights, arma::mat log_upweigths);
-  void updateItemAllocation(uword n, vec log_weights, vec log_upweigths);
-  
-  arma::uword sampleOutlier(
-    double non_outlier_likelihood_n,
-    double outlier_likelihood_n
-  );
+  // One sweep: outlier weight, then (label, outlier status) for each item, then
+  // the missing values given the new allocation.
+  void updateAllocation(const arma::vec& log_weights, const arma::mat& log_upweights);
+  void updateItemAllocation(uword n, const arma::vec& log_weights, const arma::vec& log_upweights);
   
   void updateOutlierWeights();
   
-  // Initialise the density, outlier component and mixture model
-  void initialiseDensity(arma::uword type);
-  void initialiseOutlierComponent(arma::uword type);
-  void initialiseMixture(arma::vec log_weights, arma::mat log_upweigths);
+  void initialiseDensity(arma::uword type, const arma::mat& X);
+  void initialiseOutlierComponent(arma::uword type, const arma::mat& X);
+  void initialiseMixture(const arma::vec& log_weights, const arma::mat& log_upweights);
   
-  // The functions collected from the density
   void sampleFromPriors();
   void sampleParameters();
   void calcBIC();
-  arma::vec itemLogLikelihood(arma::uword n);
-  double logLikelihood(arma::uword n, arma::uword k);
   
-  // New method for coordinated missing value sampling
+  // Sample every missing value from its full conditional given the current 
+  // allocation
   void sampleAllMissingValues();
+  
+  // Exchange components k and k'
+  void swapComponents(uword k, uword kprime);
+  
+  // The data with missing entries replaced by the current imputation
+  const arma::mat& imputedData() const { return density_ptr->X; }
   
 };
 

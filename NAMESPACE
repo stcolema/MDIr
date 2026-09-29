@@ -27,8 +27,6 @@ export(runMCMCChainsSavingToFile)
 importFrom(Rcpp,evalCpp)
 importFrom(Rcpp,sourceCpp)
 
-## RcppParallel
-importFrom(RcppParallel, RcppParallelLibs)
 
 ## ggplot2
 importFrom(ggplot2, aes_string)

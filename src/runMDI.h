@@ -22,7 +22,7 @@ using namespace arma ;
 //' @param R The number of iterations to run for.
 //' @param thin thinning factor for samples recorded.
 //' @param Y The list of data matrices to perform integrative clustering upon 
-//' with items to cluster in rows.
+//' with items to cluster in rows. Non-finite entries are treated as missing.
 //' @param K Vector of the number of components to model in each view. This is the upper 
 //' limit on the number of clusters that can be found.
 //' @param mixture_types Character vector of densities used in each view
@@ -33,6 +33,10 @@ using namespace arma ;
 //' @param fixed Binary matrix of the items that are fixed in their initial
 //' label.
 //' @param proposal_windows List/field of vectors
+//' @param save_parameters Record the component parameters at each saved 
+//' iteration (needed for posterior predictive checks).
+//' @param save_imputed Record the imputed values of missing entries at each 
+//' saved iteration.
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -44,7 +48,9 @@ Rcpp::List runMDI(
   arma::uvec outlier_types,
   arma::umat labels,
   arma::umat fixed,
-  arma::field< arma::vec > proposal_windows
+  arma::field< arma::vec > proposal_windows,
+  bool save_parameters = true,
+  bool save_imputed = false
 );
 
 #endif /* RUNMDI_H */

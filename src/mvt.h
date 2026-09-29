@@ -4,8 +4,6 @@
 #ifndef MVT_H
 #define MVT_H
 
-// =============================================================================
-// included dependencies
 # include "outlierComponent.h"
 # include "genericFunctions.h"
 # include "logLikelihoods.h"
@@ -14,40 +12,32 @@ using namespace arma ;
 
 // =============================================================================
 // mvt class of outlier component
-
+//
+// Multivariate t with fixed location (the column means of the observed data), 
+// scale matrix (half the pairwise-complete data covariance) and df = 4 degrees 
+// of freedom.
 class mvt : virtual public outlierComponent {
-  
-private:
   
 public:
   
-  double global_log_det = 0.0,
-    t_likelihood_const = 0.0,
-    
-    // T degrees of freedom
-    df = 4.0;
+  double df = 4.0;
       
-  // The dataset mean
+  // The dataset location and scale matrix
   vec global_mean;
+  mat global_cov;
   
-  // The dataset covariance
-  mat global_cov, global_cov_inv;
+  mvt(
+    arma::uvec _fixed, 
+    arma::mat _X,
+    const arma::field<arma::uvec>* miss_idx,
+    const arma::field<arma::uvec>* obs_idx
+  );
   
-  using outlierComponent::outlierComponent;
-  
-  // Parametrised class
-  mvt(arma::uvec _fixed, arma::mat _X);
-  
-  // Destructor
   virtual ~mvt() { };
   
-  // Calculate the likelihood of each item being an outlier
-  void initializeMissingValues() override;
-  void sampleMissingForObservation(arma::uword n) override;
   double calculateItemLogLikelihood(arma::uword n) override; 
-  
-  arma::mat findInvertibleGlobalCov(double threshold = DBL_EPSILON);
-  
+  arma::vec sampleMissingValues(arma::uword n) const override;
+  arma::vec simulate() const override;
 };
 
 #endif /* MVT_H */

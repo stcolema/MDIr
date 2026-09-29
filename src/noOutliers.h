@@ -4,45 +4,30 @@
 #ifndef NOOUTLIERS_H
 #define NOOUTLIERS_H
 
-// =============================================================================
-// included dependencies
 # include "outlierComponent.h"
 
 using namespace arma ;
 
 // =============================================================================
-// noOutliers class of outlier component
-
+// noOutliers class of outlier component: the default, which absorbs nothing.
 class noOutliers : virtual public outlierComponent {
-  
-private:
   
 public:
   
-  using outlierComponent::outlierComponent;
+  noOutliers(
+    arma::uvec _fixed, 
+    arma::mat _X,
+    const arma::field<arma::uvec>* miss_idx,
+    const arma::field<arma::uvec>* obs_idx
+  );
   
-  // Parametrised class
-  noOutliers(arma::uvec _fixed, arma::mat _X);
-  
-  // Destructor
   virtual ~noOutliers() { };
   
-  // The likelihood of a given item
-  void calculateAllLogLikelihoods();
-  
-  // Missing value methods
-  void initializeMissingValues() override;
-  void sampleMissingForObservation(arma::uword n) override;
-  
+  bool active() const override { return false; }
   double calculateItemLogLikelihood(arma::uword n) override;
-  
-  // Update the outlier weights
-  void updateWeights(uvec non_outliers, uvec outliers);
-  
-  // Sample if a given item is an outlier or not
-  arma::uword sampleOutlier(double non_outlier_likelihood_n,
-                            double outlier_likelihood_n);
-  
+  arma::vec sampleMissingValues(arma::uword n) const override;
+  arma::vec simulate() const override;
+  void updateWeights(const uvec& non_outliers, const uvec& outliers) override;
 };
 
 #endif /* NOOUTLIERS_H */
