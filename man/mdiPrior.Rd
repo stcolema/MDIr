@@ -51,18 +51,27 @@ probability proportional to
 al., 2012).
 
 \strong{Choosing them.} (i) With \eqn{K} components and concentration
-\eqn{a}, each component has Dirichlet parameter \eqn{e_0 = a / K}. In an
-overfitted mixture (\eqn{K} larger than the number of clusters) the extra
-components empty out if \eqn{e_0 < d / 2}, where \eqn{d} is the number of free
-parameters of one component, and instead duplicate occupied components if
-\eqn{e_0 > d / 2} (Rousseau and Mengersen, 2011). The defaults give a prior
-mean of \eqn{a = 20}, so with a large \code{K} the extra components empty
-out, but with \code{K} of about 5 or less the prior is not sparse. Adjust
-\code{mass_shape} and \code{mass_rate} to your \code{K}. (ii) \eqn{\phi}
-multiplies the probability that an item takes the same component in two
-views by \eqn{1 + \phi}; the default prior has median around 8 and mean
-10, which expresses an expectation of strong agreement between views. If you
-expect weaker sharing, lower the prior mean. (iii) Use
+\eqn{a}, each component has Dirichlet parameter \eqn{e_0 = a / K}. For an
+overfitted mixture (\eqn{K} larger than the number of clusters) Rousseau and
+Mengersen (2011, Theorem 1) show that if \eqn{e_0 < d / 2}, where \eqn{d} is the
+dimension of the component-specific parameter, the posterior weights of the
+superfluous components tend to zero (they empty), whereas if
+\eqn{e_0 > d / 2} the superfluous components duplicate occupied ones and keep
+non-negligible weight. The result is asymptotic in the number of items, for
+fixed \eqn{K} and a fixed weight prior, and needs the component density to be
+regular and strongly identifiable. It does not cover a random concentration
+\eqn{a} (as here) or the coupling between views, so treat it as guidance on
+where the prior should sit rather than a guarantee. \eqn{d} is \eqn{2P}
+for \code{"G"}, \eqn{P + P(P + 1) / 2} for \code{"MVN"} and \code{"TAGM"} and
+the sum over measurements of (number of categories - 1) for \code{"C"}.
+\code{\link{callMDI}} reports a message when the prior median of
+\eqn{a / K} exceeds \eqn{d / 2}. With the defaults (prior median of \eqn{a}
+about 17) that happens when \eqn{K} is small relative to \eqn{d}, so lower
+\code{mass_shape} or raise \code{mass_rate} to put \eqn{a / K} below
+\eqn{d / 2}. (ii) \eqn{\phi} multiplies the probability that an item takes the
+same component in two views by \eqn{1 + \phi}; the default prior has median
+around 8 and mean 10, which expresses an expectation of strong agreement
+between views. If you expect weaker sharing, lower the prior mean. (iii) Use
 \code{\link{simulatePriorPredictive}} to look at datasets and cluster
 agreement that these choices imply before fitting.
 
@@ -73,12 +82,11 @@ standard for finite mixtures (Fraley and Raftery, 2007): component means
 degrees of freedom and scale \eqn{\mathrm{tr}(S)/(P K^{2/P}) I} for
 \code{"MVN"}/\code{"TAGM"} (independent normal-inverse-gamma with 3 degrees
 of freedom for \code{"G"}), and Dirichlet priors with total concentration 1
-equal to the observed category frequencies for \code{"C"}. Because the data
-set these hyperparameters, the posterior uses the data twice (weakly, through
-two location/scale summaries). \code{"GP"}/\code{"TAGPM"} views use
-log-normal(0, 1) priors on the amplitude, length scale and noise variance,
-which assume the data are on a scale of order one: \strong{standardise GP
-views}. Outliers (\code{"TAGM"}, \code{"TAGPM"}) have weight
+equal to the observed category frequencies for \code{"C"}. The variance scale
+is pooled across components and the Gaussian process views have guarded,
+partially pooled priors; see \code{\link{densityPrior}}. Because the data
+set the centres of these priors, the posterior uses the data twice (weakly,
+through location/scale summaries). Outliers (\code{"TAGM"}, \code{"TAGPM"}) have weight
 \eqn{\mathrm{Beta}(2, 10)} and a multivariate t with 4 degrees of freedom,
 the data mean and half of the data covariance (Crook et al., 2018).
 }
@@ -95,7 +103,7 @@ datasets. \emph{Bioinformatics}, 28(24), 3290-3297.
 
 Rousseau, J. and Mengersen, K. (2011). Asymptotic behaviour of the posterior
 distribution in overfitted mixture models. \emph{Journal of the Royal
-Statistical Society B}, 73(5), 689-710.
+Statistical Society B}, 73(5), 689-710. \doi{10.1111/j.1467-9868.2011.00781.x}
 
 Fraley, C. and Raftery, A. E. (2007). Bayesian regularization for normal
 mixture estimation and model-based clustering. \emph{Journal of

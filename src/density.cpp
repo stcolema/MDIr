@@ -11,11 +11,28 @@ using namespace arma ;
 // =============================================================================
 // virtual density class
 
+arma::vec resolveDensityPrior(const arma::vec& prior) {
+  // scale_pool_shape (0 switches pooling of variance scales off), gp_pool (0/1), 
+  // gp_min_length (grid units), gp_center_sd, gp_pool_sd_scale
+  arma::vec out = {2.0, 1.0, 1.0, 2.0, 1.0};
+  if(prior.n_elem == 0) {
+    return out;
+  }
+  if(prior.n_elem != 5 || !prior.is_finite() || prior(0) < 0.0 
+     || (prior(1) != 0.0 && prior(1) != 1.0) || prior(2) <= 0.0 
+     || prior(3) <= 0.0 || prior(4) <= 0.0) {
+    Rcpp::stop("Invalid density prior options; see densityPrior().");
+  }
+  return prior;
+}
+
 density::density(
   arma::uword _K,
   arma::uvec _labels,
-  arma::mat _X)
+  arma::mat _X,
+  arma::vec _density_prior)
 {
+  density_prior = resolveDensityPrior(_density_prior);
   K = _K;
   labels = _labels;
   X = _X;
@@ -28,8 +45,20 @@ density::density(
 };
 
 void density::sampleParameters(const arma::umat& members, const arma::uvec& non_outliers) {
+  arma::uvec is_occupied(K, arma::fill::zeros);
   for(uword k = 0; k < K; k++) {
-    sampleKthComponentParameters(k, members, non_outliers);
+    is_occupied(k) = (accu((members.col(k) == 1) && (non_outliers == 1)) > 0) ? 1 : 0;
+  }
+  const arma::uvec occupied = find(is_occupied == 1);
+  
+  for(uword i = 0; i < occupied.n_elem; i++) {
+    sampleKthComponentParameters(occupied(i), members, non_outliers);
+  }
+  updatePooledHyperparameters(occupied);
+  for(uword k = 0; k < K; k++) {
+    if(is_occupied(k) == 0) {
+      sampleKthComponentParameters(k, members, non_outliers);
+    }
   }
 };
 

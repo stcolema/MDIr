@@ -39,6 +39,8 @@ using namespace arma ;
 //' saved iteration.
 //' @param prior Optional vector of MDI-level prior hyperparameters (mass shape, 
 //' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
+//' @param density_prior Options of the density-level priors (variance scale 
+//' pooling and Gaussian process priors), see `densityPrior()` in R.
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -53,7 +55,8 @@ Rcpp::List runMDI(
   arma::field< arma::vec > proposal_windows,
   bool save_parameters,
   bool save_imputed,
-  arma::vec prior
+  arma::vec prior,
+  arma::vec density_prior
 );
 
 #endif /* RUNMDI_H */

@@ -38,6 +38,7 @@
 #' in every view.
 #' @param n_datasets Number of datasets to simulate.
 #' @param prior MDI-level priors, see \code{\link{mdiPrior}}.
+#' @param density_prior Density-level priors, see \code{\link{densityPrior}}.
 #' @param mimic_missingness If \code{TRUE} the entries that are \code{NA} in
 #' \code{X} are set to \code{NA} in every simulated dataset so that summaries
 #' compare like with like (this assumes missingness is independent of the
@@ -65,6 +66,7 @@ simulatePriorPredictive <- function(X,
                                     K = NULL,
                                     n_datasets = 20,
                                     prior = mdiPrior(),
+                                    density_prior = densityPrior(),
                                     mimic_missingness = TRUE) {
   X <- .asViewList(X)
   checkDataCorrectInput(X, types)
@@ -78,7 +80,8 @@ simulatePriorPredictive <- function(X,
   }
   codes <- .typeCodes(types)
   raw <- simulatePriorPredictiveCpp(X, as.integer(K), codes$density, codes$outlier,
-                                    as.integer(n_datasets), as.numeric(prior))
+                                    as.integer(n_datasets), as.numeric(prior),
+                                    as.numeric(density_prior))
 
   replicates <- lapply(raw, function(r) {
     lapply(seq_len(V), function(v) {
@@ -195,8 +198,10 @@ simulatePosteriorPredictive <- function(mcmc_output,
   }
 
   prior <- if (is.null(first$prior)) mdiPrior() else first$prior
+  density_prior <- if (is.null(first$density_prior)) densityPrior() else first$density_prior
   cubes <- simulatePosteriorPredictiveCpp(X, as.integer(K), codes$density, codes$outlier,
-                                          parameters, allocations, outliers, as.numeric(prior))
+                                          parameters, allocations, outliers, as.numeric(prior),
+                                          as.numeric(density_prior))
 
   replicates <- lapply(seq_len(n_pick), function(i) {
     lapply(seq_len(V), function(v) {

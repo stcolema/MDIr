@@ -36,6 +36,7 @@ using namespace arma ;
 //' @param proposal_windows List/field of vectors
 //' @param save_dir Directory to save MCMC samples to
 //' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
+//' @param density_prior Options of the density-level priors (see `runMDI`).
 //' @return Nothing; one binary file per saved sample is written to `save_dir`.
 // [[Rcpp::export]]
 void runMDIWriteToFile(
@@ -49,7 +50,8 @@ void runMDIWriteToFile(
      arma::umat fixed,
      arma::field< arma::vec > proposal_windows,
      std::string save_dir,
-     arma::vec prior
+     arma::vec prior,
+     arma::vec density_prior
  );
 
 #endif /* RUNMDIWRITETOFILE_H */

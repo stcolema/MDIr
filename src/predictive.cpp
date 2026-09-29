@@ -18,11 +18,12 @@ std::unique_ptr<mdi> buildModel(
     const arma::uvec& K,
     const arma::uvec& mixture_types,
     const arma::uvec& outlier_types,
-    const arma::vec& prior
+    const arma::vec& prior,
+    const arma::vec& density_prior
 ) {
   const uword L = X.n_elem, N = X(0).n_rows;
   arma::umat labels(N, L, arma::fill::zeros), fixed(N, L, arma::fill::zeros);
-  return std::unique_ptr<mdi>(new mdi(X, mixture_types, outlier_types, K, labels, fixed, prior));
+  return std::unique_ptr<mdi>(new mdi(X, mixture_types, outlier_types, K, labels, fixed, prior, density_prior));
 }
 
 }
@@ -33,13 +34,14 @@ std::unique_ptr<mdi> buildModel(
 //' @param X Data matrix. Non-finite entries are treated as missing.
 //' @param K Number of components.
 //' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).
+//' @param density_prior Density-level prior options (see `runMDI`).
 //' @return A named list of hyperparameters.
 //' @keywords internal
 // [[Rcpp::export]]
-Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixture_type) {
+Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior) {
   arma::uvec labels(X.n_rows, arma::fill::zeros);
   densityFactory::densityType val = static_cast<densityFactory::densityType>(mixture_type);
-  std::unique_ptr<density> d = densityFactory::createDensity(val, K, labels, X);
+  std::unique_ptr<density> d = densityFactory::createDensity(val, K, labels, X, density_prior);
   return d->hyperparameterList();
 }
 
@@ -53,6 +55,7 @@ Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixtur
 //' @param outlier_types Integer outlier component codes.
 //' @param n_datasets Number of datasets to simulate.
 //' @param prior Optional MDI-level prior vector (see `runMDI`).
+//' @param density_prior Density-level prior options (see `runMDI`).
 //' @return A list with one entry per dataset holding `data` (list of matrices), 
 //' `labels`, `outliers`, `mass`, `phis` and `weights`.
 //' @keywords internal
@@ -63,9 +66,10 @@ Rcpp::List simulatePriorPredictiveCpp(
     arma::uvec mixture_types,
     arma::uvec outlier_types,
     arma::uword n_datasets,
-    arma::vec prior
+    arma::vec prior,
+    arma::vec density_prior
 ) {
-  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior);
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
   const uword L = model->L, N = model->N;
   
   Rcpp::List out(n_datasets);
@@ -118,6 +122,7 @@ Rcpp::List simulatePriorPredictiveCpp(
 //' @param allocations Cube (draws x N x L) of sampled labels (as doubles).
 //' @param outliers Cube (draws x N x L) of sampled outlier indicators.
 //' @param prior Optional MDI-level prior vector (see `runMDI`).
+//' @param density_prior Density-level prior options (see `runMDI`).
 //' @return A list with one entry per view: a cube (draws x N x P) of replicates.
 //' @keywords internal
 // [[Rcpp::export]]
@@ -129,9 +134,10 @@ Rcpp::List simulatePosteriorPredictiveCpp(
     arma::field<arma::mat> parameters,
     arma::cube allocations,
     arma::cube outliers,
-    arma::vec prior
+    arma::vec prior,
+    arma::vec density_prior
 ) {
-  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior);
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
   const uword L = model->L, N = model->N, n_draws = allocations.n_rows;
   
   Rcpp::List out(L);
@@ -236,4 +242,44 @@ Rcpp::List mvtImputationCheckCpp(arma::mat X, arma::uvec missing_cols, arma::uwo
     imputed.row(r) = x_new.t();
   }
   return Rcpp::List::create(Rcpp::Named("direct") = direct, Rcpp::Named("imputed") = imputed);
+}
+
+//' @title Test hook: inverse-gamma calibration
+//' @description Inverse-gamma parameters with `tail` probability below `lower` and
+//' above `upper` (used for the Gaussian process length scale prior).
+//' @param lower,upper Bounds.
+//' @param tail Tail probability.
+//' @return c(shape, rate).
+//' @keywords internal
+// [[Rcpp::export]]
+arma::vec calibrateInverseGammaCpp(double lower, double upper, double tail) {
+  return calibrateInverseGamma(lower, upper, tail);
+}
+
+//' @title Test hook: population update of the GP hyperparameters
+//' @description Runs the update of the mean and sd of a population of log
+//' hyperparameters `y` repeatedly with `y` held fixed, so the draws can be 
+//' compared with the analytic posterior of (m, s) given `y`.
+//' @param y Log hyperparameters of the occupied components.
+//' @param centre Prior mean of the population mean.
+//' @param center_sd Prior sd of the population mean.
+//' @param pool_sd_scale Scale of the half-normal prior on the population sd.
+//' @param n_iter Number of updates.
+//' @return A matrix with columns m and s.
+//' @keywords internal
+// [[Rcpp::export]]
+arma::mat gpPopulationCheckCpp(arma::vec y, double centre, double center_sd, 
+                               double pool_sd_scale, arma::uword n_iter) {
+  arma::mat X(6, 3, arma::fill::randn);
+  arma::uvec labels(6, arma::fill::zeros);
+  gp g(1, labels, X, arma::vec({2.0, 1.0, 1.0, center_sd, pool_sd_scale}));
+  g.log_variance_centre = centre;
+  double m = centre, s = 1.0;
+  arma::mat out(n_iter, 2);
+  for(uword it = 0; it < n_iter; it++) {
+    g.updatePopulation(y, m, s);
+    out(it, 0) = m;
+    out(it, 1) = s;
+  }
+  return out;
 }

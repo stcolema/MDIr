@@ -43,7 +43,8 @@ public:
     densityType type,
     arma::uword K,
     arma::uvec labels,
-    arma::mat X
+    arma::mat X,
+    arma::vec density_prior
   );
 };
 

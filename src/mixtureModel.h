@@ -80,7 +80,8 @@ public:
     arma::uword _K,
     arma::uvec _labels,
     arma::uvec _fixed,
-    arma::mat _X);
+    arma::mat _X,
+    arma::vec _density_prior);
   
   virtual ~mixtureModel() { };
   
@@ -91,7 +92,7 @@ public:
   
   void updateOutlierWeights();
   
-  void initialiseDensity(arma::uword type, const arma::mat& X);
+  void initialiseDensity(arma::uword type, const arma::mat& X, const arma::vec& density_prior);
   void initialiseOutlierComponent(arma::uword type, const arma::mat& X);
   void initialiseMixture(const arma::vec& log_weights, const arma::mat& log_upweights);
   

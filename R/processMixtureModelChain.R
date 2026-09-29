@@ -102,7 +102,7 @@ processMixtureModelChain <- function(mcmc_output,
   if (!is.null(mcmc_output$outlier_weights) && !is.matrix(mcmc_output$outlier_weights)) {
     mcmc_output$outlier_weights <- matrix(mcmc_output$outlier_weights, ncol = 1)
   }
-  for (nm in c("parameters", "imputed", "missing_cells")) {
+  for (nm in c("parameters", "imputed", "missing_cells", "pooled_hyperparameters")) {
     if (!is.null(mcmc_output[[nm]]) && !is.list(mcmc_output[[nm]])) {
       mcmc_output[[nm]] <- list(mcmc_output[[nm]])
     }

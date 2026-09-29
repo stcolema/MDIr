@@ -12,7 +12,7 @@ test_that("diagonal Gaussian parameters follow the normal-inverse-gamma posterio
   set.seed(11)
   N <- 25; P <- 2
   X <- cbind(rnorm(N, 2, 1.5), rnorm(N, -1, 0.5))
-  hp <- mdir:::densityHyperparameters(X, 1, 0)
+  hp <- mdir:::densityHyperparameters(X, 1, 0, numeric(0))
   out <- run_single_component(X, "G")
   theta <- out$parameters[[1]][-(1:200), , drop = FALSE]     # mu (P), variances (P)
   n <- N; kappa_n <- hp$kappa + n; nu_n <- hp$nu + n
@@ -35,7 +35,7 @@ test_that("MVN parameters follow the normal-inverse-Wishart posterior", {
   N <- 30; P <- 3
   Sig <- matrix(c(1, .5, .2, .5, 2, -.3, .2, -.3, .7), P)
   X <- matrix(rnorm(N * P), N) %*% chol(Sig) + rep(c(1, 0, -1), each = N)
-  hp <- mdir:::densityHyperparameters(X, 1, 1)
+  hp <- mdir:::densityHyperparameters(X, 1, 1, numeric(0))
   out <- run_single_component(X, "MVN")
   theta <- out$parameters[[1]][-(1:200), , drop = FALSE]
   n <- N; kappa_n <- hp$kappa + n; nu_n <- hp$nu + n
@@ -54,7 +54,7 @@ test_that("categorical probabilities follow the Dirichlet posterior", {
   set.seed(13)
   N <- 40
   X <- cbind(sample(0:2, N, TRUE, c(.6, .3, .1)), sample(0:1, N, TRUE))
-  hp <- mdir:::densityHyperparameters(X, 1, 2)
+  hp <- mdir:::densityHyperparameters(X, 1, 2, numeric(0))
   out <- run_single_component(X, "C")
   theta <- out$parameters[[1]][-(1:200), , drop = FALSE]
   start <- 0
@@ -69,12 +69,12 @@ test_that("categorical probabilities follow the Dirichlet posterior", {
 test_that("empirical-Bayes hyperparameters use only observed entries", {
   X <- cbind(c(1, 2, 3, 4, NA, NA), c(NA, 2, 4, 6, 8, 10))
   for (type in c(0, 1)) {
-    hp <- mdir:::densityHyperparameters(X, 2, type)
+    hp <- mdir:::densityHyperparameters(X, 2, type, numeric(0))
     expect_true(all(is.finite(unlist(hp))))
     expect_equal(as.numeric(hp$xi), c(2.5, 6))
   }
   # a column that is missing in the first row and complete elsewhere (the case
   # the old complete-row detection got wrong)
   X2 <- cbind(c(NA, 1:9), rnorm(10))
-  expect_true(all(is.finite(mdir:::densityHyperparameters(X2, 3, 0)$scale)))
+  expect_true(all(is.finite(mdir:::densityHyperparameters(X2, 3, 0, numeric(0))$scale)))
 })

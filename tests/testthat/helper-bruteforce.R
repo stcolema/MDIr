@@ -34,3 +34,16 @@ random_mdi_state <- function(K, phi_scale = 5, w_shape = 1) {
   if (L > 1) for (l in 1:(L - 1)) for (m in (l + 1):L) phi[l, m] <- phi[m, l] <- rgamma(1, 2, 2 / phi_scale)
   list(w = w, phi = phi)
 }
+
+# Effective sample size of a single chain via the split-chain estimator
+ess_of <- function(x) {
+  n <- length(x) %/% 2
+  rankNormalizedRhat(cbind(x[seq_len(n)], x[n + seq_len(n)]))$ess_bulk
+}
+
+# Posterior mean and sd of a density given on a grid
+grid_moments <- function(x, logdens) {
+  w <- exp(logdens - max(logdens)); w <- w / sum(w)
+  m <- sum(w * x)
+  c(mean = m, sd = sqrt(sum(w * x^2) - m^2))
+}

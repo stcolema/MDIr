@@ -23,7 +23,7 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
-#' @param save_parameters,save_imputed,prior See ``callMDI``.
+#' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
 #' @return A named list containing the sampled partitions, component weights,
 #' and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -53,7 +53,8 @@ callMixtureModel <- function(X,
                              proposal_windows = NULL,
                              save_parameters = TRUE,
                              save_imputed = FALSE,
-                             prior = mdiPrior()) {
+                             prior = mdiPrior(),
+                             density_prior = densityPrior()) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -121,7 +122,8 @@ callMixtureModel <- function(X,
     proposal_windows,
     save_parameters,
     save_imputed,
-    as.numeric(prior)
+    as.numeric(prior),
+    as.numeric(density_prior)
   )
 
   t_1 <- Sys.time()
@@ -139,6 +141,7 @@ callMixtureModel <- function(X,
   mcmc_output$observed_likelihood <- as.numeric(mcmc_output$observed_likelihood)
   mcmc_output$evidence <- NULL
   mcmc_output$parameters <- mcmc_output$parameters[[1]]
+  mcmc_output$pooled_hyperparameters <- mcmc_output$pooled_hyperparameters[[1]]
   mcmc_output$imputed <- mcmc_output$imputed[[1]]
   mcmc_output$missing_cells <- mcmc_output$missing_cells[[1]]
   mcmc_output$outlier_weights <- mcmc_output$outlier_weights[, 1]

@@ -69,6 +69,9 @@ public:
     K_unfixed,          // Number of components not fixed
     K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
 
+  // Options of the density-level priors (see resolveDensityPrior())
+  arma::vec density_prior;
+  
   arma::vec phis,
     mass,
     complete_likelihood_vec,
@@ -111,7 +114,8 @@ public:
     arma::uvec _K,
     arma::umat _labels,
     arma::umat _fixed,
-    arma::vec _prior = arma::vec()
+    arma::vec _prior = arma::vec(),
+    arma::vec _density_prior = arma::vec()
   ) ;
 
   virtual ~mdi() { };

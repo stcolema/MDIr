@@ -12,8 +12,8 @@ using namespace arma ;
 // =============================================================================
 // gaussian class
 
-gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X) :
-  density(_K, _labels, _X)
+gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior) :
+  density(_K, _labels, _X, _density_prior)
 {
   mu.zeros(P, K);
   variances.ones(P, K);
@@ -28,6 +28,10 @@ gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X) :
 
   // These use only the observed entries
   empiricalBayesHyperparameters();
+  
+  // The empirical scale is the prior mean of the pooled scale
+  scale_shape = density_prior(0);
+  scale_prior_mean = scale;
 
   identifyMissingValues();
   initializeMissingValues();
@@ -53,6 +57,8 @@ Rcpp::List gaussian::hyperparameterList() const {
   return Rcpp::List::create(
     Rcpp::Named("xi") = xi,
     Rcpp::Named("scale") = scale,
+    Rcpp::Named("scale_prior_mean") = scale_prior_mean,
+    Rcpp::Named("scale_pooling_shape") = scale_shape,
     Rcpp::Named("kappa") = kappa,
     Rcpp::Named("nu") = nu
   );
@@ -80,7 +86,30 @@ void gaussian::sampleMuPrior() {
   }
 };
 
+void gaussian::updatePooledHyperparameters(const arma::uvec& occupied) {
+  if(scale_shape <= 0.0) {
+    return;
+  }
+  const double shape = scale_shape + 0.5 * nu * (double) occupied.n_elem;
+  for(uword p = 0; p < P; p++) {
+    double rate = scale_shape / scale_prior_mean(p);
+    for(uword i = 0; i < occupied.n_elem; i++) {
+      rate += 0.5 * precisions(p, occupied(i));
+    }
+    scale(p) = rGamma(shape, rate);
+  }
+}
+
+arma::vec gaussian::pooledHyperparameters() const {
+  return scale;
+}
+
 void gaussian::sampleFromPriors() {
+  if(scale_shape > 0.0) {
+    for(uword p = 0; p < P; p++) {
+      scale(p) = rGamma(scale_shape, scale_shape / scale_prior_mean(p));
+    }
+  }
   sampleVariancePrior();
   sampleMuPrior();
 };

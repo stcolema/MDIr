@@ -231,6 +231,16 @@ assessConvergence <- function(mcmc_chains,
       apply(ch$allocations[, , v, drop = TRUE], 1, function(z) length(unique(z)))
     })
   }
+  # Hyperparameters pooled across components (variance scales, GP populations)
+  if (!is.null(first$pooled_hyperparameters)) {
+    for (v in seq_len(V)) {
+      n_pooled <- ncol(first$pooled_hyperparameters[[v]])
+      for (j in seq_len(if (is.null(n_pooled)) 0 else n_pooled)) {
+        add_trace(paste0("pooled_hyperparameter[", v, ",", j, "]"),
+                  function(ch) ch$pooled_hyperparameters[[v]][, j])
+      }
+    }
+  }
   if (V > 1) {
     pairs <- utils::combn(V, 2)
     for (i in seq_len(ncol(pairs))) {

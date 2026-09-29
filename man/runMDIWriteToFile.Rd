@@ -15,7 +15,8 @@ runMDIWriteToFile(
   fixed,
   proposal_windows,
   save_dir,
-  prior
+  prior,
+  density_prior
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ label.}
 \item{save_dir}{Directory to save MCMC samples to}
 
 \item{prior}{Optional vector of MDI-level prior hyperparameters (see `runMDI`).}
+
+\item{density_prior}{Options of the density-level priors (see `runMDI`).}
 }
 \value{
 Nothing; one binary file per saved sample is written to `save_dir`.

@@ -22,7 +22,7 @@
 #' view. For views modelled using a Gaussian process, the first entry is the
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
-#' @param save_parameters,save_imputed,prior See ``callMDI``.
+#' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
 #' @examples
@@ -62,8 +62,13 @@ runMCMCChains <- function(X,
                           proposal_windows = NULL,
                           save_parameters = TRUE,
                           save_imputed = FALSE,
-                          prior = mdiPrior()) {
+                          prior = mdiPrior(),
+                          density_prior = densityPrior()) {
   mcmc_lst <- vector("list", n_chains)
+
+  # report prior warnings once rather than for every chain
+  if (is.null(K)) K_used <- rep(floor(nrow(X[[1]]) / 2), length(X)) else K_used <- K
+  for (m in .checkSparsity(X, types, K_used, prior)) message(m)
 
   mcmc_lst <- lapply(mcmc_lst, function(x) {
     callMDI(X,
@@ -78,7 +83,9 @@ runMCMCChains <- function(X,
       proposal_windows = proposal_windows,
       save_parameters = save_parameters,
       save_imputed = save_imputed,
-      prior = prior
+      prior = prior,
+      density_prior = density_prior,
+      check_prior = FALSE
     )
   })
 

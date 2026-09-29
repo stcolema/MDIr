@@ -22,10 +22,12 @@ mdi::mdi(
   arma::uvec _K,
   arma::umat _labels,
   arma::umat _fixed,
-  arma::vec _prior
+  arma::vec _prior,
+  arma::vec _density_prior
 ) {
 
   setPrior(_prior);
+  density_prior = _density_prior;
   mixture_types = _mixture_types;
   outlier_types = _outlier_types;
 
@@ -150,7 +152,8 @@ void mdi::initialiseMixtures() {
         K(l),
         labels.col(l),
         fixed.col(l),
-        X(l)
+        X(l),
+        density_prior
       ))
     );
     non_outliers.col(l) = mixtures[l]->non_outliers;

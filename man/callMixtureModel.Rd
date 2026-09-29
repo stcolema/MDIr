@@ -17,7 +17,8 @@ callMixtureModel(
   proposal_windows = NULL,
   save_parameters = TRUE,
   save_imputed = FALSE,
-  prior = mdiPrior()
+  prior = mdiPrior(),
+  density_prior = densityPrior()
 )
 }
 \arguments{
@@ -53,7 +54,7 @@ view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
 
-\item{save_parameters, save_imputed, prior}{See ``callMDI``.}
+\item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

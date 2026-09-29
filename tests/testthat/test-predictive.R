@@ -12,7 +12,7 @@ test_that("prior predictive draws follow the prior (MVN, one view)", {
   expect_length(sims$replicates, 200)
   expect_equal(dim(sims$replicates[[1]][[1]]), dim(X))
   # Data are drawn around the data-driven prior mean xi with large spread
-  hp <- mdir:::densityHyperparameters(X, 3, 1)
+  hp <- mdir:::densityHyperparameters(X, 3, 1, numeric(0))
   first_col_means <- vapply(sims$replicates, function(r) mean(r[[1]][, 1]), numeric(1))
   expect_lt(abs(mean(first_col_means) - hp$xi[1]), 4 * sd(first_col_means) / sqrt(200) + 0.5)
   expect_true(all(vapply(sims$replicates, function(r) all(is.finite(r[[1]])), logical(1))))

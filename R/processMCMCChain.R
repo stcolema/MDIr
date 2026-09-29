@@ -112,6 +112,9 @@ processMCMCChain <- function(mcmc_output, burn,
     if (!is.null(mcmc_output$parameters) && length(mcmc_output$parameters[[v]]) > 0) {
       new_output$parameters[[v]] <- mcmc_output$parameters[[v]][-dropped_indices, , drop = FALSE]
     }
+    if (!is.null(mcmc_output$pooled_hyperparameters) && length(mcmc_output$pooled_hyperparameters[[v]]) > 0) {
+      new_output$pooled_hyperparameters[[v]] <- mcmc_output$pooled_hyperparameters[[v]][-dropped_indices, , drop = FALSE]
+    }
     if (!is.null(mcmc_output$imputed) && length(mcmc_output$imputed[[v]]) > 0) {
       new_output$imputed[[v]] <- mcmc_output$imputed[[v]][-dropped_indices, , drop = FALSE]
     }
