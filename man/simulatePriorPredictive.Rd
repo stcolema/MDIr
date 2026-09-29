@@ -10,6 +10,7 @@ simulatePriorPredictive(
   K = NULL,
   n_datasets = 20,
   prior = mdiPrior(),
+  density_prior = densityPrior(),
   mimic_missingness = TRUE
 )
 }
@@ -26,6 +27,8 @@ in every view.}
 \item{n_datasets}{Number of datasets to simulate.}
 
 \item{prior}{MDI-level priors, see \code{\link{mdiPrior}}.}
+
+\item{density_prior}{Density-level priors, see \code{\link{densityPrior}}.}
 
 \item{mimic_missingness}{If \code{TRUE} the entries that are \code{NA} in
 \code{X} are set to \code{NA} in every simulated dataset so that summaries

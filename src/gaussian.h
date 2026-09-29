@@ -16,6 +16,10 @@ using namespace arma ;
 // Independent normal features within each component (diagonal covariance) with
 // a conjugate normal-inverse-gamma prior per feature,
 //   sigma2_kp ~ InvGamma(nu / 2, scale_p / 2),  mu_kp | sigma2_kp ~ N(xi_p, sigma2_kp / kappa).
+// The scale is pooled across components: scale_p ~ Gamma(a, a / c_p) with shape 
+// a = density_prior[0] and prior mean c_p = (mean marginal variance) / K^{2/P}
+// (a = 0 fixes scale at c). Then 
+//   scale_p | sigma2_occupied ~ Gamma(a + n_occ nu / 2, a / c_p + sum_k 1 / (2 sigma2_kp)).
 class gaussian : virtual public density
 {
 public:
@@ -29,7 +33,10 @@ public:
   // deviations.
   arma::mat mu, variances, precisions, log_precisions;
 
-  gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X);
+  double scale_shape;
+  arma::vec scale_prior_mean;
+  
+  gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior = arma::vec());
 
   virtual ~gaussian() { };
 
@@ -42,6 +49,8 @@ public:
   void sampleVariancePrior();
   void sampleMuPrior();
   void sampleFromPriors() override;
+  void updatePooledHyperparameters(const arma::uvec& occupied) override;
+  arma::vec pooledHyperparameters() const override;
 
   void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
 

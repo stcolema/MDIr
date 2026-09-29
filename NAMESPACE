@@ -59,6 +59,7 @@ useDynLib(mdir)
 ## S3 methods
 S3method(print, mdir_convergence)
 S3method(print, mdir_prior)
+S3method(print, mdir_density_prior)
 
 ## rlang pronoun used in ggplot2 aesthetics
 importFrom(rlang, .data)

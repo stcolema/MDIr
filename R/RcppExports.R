@@ -257,10 +257,11 @@ pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
 #' @param X Data matrix. Non-finite entries are treated as missing.
 #' @param K Number of components.
 #' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).
+#' @param density_prior Density-level prior options (see `runMDI`).
 #' @return A named list of hyperparameters.
 #' @keywords internal
-densityHyperparameters <- function(X, K, mixture_type) {
-    .Call(`_mdir_densityHyperparameters`, X, K, mixture_type)
+densityHyperparameters <- function(X, K, mixture_type, density_prior) {
+    .Call(`_mdir_densityHyperparameters`, X, K, mixture_type, density_prior)
 }
 
 #' @title Simulate datasets from the prior predictive distribution
@@ -273,11 +274,12 @@ densityHyperparameters <- function(X, K, mixture_type) {
 #' @param outlier_types Integer outlier component codes.
 #' @param n_datasets Number of datasets to simulate.
 #' @param prior Optional MDI-level prior vector (see `runMDI`).
+#' @param density_prior Density-level prior options (see `runMDI`).
 #' @return A list with one entry per dataset holding `data` (list of matrices), 
 #' `labels`, `outliers`, `mass`, `phis` and `weights`.
 #' @keywords internal
-simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_datasets, prior) {
-    .Call(`_mdir_simulatePriorPredictiveCpp`, X, K, mixture_types, outlier_types, n_datasets, prior)
+simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_datasets, prior, density_prior) {
+    .Call(`_mdir_simulatePriorPredictiveCpp`, X, K, mixture_types, outlier_types, n_datasets, prior, density_prior)
 }
 
 #' @title Simulate replicate datasets from the posterior predictive distribution
@@ -293,10 +295,11 @@ simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_dat
 #' @param allocations Cube (draws x N x L) of sampled labels (as doubles).
 #' @param outliers Cube (draws x N x L) of sampled outlier indicators.
 #' @param prior Optional MDI-level prior vector (see `runMDI`).
+#' @param density_prior Density-level prior options (see `runMDI`).
 #' @return A list with one entry per view: a cube (draws x N x P) of replicates.
 #' @keywords internal
-simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior) {
-    .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior)
+simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior) {
+    .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior)
 }
 
 #' @title Test hook: MDI normalising constant
@@ -342,6 +345,32 @@ mvtImputationCheckCpp <- function(X, missing_cols, n_rep) {
     .Call(`_mdir_mvtImputationCheckCpp`, X, missing_cols, n_rep)
 }
 
+#' @title Test hook: inverse-gamma calibration
+#' @description Inverse-gamma parameters with `tail` probability below `lower` and
+#' above `upper` (used for the Gaussian process length scale prior).
+#' @param lower,upper Bounds.
+#' @param tail Tail probability.
+#' @return c(shape, rate).
+#' @keywords internal
+calibrateInverseGammaCpp <- function(lower, upper, tail) {
+    .Call(`_mdir_calibrateInverseGammaCpp`, lower, upper, tail)
+}
+
+#' @title Test hook: population update of the GP hyperparameters
+#' @description Runs the update of the mean and sd of a population of log
+#' hyperparameters `y` repeatedly with `y` held fixed, so the draws can be 
+#' compared with the analytic posterior of (m, s) given `y`.
+#' @param y Log hyperparameters of the occupied components.
+#' @param centre Prior mean of the population mean.
+#' @param center_sd Prior sd of the population mean.
+#' @param pool_sd_scale Scale of the half-normal prior on the population sd.
+#' @param n_iter Number of updates.
+#' @return A matrix with columns m and s.
+#' @keywords internal
+gpPopulationCheckCpp <- function(y, centre, center_sd, pool_sd_scale, n_iter) {
+    .Call(`_mdir_gpPopulationCheckCpp`, y, centre, center_sd, pool_sd_scale, n_iter)
+}
+
 #' @title Read MCMC Samples
 #' @description C++ function to read the files saved from 
 #' `runMDIWriteToFile.cpp` to disk and compile them into a matrix.
@@ -375,9 +404,11 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' saved iteration.
 #' @param prior Optional vector of MDI-level prior hyperparameters (mass shape, 
 #' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
+#' @param density_prior Options of the density-level priors (variance scale 
+#' pooling and Gaussian process priors), see `densityPrior()` in R.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -399,8 +430,9 @@ runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, p
 #' @param proposal_windows List/field of vectors
 #' @param save_dir Directory to save MCMC samples to
 #' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
+#' @param density_prior Options of the density-level priors (see `runMDI`).
 #' @return Nothing; one binary file per saved sample is written to `save_dir`.
-runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior) {
-    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior))
+runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior) {
+    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior))
 }
 

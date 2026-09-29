@@ -19,7 +19,8 @@ Rcpp::List runMDI(
     arma::field< arma::vec > proposal_windows,
     bool save_parameters,
     bool save_imputed,
-    arma::vec prior
+    arma::vec prior,
+    arma::vec density_prior
 ) {
   
   if(thin < 1) {
@@ -29,7 +30,7 @@ Rcpp::List runMDI(
   const uword L = Y.n_elem, n_saved = R / thin + 1;
   uword save_ind = 0;
   
-  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior);
+  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior);
   
   for(uword l = 0; l < L; l++) {
     // Only Gaussian process views use proposal windows
@@ -56,13 +57,14 @@ Rcpp::List runMDI(
   ucube N_k_record(my_mdi.K_max, L, n_saved, arma::fill::zeros);
   
   field< cube > alloc(L);
-  field< mat > hyper_record(L), parameter_record(L), imputed_record(L);
+  field< mat > hyper_record(L), parameter_record(L), imputed_record(L), pooled_record(L);
   field< umat > missing_cells(L);
   field< vec > acceptance_count(L);
   
   for(uword l = 0; l < L; l++) {
     alloc(l) = zeros<cube>(N, K(l), n_saved);
     hyper_record(l) = zeros< mat >(n_saved, 3 * K(l));
+    pooled_record(l) = zeros< mat >(n_saved, my_mdi.mixtures[l]->density_ptr->pooledHyperparameters().n_elem);
     acceptance_count(l) = zeros< vec >(3 * K(l));
     
     if(save_parameters) {
@@ -93,6 +95,9 @@ Rcpp::List runMDI(
       const auto& density_ptr = my_mdi.mixtures[l]->density_ptr;
       if(mixture_types(l) == 3) {
         hyper_record(l).row(s) = density_ptr->hypers.t();
+      }
+      if(pooled_record(l).n_cols > 0) {
+        pooled_record(l).row(s) = density_ptr->pooledHyperparameters().t();
       }
       if(save_parameters) {
         parameter_record(l).row(s) = density_ptr->parameters().t();
@@ -149,6 +154,7 @@ Rcpp::List runMDI(
       Named("acceptance_count") = acceptance_count,
       Named("mass_acceptance_rate") = my_mdi.mass_acceptance_count / (double) std::max<uword>(R, 1),
       Named("parameters") = parameter_record,
+      Named("pooled_hyperparameters") = pooled_record,
       Named("imputed") = imputed_record,
       Named("missing_cells") = missing_cells
     )

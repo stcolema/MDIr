@@ -26,6 +26,7 @@
 #' @param dir_path A string for the directory to save samples to. This cannot be
 #' a shorthand containing the `~` symbol.
 #' @param prior MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.
+#' @param density_prior Density-level prior options, see \code{\link{densityPrior}}.
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -61,7 +62,8 @@ callMDIWritingToFile <- function(X,
                     initial_labels_as_intended = FALSE,
                     proposal_windows = NULL,
                     dir_path = tempdir(),
-                    prior = mdiPrior()) {
+                    prior = mdiPrior(),
+                    density_prior = densityPrior()) {
   
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -131,7 +133,8 @@ callMDIWritingToFile <- function(X,
     fixed,
     proposal_windows,
     dir_path,
-    as.numeric(prior)
+    as.numeric(prior),
+    as.numeric(density_prior)
   )
   
   run_details <- list()

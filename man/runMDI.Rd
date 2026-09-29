@@ -16,7 +16,8 @@ runMDI(
   proposal_windows,
   save_parameters,
   save_imputed,
-  prior
+  prior,
+  density_prior
 )
 }
 \arguments{
@@ -51,6 +52,9 @@ saved iteration.}
 
 \item{prior}{Optional vector of MDI-level prior hyperparameters (mass shape, 
 mass rate, weight rate, phi shape, phi rate). Empty for the defaults.}
+
+\item{density_prior}{Options of the density-level priors (variance scale 
+pooling and Gaussian process priors), see `densityPrior()` in R.}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

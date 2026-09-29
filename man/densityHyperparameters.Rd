@@ -4,7 +4,7 @@
 \alias{densityHyperparameters}
 \title{Data-driven prior hyperparameters of a density}
 \usage{
-densityHyperparameters(X, K, mixture_type)
+densityHyperparameters(X, K, mixture_type, density_prior)
 }
 \arguments{
 \item{X}{Data matrix. Non-finite entries are treated as missing.}
@@ -12,6 +12,8 @@ densityHyperparameters(X, K, mixture_type)
 \item{K}{Number of components.}
 
 \item{mixture_type}{Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).}
+
+\item{density_prior}{Density-level prior options (see `runMDI`).}
 }
 \value{
 A named list of hyperparameters.

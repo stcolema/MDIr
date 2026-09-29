@@ -1,3 +1,45 @@
+# mdir 0.10.1
+
+## Partial pooling and guarded Gaussian process priors
+
+* **Variance scale pooled across components** (`"MVN"`, `"TAGM"`, `"G"`). The
+  inverse-Wishart / inverse-gamma scale, previously a fixed data-driven value, is
+  now diagonal with a Gamma hyperprior centred on that value, updated from the
+  occupied components (the exact conditional with empty components integrated
+  out). `densityPrior(scale_pool_shape = 0)` restores the fixed scale. The
+  pooled scales are saved as `pooled_hyperparameters` and monitored by
+  `assessConvergence()`.
+* **Gaussian process views** (`"GP"`, `"TAGPM"`) have new priors:
+  * The length scale is now an actual length scale, `lambda` in
+    `a * exp(-d^2 / (2 * lambda^2))` (previously `lambda^2` was stored under the
+    name `length`, so saved values change meaning). It has a hard floor at
+    `gp_min_length` (default one measurement spacing) and an inverse-gamma prior
+    calibrated to put 1% of its mass below the floor and 1% above the extent of
+    the grid. On data with no structure, an unguarded prior put 94% of the
+    length-scale draws below one grid unit (median 0.09), where the kernel is
+    diagonal and the mean function is white noise; with the guard none fall below
+    the floor.
+  * Amplitude and noise variance have a log-normal population shared by the
+    components, centred on the average data variance, with a half-normal prior on
+    its sd. GP data no longer need to be standardised, and the mean function is
+    centred on the column means rather than zero.
+  * An interweaved non-centred amplitude move and a mixture of random-walk scales
+    improve mixing of the amplitude (effective sample size 7 to about 400 in a
+    test where the data barely constrain it).
+  * At least three measurements per item are required.
+* `densityPrior()` collects these options; `mdiPrior()` documentation now states
+  the Rousseau and Mengersen (2011) condition (`mass / K` below `d / 2` empties
+  superfluous components) with its assumptions (asymptotic, fixed weight prior,
+  regular kernel), and `callMDI()` reports a message when the prior median of
+  `mass / K` is above `d / 2` (`options(mdir.quiet = TRUE)` silences it).
+
+## Tests
+
+* Marginal posteriors of the pooled scales (one occupied component, with and
+  without an empty second component) and of the GP hyperparameters are compared
+  with exact numerical posteriors; the GP population update is compared with its
+  analytic conditional.
+
 # mdir 0.10.0
 
 This release corrects several errors in the sampler, removes the parallel

@@ -11,6 +11,9 @@
 # include "logLikelihoods.h"
 # include "genericFunctions.h"
 
+// Validates and fills the density-level prior options (empty gives the defaults)
+arma::vec resolveDensityPrior(const arma::vec& prior);
+
 using namespace arma ;
 
 // =============================================================================
@@ -69,10 +72,16 @@ public:
   arma::field<arma::uvec> observed_indices;
   arma::umat has_missing;
 
+  // Options for the density-level (hierarchical) priors, ordered as
+  //  (scale_pool_shape, gp_pool, gp_min_length, gp_center_sd, gp_pool_sd_scale);
+  // see resolveDensityPrior()
+  arma::vec density_prior;
+  
   density(
     arma::uword _K,
     arma::uvec _labels,
-    arma::mat _X);
+    arma::mat _X,
+    arma::vec _density_prior = arma::vec());
 
   virtual ~density() { };
 
@@ -83,7 +92,19 @@ public:
     const umat& members,
     const uvec& non_outliers
   ) = 0;
+  
+  // Updates the component parameters. Occupied components (those with at least 
+  // one non-outlier member) are updated first, then the pooled hyperparameters 
+  // given the occupied components only, then the empty components are drawn 
+  // from their prior given the new hyperparameters. Conditioning the 
+  // hyperparameters on the occupied components alone is the exact conditional
+  // with the empty components integrated out; using the empty ones too would 
+  // make the hyperparameters a random walk driven by their own prior draws.
   virtual void sampleParameters(const arma::umat& members, const arma::uvec& non_outliers);
+  
+  // Hyperparameters shared across components (partial pooling)
+  virtual void updatePooledHyperparameters(const arma::uvec& occupied) { }
+  virtual arma::vec pooledHyperparameters() const { return arma::vec(); }
 
   // === Likelihood ============================================================
   // Log-likelihood of the *observed* entries of item n in each / one component

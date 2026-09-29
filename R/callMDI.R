@@ -30,6 +30,13 @@
 #' @param prior MDI-level prior hyperparameters, created by
 #' \code{\link{mdiPrior}}. See its documentation for the defaults and how to
 #' check them with \code{\link{simulatePriorPredictive}}.
+#' @param density_prior Density-level (hierarchical) prior options, created by
+#' \code{\link{densityPrior}}: pooling of the variance scale across components and
+#' the priors of Gaussian process views, including a floor on the GP length scale.
+#' @param check_prior Logical. Report a message if the prior on the weights is on
+#' the side of the Rousseau and Mengersen (2011) threshold that duplicates rather
+#' than empties superfluous components (see \code{\link{mdiPrior}}). Set
+#' \code{options(mdir.quiet = TRUE)} to silence it globally.
 #' @param save_imputed Logical. Record the imputed value of every missing entry
 #' at every saved iteration (``FALSE`` by default).
 #' @return A named list containing the sampled partitions, component weights,
@@ -71,7 +78,9 @@ callMDI <- function(X,
                     proposal_windows = NULL,
                     save_parameters = TRUE,
                     save_imputed = FALSE,
-                    prior = mdiPrior()) {
+                    prior = mdiPrior(),
+                    density_prior = densityPrior(),
+                    check_prior = TRUE) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -108,6 +117,10 @@ callMDI <- function(X,
   # Check that the matrix indicating observed labels is correctly formatted.
   checkFixedInput(fixed, N, V)
 
+  if (check_prior) {
+    for (m in .checkSparsity(X, types, K, prior)) message(m)
+  }
+
   # Translate user input into appropriate types for C++ function
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
@@ -142,7 +155,8 @@ callMDI <- function(X,
     proposal_windows,
     save_parameters,
     save_imputed,
-    as.numeric(prior)
+    as.numeric(prior),
+    as.numeric(density_prior)
   )
   
   # Traces are returned as one-column matrices; use plain vectors
@@ -177,6 +191,7 @@ callMDI <- function(X,
   # Record hyperparameter choice
   mcmc_output$alpha <- alpha
   mcmc_output$prior <- prior
+  mcmc_output$density_prior <- density_prior
 
   # Indicate if the model was semi-supervised or unsupervised
   mcmc_output$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))

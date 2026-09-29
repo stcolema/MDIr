@@ -31,7 +31,11 @@ public:
   arma::mat scale, mu;
   arma::cube cov, cov_inv;
 
-  mvn(arma::uword _K, arma::uvec _labels, arma::mat _X);
+  // Pooling of the scale (see above)
+  double scale_shape;
+  arma::vec scale_prior_mean;
+  
+  mvn(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior = arma::vec());
 
   virtual ~mvn() { };
 
@@ -44,6 +48,8 @@ public:
   void sampleCovPrior();
   void sampleMuPrior();
   void sampleFromPriors() override;
+  void updatePooledHyperparameters(const arma::uvec& occupied) override;
+  arma::vec pooledHyperparameters() const override;
 
   void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
 

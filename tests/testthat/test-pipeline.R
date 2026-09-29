@@ -98,3 +98,36 @@ test_that("likelihood traces are extracted and plotted", {
   proc <- processMCMCChain(chains[[1]], burn = 50)
   expect_equal(min(getLikelihood(proc)$iteration), 55)
 })
+
+test_that("the sparsity check reports priors on the merging side of d / 2", {
+  op <- options(mdir.quiet = FALSE); on.exit(options(op))
+  set.seed(95)
+  X <- matrix(rnorm(60 * 2), 60); rownames(X) <- 1:60          # MVN with P = 2 has d = 5
+  # prior median of mass is about 17, so mass / K is 8.4 for K = 2 (> 2.5) and 0.85 for K = 20 (< 2.5)
+  expect_message(callMDI(list(X), R = 20, thin = 2, types = "MVN", K = 2), "Rousseau and Mengersen")
+  expect_no_message(callMDI(list(X), R = 20, thin = 2, types = "MVN", K = 20))
+  # once for a set of chains, not once per chain
+  msgs <- character(0)
+  withCallingHandlers(
+    runMCMCChains(list(X), 3, R = 20, thin = 2, types = "MVN", K = 2),
+    message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") }
+  )
+  expect_equal(sum(grepl("Rousseau", msgs)), 1)
+  expect_equal(mdir:::.componentDimension(X, "MVN"), 5)
+  expect_equal(mdir:::.componentDimension(X, "G"), 4)
+  expect_equal(mdir:::.componentDimension((X > 0) * 1, "C"), 2)
+})
+
+test_that("density prior options are validated and reach the sampler", {
+  expect_error(densityPrior(scale_pool_shape = -1), "non-negative")
+  expect_error(densityPrior(gp_min_length = 0), "positive")
+  expect_output(print(densityPrior()), "pooled")
+  set.seed(96)
+  X <- matrix(rnorm(40 * 5), 40); rownames(X) <- 1:40
+  fit <- callMDI(list(X), R = 60, thin = 6, types = "GP", K = 3, density_prior = densityPrior(gp_min_length = 3),
+                 check_prior = FALSE)
+  expect_gte(min(fit$hypers[[1]]$length), 3)
+  expect_equal(fit$density_prior[["gp_min_length"]], 3)
+  # a GP needs enough measurements to have a length scale
+  expect_error(callMDI(list(X[, 1:2]), R = 20, thin = 2, types = "GP", K = 2), "three measurements")
+})

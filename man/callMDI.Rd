@@ -17,7 +17,9 @@ callMDI(
   proposal_windows = NULL,
   save_parameters = TRUE,
   save_imputed = FALSE,
-  prior = mdiPrior()
+  prior = mdiPrior(),
+  density_prior = densityPrior(),
+  check_prior = TRUE
 )
 }
 \arguments{
@@ -64,6 +66,15 @@ at every saved iteration (``FALSE`` by default).}
 \item{prior}{MDI-level prior hyperparameters, created by
 \code{\link{mdiPrior}}. See its documentation for the defaults and how to
 check them with \code{\link{simulatePriorPredictive}}.}
+
+\item{density_prior}{Density-level (hierarchical) prior options, created by
+\code{\link{densityPrior}}: pooling of the variance scale across components and
+the priors of Gaussian process views, including a floor on the GP length scale.}
+
+\item{check_prior}{Logical. Report a message if the prior on the weights is on
+the side of the Rousseau and Mengersen (2011) threshold that duplicates rather
+than empties superfluous components (see \code{\link{mdiPrior}}). Set
+\code{options(mdir.quiet = TRUE)} to silence it globally.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

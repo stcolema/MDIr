@@ -12,7 +12,8 @@ simulatePosteriorPredictiveCpp(
   parameters,
   allocations,
   outliers,
-  prior
+  prior,
+  density_prior
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ flattened component parameters.}
 \item{outliers}{Cube (draws x N x L) of sampled outlier indicators.}
 
 \item{prior}{Optional MDI-level prior vector (see `runMDI`).}
+
+\item{density_prior}{Density-level prior options (see `runMDI`).}
 }
 \value{
 A list with one entry per view: a cube (draws x N x P) of replicates.
