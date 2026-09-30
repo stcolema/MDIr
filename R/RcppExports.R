@@ -321,6 +321,18 @@ mdiWeightRateCpp <- function(w, K, phi, lstar, kstar) {
     .Call(`_mdir_mdiWeightRateCpp`, w, K, phi, lstar, kstar)
 }
 
+#' @title Test hook: rates of all the weight conditionals of a view
+#' @description dZ/dw for every weight of one view from a single pass (test hook).
+#' @param w Weights (K_max x L).
+#' @param K Components per view.
+#' @param phi L x L matrix of phis.
+#' @param lstar View (0-based).
+#' @return The derivatives for components 0, ..., K(lstar) - 1.
+#' @keywords internal
+mdiWeightRatesCpp <- function(w, K, phi, lstar) {
+    .Call(`_mdir_mdiWeightRatesCpp`, w, K, phi, lstar)
+}
+
 #' @title Test hook: rate of a phi conditional
 #' @description dZ/dphi for one pair of views (test hook).
 #' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.

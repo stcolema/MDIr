@@ -98,6 +98,11 @@ public:
   // The weights in each dataset
   arma::mat w;
 
+  // Connected sums of the partition-sum recursion and the phis they were built
+  // from (see mdiPartition.h)
+  std::vector<double> partition_tables;
+  arma::vec partition_tables_phis;
+
   // Cube of cluster members
   arma::ucube members;
 
@@ -129,6 +134,10 @@ public:
 
   // The L x L symmetric matrix of phis
   arma::mat phiMatrix() const;
+
+  // Refresh the cached connected sums if the phis have changed since they were
+  // computed
+  void refreshPartitionTables();
 
   void updateNormalisingConstant();
   void sampleStrategicLatentVariable();

@@ -182,6 +182,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mdiWeightRatesCpp
+std::vector<double> mdiWeightRatesCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword lstar);
+RcppExport SEXP _mdir_mdiWeightRatesCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lstarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type lstar(lstarSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiWeightRatesCpp(w, K, phi, lstar));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mdiPhiRateCpp
 double mdiPhiRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m);
 RcppExport SEXP _mdir_mdiPhiRateCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lSEXP, SEXP mSEXP) {
@@ -309,6 +323,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_simulatePosteriorPredictiveCpp", (DL_FUNC) &_mdir_simulatePosteriorPredictiveCpp, 9},
     {"_mdir_mdiNormalisingConstantCpp", (DL_FUNC) &_mdir_mdiNormalisingConstantCpp, 3},
     {"_mdir_mdiWeightRateCpp", (DL_FUNC) &_mdir_mdiWeightRateCpp, 5},
+    {"_mdir_mdiWeightRatesCpp", (DL_FUNC) &_mdir_mdiWeightRatesCpp, 4},
     {"_mdir_mdiPhiRateCpp", (DL_FUNC) &_mdir_mdiPhiRateCpp, 5},
     {"_mdir_mvtImputationCheckCpp", (DL_FUNC) &_mdir_mvtImputationCheckCpp, 3},
     {"_mdir_calibrateInverseGammaCpp", (DL_FUNC) &_mdir_calibrateInverseGammaCpp, 3},

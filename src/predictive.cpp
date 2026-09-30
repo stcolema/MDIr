@@ -185,6 +185,19 @@ double mdiWeightRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword ls
   return mdiWeightRate(w, K, phi, lstar, kstar);
 }
 
+//' @title Test hook: rates of all the weight conditionals of a view
+//' @description dZ/dw for every weight of one view from a single pass (test hook).
+//' @param w Weights (K_max x L).
+//' @param K Components per view.
+//' @param phi L x L matrix of phis.
+//' @param lstar View (0-based).
+//' @return The derivatives for components 0, ..., K(lstar) - 1.
+//' @keywords internal
+// [[Rcpp::export]]
+std::vector<double> mdiWeightRatesCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword lstar) {
+  return arma::conv_to< std::vector<double> >::from(mdiWeightRates(w, K, mdiConnectedSums(phi), lstar));
+}
+
 //' @title Test hook: rate of a phi conditional
 //' @description dZ/dphi for one pair of views (test hook).
 //' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
