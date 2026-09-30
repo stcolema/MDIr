@@ -217,6 +217,42 @@ arma::vec mdiWeightRates(
   return rates;
 }
 
+double mdiSwapLogRatio(
+    const arma::umat& labels,
+    const arma::mat& phi,
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    double v,
+    arma::uword lstar,
+    arma::uword k,
+    arma::uword kprime,
+    double Z_current,
+    double& Z_swapped
+) {
+  const uword N = labels.n_rows, L = labels.n_cols;
+
+  double log_phi_term = 0.0;
+  for(uword m = 0; m < L; m++) {
+    if(m == lstar) {
+      continue;
+    }
+    uword agree = 0, agree_swapped = 0;
+    for(uword n = 0; n < N; n++) {
+      const uword c_l = labels(n, lstar), c_m = labels(n, m);
+      const uword c_l_swapped = (c_l == k) ? kprime : ((c_l == kprime) ? k : c_l);
+      agree += (c_l == c_m) ? 1 : 0;
+      agree_swapped += (c_l_swapped == c_m) ? 1 : 0;
+    }
+    log_phi_term += std::log1p(phi(m, lstar)) * ((double) agree_swapped - (double) agree);
+  }
+
+  arma::mat w_swapped = w;
+  std::swap(w_swapped(k, lstar), w_swapped(kprime, lstar));
+  Z_swapped = mdiPartitionSumFromC(w_swapped, K, C);
+  return log_phi_term - v * (Z_swapped - Z_current);
+}
+
 double mdiWeightRate(
     const arma::mat& w,
     const arma::uvec& K,

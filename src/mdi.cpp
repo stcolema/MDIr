@@ -453,17 +453,6 @@ void mdi::updateAllocation() {
 
 // === Label swapping ==========================================================
 
-double mdi::calcScore(uword lstar, const arma::umat& c) const {
-  double score = 0.0;
-  for(uword m = 0; m < L; m++) {
-    if(m != lstar) {
-      const double log_up = std::log1p(phis(phi_map(m, lstar)));
-      score += log_up * (double) accu(c.col(m) == c.col(lstar));
-    }
-  }
-  return score;
-}
-
 void mdi::updateLabels() {
   if(L == 1) {
     return;
@@ -480,6 +469,7 @@ void mdi::updateLabelsViewL(uword lstar) {
   }
 
   refreshPartitionTables();
+  const arma::mat phi_mat = phiMatrix();
   double Z_current = mdiPartitionSumFromC(w, K, partition_tables);
 
   for(uword k = K_fixed(lstar); k < K(lstar); k++) {
@@ -495,30 +485,23 @@ void mdi::updateLabelsViewL(uword lstar) {
       continue;
     }
 
-    // The labels with components k and k' exchanged
-    umat swapped_labels = labels;
-    uvec loc_labs = labels.col(lstar);
-    uvec in_k = find(loc_labs == k), in_k_prime = find(loc_labs == k_prime);
-    loc_labs.elem(in_k).fill(k_prime);
-    loc_labs.elem(in_k_prime).fill(k);
-    swapped_labels.col(lstar) = loc_labs;
-
-    // Exchanging (labels, weights, component parameters) leaves the prior over
-    // weights and parameters, the weight products and the data likelihood
-    // unchanged. What changes is the phi coupling term and Z, which depends on
-    // the weights through the alignment with other views.
-    mat w_swapped = w;
-    w_swapped.swap_rows(k, k_prime);
-    const double Z_swapped = mdiPartitionSumFromC(w_swapped, K, partition_tables);
-
-    const double log_acceptance = calcScore(lstar, swapped_labels)
-      - calcScore(lstar, labels)
-      - v * (Z_swapped - Z_current);
+    // Exchanging (labels, weights, component parameters) of this view leaves the
+    // prior over weights and parameters, the weight products and the data
+    // likelihood unchanged. What changes is the phi coupling term and Z, which
+    // depends on the weights through the alignment with the other views.
+    double Z_swapped = 0.0;
+    const double log_acceptance = mdiSwapLogRatio(
+      labels, phi_mat, w, K, partition_tables, v, lstar, k, k_prime, Z_current, Z_swapped
+    );
 
     if(std::log(randu()) < log_acceptance) {
       acceptance_count++;
-      labels = swapped_labels;
-      w = w_swapped;
+      uvec loc_labs = labels.col(lstar);
+      uvec in_k = find(loc_labs == k), in_k_prime = find(loc_labs == k_prime);
+      loc_labs.elem(in_k).fill(k_prime);
+      loc_labs.elem(in_k_prime).fill(k);
+      labels.col(lstar) = loc_labs;
+      std::swap(w(k, lstar), w(k_prime, lstar));
       Z_current = Z_swapped;
       mixtures[lstar]->labels = labels.col(lstar);
       mixtures[lstar]->swapComponents(k, k_prime);

@@ -333,6 +333,22 @@ mdiWeightRatesCpp <- function(w, K, phi, lstar) {
     .Call(`_mdir_mdiWeightRatesCpp`, w, K, phi, lstar)
 }
 
+#' @title Test hook: log Metropolis-Hastings ratio of a label swap
+#' @description Log acceptance ratio for exchanging two components of one view
+#' (labels, weights and component parameters together; test hook).
+#' @param labels N x L matrix of labels (0-based).
+#' @param phi L x L matrix of phis.
+#' @param w Weights (K_max x L).
+#' @param K Components per view.
+#' @param v Strategic latent variable.
+#' @param lstar View (0-based).
+#' @param k,kprime Components to exchange (0-based).
+#' @return The log ratio.
+#' @keywords internal
+mdiSwapLogRatioCpp <- function(labels, phi, w, K, v, lstar, k, kprime) {
+    .Call(`_mdir_mdiSwapLogRatioCpp`, labels, phi, w, K, v, lstar, k, kprime)
+}
+
 #' @title Test hook: rate of a phi conditional
 #' @description dZ/dphi for one pair of views (test hook).
 #' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.
