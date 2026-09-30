@@ -310,17 +310,27 @@ value is rejected. Use `save_imputed = TRUE` to record the imputations.
 prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 50)
 plotPredictiveCheck(X[[1]], prior_sims, column = 1)
 
-# 2. Fit several chains
-chains <- runMCMCChains(X, n_chains = 4, R = 10000, thin = 10, types = types, K = K)
+# 2. Fit several chains. fitMDI() reports each chain as it finishes and checks
+#    convergence (rank-normalised split Rhat and bulk/tail ESS) before returning
+chains <- fitMDI(X, n_chains = 4, R = 10000, thin = 10, types = types, K = K, burn = 5000)
 
-# 3. Convergence: rank-normalised split Rhat and bulk/tail ESS
-assessConvergence(chains, burn = 5000)
+# 3. Look at the result: print() is a short report, summary() has per-chain
+#    detail and the full convergence table
+chains
+summary(chains)
 
 # 4. Does the fitted model reproduce the data?
 post_sims <- simulatePosteriorPredictive(chains, X, n_draws = 100, burn = 5000)
 plotPredictiveCheck(X[[1]], post_sims, style = "statistic", statistic = sd, statistic_name = "SD")
 predictiveCheck(X, post_sims, function(m) max(abs(m[, 1])))
 ```
+
+`fitMDI()` is `runMCMCChains()` plus `assessConvergence()`, with messages; it
+stays quiet with `verbose = FALSE` or `options(mdir.quiet = TRUE)`. Printing a
+fit, one chain or a list of chains, gives a report rather than the sampled
+arrays, and `summary()` gives posterior summaries (in the style of `mclust` and
+Stan): occupied components per view, the view association `phi`, and, after
+`processMCMCChain()`, a clustering table for each view.
 
 Diagnostics are computed on quantities that do not depend on label switching
 (likelihoods, the view association parameters, concentrations, the number of

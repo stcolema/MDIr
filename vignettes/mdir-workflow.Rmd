@@ -59,9 +59,21 @@ plotPredictiveCheck(X, prior_sims, view = 1, column = 1)
 
 ## Fitting and convergence
 
+`fitMDI()` runs the chains and checks convergence before returning. It
+reports progress as each chain finishes (silenced here with
+`options(mdir.quiet = TRUE)`; use `verbose = TRUE` to see it).
+
 ```{r fit}
-chains <- runMCMCChains(X, n_chains = 3, R = 1500, thin = 5, types = types, K = K)
-assessConvergence(chains, burn = 750)
+chains <- fitMDI(X, n_chains = 3, R = 1500, thin = 5, types = types, K = K,
+                 burn = 750, verbose = FALSE)
+chains
+```
+
+Printing the result gives a short report rather than the sampled arrays.
+`summary()` adds a table per chain and the full convergence table:
+
+```{r summary}
+summary(chains)
 ```
 
 The diagnostics are the rank-normalised split R-hat and bulk and tail effective

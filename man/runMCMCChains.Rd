@@ -19,7 +19,8 @@ runMCMCChains(
   save_parameters = TRUE,
   save_imputed = FALSE,
   prior = mdiPrior(),
-  density_prior = densityPrior()
+  density_prior = densityPrior(),
+  verbose = FALSE
 )
 }
 \arguments{
@@ -56,10 +57,16 @@ proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
+
+\item{verbose}{Logical. Report the start and end of each chain (with run
+time) as a message. \code{FALSE} by default here; \code{\link{fitMDI}}, which
+also assesses convergence, defaults to \code{TRUE}.}
 }
 \value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
+An object of class \code{mdir_fit_list}: a list with one
+\code{\link{callMDI}} result per chain, each with the chain number in
+\code{Chain}. It prints as a short report; \code{summary()} gives per-chain
+detail.
 }
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using
