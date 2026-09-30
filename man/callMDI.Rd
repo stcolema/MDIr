@@ -77,9 +77,11 @@ than empties superfluous components (see \code{\link{mdiPrior}}). Set
 \code{options(mdir.quiet = TRUE)} to silence it globally.}
 }
 \value{
-A named list containing the sampled partitions, component weights,
-phi and mass parameters, model fit measures and some details on the model call.
-Missing data (``NA`` entries in ``X``) are treated as missing at random and
+An object of class \code{mdir_fit}: a named list containing the
+sampled partitions, component weights, phi and mass parameters, model fit
+measures and some details on the model call. It prints as a short report
+(see \code{\link{print.mdir_fit}}); use \code{summary()} for posterior
+summaries. Missing data (``NA`` entries in ``X``) are treated as missing at random and
 imputed within the sampler.
 }
 \description{

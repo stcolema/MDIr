@@ -8,8 +8,9 @@
 #' @param construct_psm Logical indicating if PSMs be constructed in the
 #' unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and
 #' this is used to infer the point estimate rather than the sampled partitions.
-#' @returns A named list similar to the output of
-#' ``runMCMCChains`` with some additional entries:
+#' @returns A list of chains with the same class as the output of
+#' ``runMCMCChains`` (any convergence diagnostics attached to it are kept), each
+#' similar to the output of ``callMDI`` with some additional entries:
 #'
 #'  * ``allocation_probability``: $(N x K)$ matrix. The point estimate of
 #'  the allocation probabilities for each data point to each class.
@@ -30,6 +31,11 @@ processMCMCChains <- function(mcmc_lst, burn,
     point_estimate_method,
     construct_psm
   )
+
+  # lapply() drops the class and attributes (e.g. the convergence diagnostics
+  # attached by fitMDI()), so restore them
+  class(new_output) <- class(mcmc_lst)
+  attr(new_output, "convergence") <- attr(mcmc_lst, "convergence")
 
   # Return the MCMC object with burn in applied and point estimates found
   new_output

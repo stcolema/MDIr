@@ -3,6 +3,7 @@
 \name{assessConvergence}
 \alias{assessConvergence}
 \alias{print.mdir_convergence}
+\alias{format.mdir_convergence}
 \title{Assess MCMC convergence of an MDI run}
 \usage{
 assessConvergence(
@@ -12,7 +13,9 @@ assessConvergence(
   min_ess_per_chain = 100
 )
 
-\method{print}{mdir_convergence}(x, digits = 3, ...)
+\method{print}{mdir_convergence}(x, digits = 3, max_rows = 20, ...)
+
+\method{format}{mdir_convergence}(x, ...)
 }
 \arguments{
 \item{mcmc_chains}{Output of \code{\link{runMCMCChains}} (two or more chains
@@ -31,6 +34,9 @@ the iterations run.}
 \item{x}{An \code{mdir_convergence} object.}
 
 \item{digits}{Significant digits to print.}
+
+\item{max_rows}{Largest number of quantities to list. If there are more, those
+with the largest \eqn{\hat{R}} are shown.}
 
 \item{...}{Unused.}
 }
@@ -52,6 +58,10 @@ complete-data and observed-data log-likelihoods, the MDI dataset
 association parameters \eqn{\phi}, the concentration masses, and the number
 of occupied components in each view. For the pairwise agreement of the
 clusterings it also reports \eqn{\hat{R}} for the fusion probabilities.
+
+\code{format()} gives the verdict on its own, as a short
+paragraph: how many quantities fail, the worst, and what to try. It is used
+by \code{print()} and by the messages from \code{\link{fitMDI}}.
 }
 \examples{
 \donttest{
