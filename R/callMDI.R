@@ -39,9 +39,11 @@
 #' \code{options(mdir.quiet = TRUE)} to silence it globally.
 #' @param save_imputed Logical. Record the imputed value of every missing entry
 #' at every saved iteration (``FALSE`` by default).
-#' @return A named list containing the sampled partitions, component weights,
-#' phi and mass parameters, model fit measures and some details on the model call.
-#' Missing data (``NA`` entries in ``X``) are treated as missing at random and
+#' @return An object of class \code{mdir_fit}: a named list containing the
+#' sampled partitions, component weights, phi and mass parameters, model fit
+#' measures and some details on the model call. It prints as a short report
+#' (see \code{\link{print.mdir_fit}}); use \code{summary()} for posterior
+#' summaries. Missing data (``NA`` entries in ``X``) are treated as missing at random and
 #' imputed within the sampler.
 #' @examples
 #'
@@ -221,6 +223,10 @@ callMDI <- function(X,
   
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken
+
+  # A classed list (every `$` access still works): print() and summary() show
+  # a report instead of the sampled arrays, see R/mdirFitMethods.R
+  class(mcmc_output) <- c("mdir_fit", class(mcmc_output))
 
   mcmc_output
 }

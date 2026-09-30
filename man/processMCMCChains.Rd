@@ -24,8 +24,9 @@ unsupervised views. Defaults to FALSE. If TRUE the PSM is constructed and
 this is used to infer the point estimate rather than the sampled partitions.}
 }
 \value{
-A named list similar to the output of
-``runMCMCChains`` with some additional entries:
+A list of chains with the same class as the output of
+``runMCMCChains`` (any convergence diagnostics attached to it are kept), each
+similar to the output of ``callMDI`` with some additional entries:
 
  * ``allocation_probability``: $(N x K)$ matrix. The point estimate of
  the allocation probabilities for each data point to each class.

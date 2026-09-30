@@ -262,8 +262,12 @@ assessConvergence <- function(mcmc_chains,
   out$converged <- with(out, !is.na(rhat) & rhat < threshold &
     ess_bulk >= min_ess_per_chain * n_effective_chains & ess_tail >= min_ess_per_chain * n_effective_chains)
   attr(out, "threshold") <- threshold
+  attr(out, "min_ess") <- min_ess_per_chain * n_effective_chains
   attr(out, "burn") <- burn
   attr(out, "n_chains") <- n_chains
+  # Mean complete-data log-likelihood of each chain, to show a chain that sits
+  # apart from the others
+  attr(out, "chain_loglik") <- colMeans(traces$complete_likelihood)
   class(out) <- c("mdir_convergence", "data.frame")
   out
 }
@@ -271,18 +275,107 @@ assessConvergence <- function(mcmc_chains,
 #' @rdname assessConvergence
 #' @param x An \code{mdir_convergence} object.
 #' @param digits Significant digits to print.
+#' @param max_rows Largest number of quantities to list. If there are more, those
+#' with the largest \eqn{\hat{R}} are shown.
 #' @param ... Unused.
 #' @export
-print.mdir_convergence <- function(x, digits = 3, ...) {
-  cat("MDI convergence diagnostics (", attr(x, "n_chains"), " chain(s), burn = ", attr(x, "burn"),
-      ", Rhat threshold ", attr(x, "threshold"), ")\n", sep = "")
-  df <- as.data.frame(x)
-  num <- vapply(df, is.numeric, logical(1))
-  df[num] <- lapply(df[num], signif, digits)
-  print(df, row.names = FALSE)
-  if (!all(x$converged)) {
-    cat("\nQuantities not meeting the Rhat / ESS criteria: ",
-        paste(x$quantity[!x$converged], collapse = ", "), "\n", sep = "")
+print.mdir_convergence <- function(x, digits = 3, max_rows = 20, ...) {
+  n_chains <- attr(x, "n_chains")
+  cat(sprintf(
+    "MDI convergence diagnostics: %s, burn = %d, %d quantities monitored\n",
+    .mdirPlural(n_chains, "chain"), attr(x, "burn"), nrow(x)
+  ))
+  cat("Rank-normalised split-Rhat and ESS (Vehtari et al., 2021)\n\n")
+
+  shown <- x
+  if (nrow(x) > max_rows) {
+    shown <- x[order(-x$rhat)[seq_len(max_rows)], ]
+    shown <- shown[order(match(shown$quantity, x$quantity)), ]
   }
+  width <- max(nchar(c("quantity", shown$quantity)))
+  cat(sprintf("%-*s  %6s  %8s  %8s\n", width, "quantity", "Rhat", "ESS bulk", "ESS tail"))
+  cat(sprintf(
+    "%-*s  %6s  %8s  %8s %s\n", width, shown$quantity,
+    formatC(shown$rhat, digits = digits, format = "f"),
+    formatC(shown$ess_bulk, format = "f", digits = 0),
+    formatC(shown$ess_tail, format = "f", digits = 0),
+    ifelse(shown$converged, " ", "*")
+  ), sep = "")
+  if (nrow(x) > max_rows) {
+    cat(sprintf("(%d of %d quantities shown, largest Rhat first)\n", max_rows, nrow(x)))
+  }
+  cat(sprintf(
+    "* Rhat >= %g or ESS < %g (bulk or tail).\n\n",
+    attr(x, "threshold"), attr(x, "min_ess")
+  ))
+
+  chain_ll <- attr(x, "chain_loglik")
+  if (n_chains > 1 && !is.null(chain_ll)) {
+    cat("Mean complete-data log-likelihood by chain: ",
+        paste(sprintf("#%d = %.1f", seq_along(chain_ll), chain_ll), collapse = ", "), "\n\n", sep = "")
+  }
+  cat(.mdirWrap(format(x)), "\n", sep = "")
   invisible(x)
+}
+
+#' @rdname assessConvergence
+#' @description \code{format()} gives the verdict on its own, as a short
+#' paragraph: how many quantities fail, the worst, and what to try. It is used
+#' by \code{print()} and by the messages from \code{\link{fitMDI}}.
+#' @export
+format.mdir_convergence <- function(x, ...) {
+  threshold <- attr(x, "threshold")
+  min_ess <- attr(x, "min_ess")
+  n_chains <- attr(x, "n_chains")
+  n <- nrow(x)
+
+  rhat_fail <- !is.na(x$rhat) & x$rhat >= threshold
+  ess_fail <- x$ess_bulk < min_ess | x$ess_tail < min_ess
+  n_rhat <- sum(rhat_fail)
+  n_ess <- sum(ess_fail & !rhat_fail)
+
+  if (all(x$converged)) {
+    verdict <- sprintf(
+      paste0(
+        "All %d monitored quantities have Rhat < %g and ESS >= %g. ",
+        "This is a necessary check, not proof, of convergence."
+      ),
+      n, threshold, min_ess
+    )
+  } else {
+    worst <- which.max(x$rhat)
+    parts <- character(0)
+    if (n_rhat > 0) {
+      parts <- c(parts, sprintf(
+        paste0(
+          "%d of %d quantities have Rhat >= %g (worst: %s, %.2f): the chains ",
+          "disagree or have not become stationary. Run more iterations."
+        ),
+        n_rhat, n, threshold, x$quantity[worst], x$rhat[worst]
+      ))
+    }
+    if (n_ess > 0) {
+      parts <- c(parts, sprintf(
+        paste0(
+          "%d further %s Rhat < %g but ESS < %g: the chains agree, but ",
+          "there are too few effective samples for stable estimates. Run more ",
+          "iterations (or thin less)."
+        ),
+        n_ess, if (n_ess == 1) "quantity has" else "quantities have", threshold, min_ess
+      ))
+    }
+    verdict <- paste(parts, collapse = " ")
+  }
+
+  if (n_chains == 1) {
+    verdict <- paste(
+      verdict,
+      paste0(
+        "Only one chain was run: split-Rhat compares the two halves of the ",
+        "chain and cannot detect a chain stuck away from the posterior mass. ",
+        "Run several chains."
+      )
+    )
+  }
+  paste0("Convergence: ", verdict)
 }

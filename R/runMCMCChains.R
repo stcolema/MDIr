@@ -23,8 +23,13 @@
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
 #' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
-#' @return A named list containing the sampled partitions, component weights and
-#' phi parameters, model fit measures and some details on the model call.
+#' @param verbose Logical. Report the start and end of each chain (with run
+#' time) as a message. \code{FALSE} by default here; \code{\link{fitMDI}}, which
+#' also assesses convergence, defaults to \code{TRUE}.
+#' @return An object of class \code{mdir_fit_list}: a list with one
+#' \code{\link{callMDI}} result per chain, each with the chain number in
+#' \code{Chain}. It prints as a short report; \code{summary()} gives per-chain
+#' detail.
 #' @examples
 #' \donttest{
 #' N <- 100
@@ -63,15 +68,22 @@ runMCMCChains <- function(X,
                           save_parameters = TRUE,
                           save_imputed = FALSE,
                           prior = mdiPrior(),
-                          density_prior = densityPrior()) {
+                          density_prior = densityPrior(),
+                          verbose = FALSE) {
+  if (!is.numeric(n_chains) || length(n_chains) != 1 || is.na(n_chains) || n_chains < 1) {
+    stop("`n_chains` must be a single positive integer.", call. = FALSE)
+  }
   mcmc_lst <- vector("list", n_chains)
 
   # report prior warnings once rather than for every chain
   if (is.null(K)) K_used <- rep(floor(nrow(X[[1]]) / 2), length(X)) else K_used <- K
   for (m in .checkSparsity(X, types, K_used, prior)) message(m)
 
-  mcmc_lst <- lapply(mcmc_lst, function(x) {
-    callMDI(X,
+  for (ii in seq_len(n_chains)) {
+    if (verbose) {
+      message(sprintf("Chain %d/%d: running %d iterations...", ii, n_chains, R))
+    }
+    mcmc_lst[[ii]] <- callMDI(X,
       R,
       thin,
       types,
@@ -87,12 +99,18 @@ runMCMCChains <- function(X,
       density_prior = density_prior,
       check_prior = FALSE
     )
-  })
 
-  # Record chain number
-  for (ii in seq(n_chains)) {
+    # Record chain number
     mcmc_lst[[ii]]$Chain <- ii
+
+    if (verbose) {
+      message(sprintf(
+        "Chain %d/%d: finished in %s.", ii, n_chains, .mdirFormatTime(mcmc_lst[[ii]]$Time)
+      ))
+    }
   }
 
+  # A classed list (a plain list of chains underneath), see R/mdirFitMethods.R
+  class(mcmc_lst) <- c("mdir_fit_list", "list")
   mcmc_lst
 }

@@ -1,3 +1,39 @@
+# mdir (development version)
+
+## Console output and workflow
+
+* **Fits print as reports.** `callMDI()` returns an `mdir_fit` and
+  `runMCMCChains()` an `mdir_fit_list`. Both are still plain lists (`$` and `[[`
+  work as before), but `print()` now gives a short description (views, sampler
+  settings, run time, whether a burn in has been applied) instead of dumping
+  every sampled array; printing one chain used to produce thousands of lines.
+* **`summary()` methods**, laid out after `mclust` and Stan: occupied
+  components per view, posterior summaries of the view association `phi` (mean,
+  sd, quantiles), mean log-likelihoods and, after `processMCMCChain()`, a
+  clustering table per view. For several chains, a per-chain table and the
+  convergence diagnostics. The burn in defaults to half of `R` and is stated in
+  the output; `summary(fit, burn = )` overrides it.
+* **`fitMDI()`** is the recommended entry point. It is `runMCMCChains()` plus
+  `assessConvergence()` (same arguments, same order, plus `burn` and
+  `verbose`): it reports each chain as it finishes, then a verdict on
+  convergence, and attaches the diagnostics as `attr(., "convergence")`. It
+  warns if the diagnostics cannot be computed. The sampler is compiled C++ and
+  does not report progress within a chain.
+* **`runMCMCChains()`** gains `verbose` (default `FALSE`, so existing behaviour
+  is unchanged) and rejects an invalid `n_chains`.
+* **Convergence output**: `print()` on an `assessConvergence()` result is now a
+  fixed-width table (the `converged` column used to wrap onto a separate block),
+  shows each chain's mean log-likelihood, and ends with a verdict that separates
+  quantities with a high Rhat (chains disagree) from those with only a low ESS
+  (chains agree, too few effective samples). `format()` returns the verdict.
+  The returned data frame gains attributes `min_ess` and `chain_loglik`; its
+  columns are unchanged.
+* `processMCMCChains()` keeps the class and the convergence attribute; `[` on a
+  list of chains keeps the class and drops the convergence attribute (it
+  described the full set).
+* Progress and the convergence verdict respect `options(mdir.quiet = TRUE)`,
+  which already silenced the prior-sparsity message.
+
 # mdir 0.10.2
 
 ## CRAN readiness
