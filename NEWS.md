@@ -34,6 +34,24 @@
 * Progress and the convergence verdict respect `options(mdir.quiet = TRUE)`,
   which already silenced the prior-sparsity message.
 
+## Performance
+
+* **Faster sampling with many views.** The sums over set partitions that give
+  the MDI normalising constant and the rates of the weight conditionals now
+  reuse the part that depends on the `phi`s alone, and take the rates of all
+  the weights of a view from one pass instead of one pass per weight. On one
+  machine a 100-iteration chain took about 0.5 s for 8 views and 2.4 s for 10
+  views before, and 0.15 s and 0.55 s after. Fewer than five views are
+  unaffected, because the densities dominate there.
+* **Faster multivariate normal likelihood** for complete items (no per-item,
+  per-component allocation): about 1.7 times faster for a two-view MVN chain
+  with 500 items and ten components.
+* The targets and the random number streams are unchanged. In the comparisons
+  run, allocations and all other discrete output were identical to the previous
+  version and continuous output agreed to about 1e-13 relative (bit-identical
+  for one and two views); the last digits can differ with more views because
+  the sums are accumulated in a different order.
+
 # mdir 0.10.2
 
 ## CRAN readiness

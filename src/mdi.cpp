@@ -171,8 +171,18 @@ double mdi::calcPhiRate(uword l, uword m) const {
   return v * mdiPhiRate(w, K, phiMatrix(), l, m);
 }
 
+void mdi::refreshPartitionTables() {
+  if(partition_tables.empty()
+       || partition_tables_phis.n_elem != phis.n_elem
+       || !all(partition_tables_phis == phis)) {
+    partition_tables = mdiConnectedSums(phiMatrix());
+    partition_tables_phis = phis;
+  }
+}
+
 void mdi::updateNormalisingConstant() {
-  Z = mdiPartitionSum(w, K, phiMatrix());
+  refreshPartitionTables();
+  Z = mdiPartitionSumFromC(w, K, partition_tables);
 }
 
 void mdi::sampleStrategicLatentVariable() {
@@ -183,13 +193,14 @@ void mdi::updateWeightsViewL(uword l) {
 
   // The phi matrix and the other views' weights are fixed while the weights of
   // view l are updated, and w(k, l) enters Z linearly, so each weight has a
-  // Gamma full conditional given the others.
-  arma::mat phi_mat = phiMatrix();
+  // Gamma full conditional given the others. The rate of w(k, l) does not
+  // involve view l, so all K(l) rates come from a single pass.
+  refreshPartitionTables();
+  const arma::vec rates = mdiWeightRates(w, K, partition_tables, l);
 
   for(uword k = 0; k < K(l); k++) {
-    double rate = v * mdiWeightRate(w, K, phi_mat, l, k);
     double posterior_shape = (mass(l) / (double) K(l)) + (double) N_k(k, l);
-    double posterior_rate = w_rate_prior + rate;
+    double posterior_rate = w_rate_prior + v * rates(k);
     w(k, l) = rGamma(posterior_shape, posterior_rate);
   }
 }
@@ -468,7 +479,8 @@ void mdi::updateLabelsViewL(uword lstar) {
     return;
   }
 
-  const arma::mat phi_mat = phiMatrix();
+  refreshPartitionTables();
+  double Z_current = mdiPartitionSumFromC(w, K, partition_tables);
 
   for(uword k = K_fixed(lstar); k < K(lstar); k++) {
 
@@ -497,8 +509,7 @@ void mdi::updateLabelsViewL(uword lstar) {
     // the weights through the alignment with other views.
     mat w_swapped = w;
     w_swapped.swap_rows(k, k_prime);
-    const double Z_current = mdiPartitionSum(w, K, phi_mat);
-    const double Z_swapped = mdiPartitionSum(w_swapped, K, phi_mat);
+    const double Z_swapped = mdiPartitionSumFromC(w_swapped, K, partition_tables);
 
     const double log_acceptance = calcScore(lstar, swapped_labels)
       - calcScore(lstar, labels)
@@ -508,6 +519,7 @@ void mdi::updateLabelsViewL(uword lstar) {
       acceptance_count++;
       labels = swapped_labels;
       w = w_swapped;
+      Z_current = Z_swapped;
       mixtures[lstar]->labels = labels.col(lstar);
       mixtures[lstar]->swapComponents(k, k_prime);
       refreshMembersViewL(lstar);

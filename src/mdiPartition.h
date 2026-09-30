@@ -21,11 +21,38 @@
 //   P_B = sum_{A subset B, min(B) in A} C_A P_{B \ A},
 //
 // and the sum over set partitions with the same recursion. The cost is
-// O(3^L + 2^L K L) rather than O(K^L L^2).
+// O(3^L + 2^L K) rather than O(K^L L^2).
+//
+// C_B depends on the phis alone, so it is computed once per set of phis
+// (mdiConnectedSums) and reused for every evaluation that shares them: the
+// normalising constant, the rates of all the weights of a view and the label
+// swaps.
 #ifndef MDIPARTITION_H
 #define MDIPARTITION_H
 
 # include <RcppArmadillo.h>
+# include <vector>
+
+// C_X for every subset X of the views (bit l of X set when view l is in X),
+// from the symmetric L x L matrix of phis (the diagonal is ignored). Depends on
+// phi only.
+std::vector<double> mdiConnectedSums(const arma::mat& phi);
+
+// Z from precomputed connected sums (see mdiConnectedSums).
+double mdiPartitionSumFromC(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C
+);
+
+// dZ / dw(k, lstar) for every k < K(lstar) from one pass over the set
+// partitions. Equal, up to rounding, to mdiWeightRate() for each k.
+arma::vec mdiWeightRates(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    arma::uword lstar
+);
 
 // Z for weights w (K_max x L), numbers of components K (length L) and the
 // symmetric L x L matrix of phis (the diagonal is ignored).
@@ -35,7 +62,7 @@ double mdiPartitionSum(
     const arma::mat& phi
 );
 
-// dZ / dw(kstar, lstar): the rate of the conditional for w(kstar, lstar) is
+// dZ / dw(kstar, lstar) for a single weight: the rate of the conditional for w(kstar, lstar) is
 // w_rate_prior + v * this. Z is multilinear in the columns of w, so this is Z
 // evaluated with column lstar replaced by the kstar-th unit vector.
 double mdiWeightRate(
