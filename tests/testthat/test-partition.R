@@ -163,3 +163,48 @@ test_that("weights beyond a view's number of components do not enter Z or its ra
     }
   }
 })
+
+test_that("the label-swap ratio equals the exact ratio of the model's target", {
+  # Target over (c, w) given the strategic latent variable v, from the MDI joint
+  #   prod_n [prod_l w[c_nl, l] prod_{l<m}(1 + phi_lm 1[c_nl = c_nm])] exp(-v Z(w))
+  # (Kirk et al. 2012; Coleman et al. 2025, S1 Text eq. 20). Exchanging
+  # components k and k' of view l moves their labels and weights together; the
+  # Gamma prior on the weights and the data likelihood (carried with the
+  # parameters) are unchanged. Z is computed by enumeration.
+  log_target <- function(cc, w, phi, K, v) {
+    L <- length(K)
+    lp <- -v * bf_Z(w, K, phi)
+    for (n in seq_len(nrow(cc))) {
+      lp <- lp + sum(log(w[cbind(cc[n, ], seq_len(L))]))
+      if (L > 1) for (l in 1:(L - 1)) for (m in (l + 1):L) lp <- lp + log1p(phi[l, m] * (cc[n, l] == cc[n, m]))
+    }
+    lp
+  }
+  set.seed(109)
+  for (K in list(c(3L, 3L), c(4L, 4L, 4L), c(2L, 4L, 3L), c(3L, 1L, 4L, 2L))) {
+    L <- length(K); N <- 15
+    s <- random_mdi_state(K, phi_scale = 4)
+    cc <- sapply(seq_len(L), function(l) sample.int(K[l], N, TRUE))
+    v <- rgamma(1, N, bf_Z(s$w, K, s$phi))
+    for (l in seq_len(L)) if (K[l] > 1) for (rep in 1:4) {
+      kk <- sample.int(K[l], 2); k <- kk[1]; kp <- kk[2]
+      cs <- cc; cs[cc[, l] == k, l] <- kp; cs[cc[, l] == kp, l] <- k
+      ws <- s$w; ws[c(k, kp), l] <- ws[c(kp, k), l]
+      expected <- log_target(cs, ws, s$phi, K, v) - log_target(cc, s$w, s$phi, K, v)
+      expect_equal(mdir:::mdiSwapLogRatioCpp(cc - 1L, s$phi, s$w, K, v, l - 1, k - 1, kp - 1), expected,
+                   tolerance = 1e-10, info = paste("K =", paste(K, collapse = ","), "view", l, "swap", k, kp))
+    }
+  }
+})
+
+test_that("a label swap changes Z when the views are aligned differently", {
+  # Z is unchanged by the same permutation of the components of every view, but
+  # not by a permutation of one view's weights; the swap ratio must see the latter
+  set.seed(110)
+  K <- c(4L, 4L, 4L); s <- random_mdi_state(K, phi_scale = 4)
+  w_all <- s$w; w_all[c(1, 2), ] <- w_all[c(2, 1), ]
+  w_one <- s$w; w_one[c(1, 2), 1] <- w_one[c(2, 1), 1]
+  Z <- bf_Z(s$w, K, s$phi)
+  expect_equal(bf_Z(w_all, K, s$phi), Z, tolerance = 1e-12)
+  expect_gt(abs(bf_Z(w_one, K, s$phi) - Z) / Z, 1e-3)
+})

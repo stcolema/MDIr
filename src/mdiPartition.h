@@ -85,4 +85,33 @@ double mdiPhiRate(
     arma::uword m
 );
 
+// Log of the Metropolis-Hastings ratio for exchanging components k and kprime of
+// view lstar: their labels, weights and component parameters move together. The
+// weights and parameters have exchangeable priors within a view and the data
+// likelihood and the products of weights over items are carried along by the
+// exchange, so only two terms change:
+//
+//   sum_{m != lstar} log(1 + phi(m, lstar)) (A' - A)  -  v (Z' - Z),
+//
+// where A (A') counts the items whose label in view m equals their label in view
+// lstar before (after) the exchange and Z' is Z with w(k, lstar) and
+// w(kprime, lstar) interchanged. Only the weights of view lstar are interchanged:
+// Z is unchanged by the same permutation of every view (a relabelling of the
+// joint components), so exchanging the other views' weights would drop the
+// change in Z that the move produces. Z_current is Z for w; Z' is returned in
+// Z_swapped.
+double mdiSwapLogRatio(
+    const arma::umat& labels,
+    const arma::mat& phi,
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    double v,
+    arma::uword lstar,
+    arma::uword k,
+    arma::uword kprime,
+    double Z_current,
+    double& Z_swapped
+);
+
 #endif /* MDIPARTITION_H */

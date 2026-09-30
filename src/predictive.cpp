@@ -198,6 +198,27 @@ std::vector<double> mdiWeightRatesCpp(arma::mat w, arma::uvec K, arma::mat phi, 
   return arma::conv_to< std::vector<double> >::from(mdiWeightRates(w, K, mdiConnectedSums(phi), lstar));
 }
 
+//' @title Test hook: log Metropolis-Hastings ratio of a label swap
+//' @description Log acceptance ratio for exchanging two components of one view
+//' (labels, weights and component parameters together; test hook).
+//' @param labels N x L matrix of labels (0-based).
+//' @param phi L x L matrix of phis.
+//' @param w Weights (K_max x L).
+//' @param K Components per view.
+//' @param v Strategic latent variable.
+//' @param lstar View (0-based).
+//' @param k,kprime Components to exchange (0-based).
+//' @return The log ratio.
+//' @keywords internal
+// [[Rcpp::export]]
+double mdiSwapLogRatioCpp(arma::umat labels, arma::mat phi, arma::mat w, arma::uvec K, double v,
+                          arma::uword lstar, arma::uword k, arma::uword kprime) {
+  const std::vector<double> C = mdiConnectedSums(phi);
+  double Z_swapped = 0.0;
+  return mdiSwapLogRatio(labels, phi, w, K, C, v, lstar, k, kprime,
+                         mdiPartitionSumFromC(w, K, C), Z_swapped);
+}
+
 //' @title Test hook: rate of a phi conditional
 //' @description dZ/dphi for one pair of views (test hook).
 //' @param w Weights. @param K Components per view. @param phi L x L matrix of phis.

@@ -195,9 +195,9 @@ public:
   // === Label swapping ========================================================
 
   // Metropolis-Hastings relabelling moves within a view. Swaps the labels,
-  // weights and component parameters of two components; this improves the
-  // alignment of clusters across views.
-  double calcScore(uword lstar, const arma::umat& c) const;
+  // weights and component parameters of two components of that view (see
+  // mdiSwapLogRatio() for the acceptance ratio); this improves the alignment of
+  // clusters across views.
   void updateLabels();
   void updateLabelsViewL(uword lstar);
 

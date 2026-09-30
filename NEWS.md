@@ -46,11 +46,34 @@
 * **Faster multivariate normal likelihood** for complete items (no per-item,
   per-component allocation): about 1.7 times faster for a two-view MVN chain
   with 500 items and ten components.
-* The targets and the random number streams are unchanged. In the comparisons
-  run, allocations and all other discrete output were identical to the previous
-  version and continuous output agreed to about 1e-13 relative (bit-identical
-  for one and two views); the last digits can differ with more views because
-  the sums are accumulated in a different order.
+* Apart from the label-swap correction below, the targets and the random number
+  streams are unchanged. Compared with the previous version before that
+  correction, allocations and all other discrete output were identical and
+  continuous output agreed to about 1e-13 relative (bit-identical for one and
+  two views); the last digits can differ with more views because the sums are
+  accumulated in a different order.
+
+## Corrections
+
+* **Label swaps now exchange the weights of one view only.** The move that
+  exchanges two components of a view (labels, weights and component parameters)
+  also exchanged the weights of every other view, without their labels. The
+  same permutation of all views leaves the normalising constant `Z` unchanged, so
+  the `-v (Z' - Z)` term of the acceptance ratio was always zero, and the other
+  views' weights no longer matched their labels; the ratio was not the ratio of
+  the model's target. The acceptance ratio is now `sum_m log(1 + phi_m,l) (A' -
+  A) - v (Z' - Z)` with `Z'` from exchanging the two weights of view `l` alone,
+  and equals the exact log ratio of the target (checked against enumeration and
+  symbolically). Effects of the old move: with equal numbers of components the
+  sampler's stationary distribution was slightly wrong (with a constant
+  likelihood, 3 components in each of two views and 10 items, the share of items in
+  the largest-weight component of a view was about 0.011 too low, against a
+  forward simulation of the prior); with different numbers of components the
+  recorded weights had non-zero values in unused slots, and a view's weights
+  could be moved entirely out of its real slots, making `Z` zero and stopping the
+  sampler with a `randg()` error. Chains with label swaps (every tenth sweep)
+  change; results from earlier versions of models with several views are not
+  reproduced exactly.
 
 # mdir 0.10.2
 

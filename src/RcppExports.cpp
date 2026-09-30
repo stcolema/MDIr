@@ -196,6 +196,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mdiSwapLogRatioCpp
+double mdiSwapLogRatioCpp(arma::umat labels, arma::mat phi, arma::mat w, arma::uvec K, double v, arma::uword lstar, arma::uword k, arma::uword kprime);
+RcppExport SEXP _mdir_mdiSwapLogRatioCpp(SEXP labelsSEXP, SEXP phiSEXP, SEXP wSEXP, SEXP KSEXP, SEXP vSEXP, SEXP lstarSEXP, SEXP kSEXP, SEXP kprimeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type lstar(lstarSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type k(kSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type kprime(kprimeSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiSwapLogRatioCpp(labels, phi, w, K, v, lstar, k, kprime));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mdiPhiRateCpp
 double mdiPhiRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m);
 RcppExport SEXP _mdir_mdiPhiRateCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lSEXP, SEXP mSEXP) {
@@ -324,6 +342,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_mdiNormalisingConstantCpp", (DL_FUNC) &_mdir_mdiNormalisingConstantCpp, 3},
     {"_mdir_mdiWeightRateCpp", (DL_FUNC) &_mdir_mdiWeightRateCpp, 5},
     {"_mdir_mdiWeightRatesCpp", (DL_FUNC) &_mdir_mdiWeightRatesCpp, 4},
+    {"_mdir_mdiSwapLogRatioCpp", (DL_FUNC) &_mdir_mdiSwapLogRatioCpp, 8},
     {"_mdir_mdiPhiRateCpp", (DL_FUNC) &_mdir_mdiPhiRateCpp, 5},
     {"_mdir_mvtImputationCheckCpp", (DL_FUNC) &_mdir_mvtImputationCheckCpp, 3},
     {"_mdir_calibrateInverseGammaCpp", (DL_FUNC) &_mdir_calibrateInverseGammaCpp, 3},
