@@ -59,6 +59,9 @@ public:
   // True if the component can absorb items
   virtual bool active() const { return true; }
   
+  // Replace the data by new items (the outlier distribution keeps its parameters)
+  void replaceData(const arma::mat& X_new);
+  
   void calculateAllLogLikelihoods();
   virtual double calculateItemLogLikelihood(arma::uword n) = 0;
   

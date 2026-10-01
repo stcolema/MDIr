@@ -100,7 +100,62 @@ pooled <- predictFromMultipleChains(chains, burn = 750)
 table(pooled$pred[[1]], truth)
 ```
 
+## New items
+
+`predictMDI()` evaluates items that were not in the fitted data at every saved
+draw, using the draw's weights, association parameters and component parameters.
+It returns the log posterior predictive density of each new item and the
+probability that it shares a component with each fitted item. (For a semi-supervised
+view it also returns class probabilities; labels of other views are only defined up
+to permutation, so averaging them across draws would be meaningless.) A new item may
+be missing entries or a whole view.
+
+```{r new-items}
+new_items <- list(
+  matrix(c(0.1, -0.2, 0.3, 2.9, 3.1, 3.2), 2, 3, byrow = TRUE),
+  matrix(c(0.0, 0.2, 2.5, NA), 2, 2, byrow = TRUE)
+)
+new_pred <- predictMDI(chains, X, new_items, burn = 750, coclustering = TRUE)
+round(new_pred$log_predictive, 1)
+
+# Probability that each new item is in the same cluster as the first and last
+# fitted items, in view 1
+round(new_pred$coclustering[[1]][, c(1, N)], 2)
+```
+
+## Model comparison
+
+Fit with `save_pointwise = TRUE` to record the log-likelihood of each item at each
+saved draw. It sums over the cluster assignments of the item in every view, so it is
+the likelihood of the whole model, coupling between views included (the
+`observed_likelihood` trace treats each view separately and ignores the coupling).
+`pointwiseLogLik()` returns it as the draws by items matrix that `loo::waic()` and
+`loo::loo()` take.
+
+```{r pointwise, eval = FALSE}
+fit <- fitMDI(X, n_chains = 4, R = 1500, thin = 5, types = types, K = K,
+              save_pointwise = TRUE)
+ll <- pointwiseLogLik(fit, burn = 750)
+loo::waic(ll)
+```
+
+## Running chains in parallel
+
+Chains are independent, so `n_cores` runs them on separate cores. The default is one
+core. Each chain has its own random number stream, so results are reproducible
+from `set.seed()` and do not depend on the number of cores. While a package is
+being checked, at most two cores are used, as CRAN requires.
+
+```{r parallel, eval = FALSE}
+chains <- fitMDI(X, n_chains = 4, R = 5000, thin = 5, types = types, K = K,
+                 n_cores = 4)
+```
+
 ## References
+
+Vehtari, A., Gelman, A., Gabry, J. (2017). Practical Bayesian model evaluation
+using leave-one-out cross-validation and WAIC. *Statistics and Computing*, 27,
+1413-1432.
 
 Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and Burkner, P.-C. (2021).
 Rank-normalization, folding, and localization: an improved R-hat for assessing

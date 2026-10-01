@@ -123,7 +123,10 @@ callMixtureModel <- function(X,
     save_parameters,
     save_imputed,
     as.numeric(prior),
-    as.numeric(density_prior)
+    as.numeric(density_prior),
+    save_allocation_probabilities = as.integer(any(fixed == 1)),
+    save_pointwise = FALSE,
+    phi_slice = TRUE
   )
 
   t_1 <- Sys.time()
@@ -136,6 +139,11 @@ callMixtureModel <- function(X,
   mcmc_output$weights <- mcmc_output$weights[, , 1]
   mcmc_output$outliers <- mcmc_output$outliers[, , 1]
   mcmc_output$allocation_probabilities <- mcmc_output$allocation_probabilities[[1]]
+  if (!any(fixed == 1)) {
+    mcmc_output["allocation_probabilities"] <- list(NULL)
+  }
+  mcmc_output$pointwise_likelihood <- NULL
+  mcmc_output$joint_likelihood <- as.numeric(mcmc_output$joint_likelihood)
   mcmc_output$N_k <- mcmc_output$N_k[, 1, ]
   mcmc_output$complete_likelihood <- as.numeric(mcmc_output$complete_likelihood)
   mcmc_output$observed_likelihood <- as.numeric(mcmc_output$observed_likelihood)

@@ -20,7 +20,10 @@ Rcpp::List runMDI(
     bool save_parameters,
     bool save_imputed,
     arma::vec prior,
-    arma::vec density_prior
+    arma::vec density_prior,
+    arma::uvec save_allocation_probabilities,
+    bool save_pointwise,
+    bool phi_slice
 ) {
   
   if(thin < 1) {
@@ -30,7 +33,15 @@ Rcpp::List runMDI(
   const uword L = Y.n_elem, n_saved = R / thin + 1;
   uword save_ind = 0;
   
+  if(save_allocation_probabilities.n_elem == 1) {
+    save_allocation_probabilities = arma::uvec(L, arma::fill::value(save_allocation_probabilities(0)));
+  }
+  if(save_allocation_probabilities.n_elem != L) {
+    Rcpp::stop("save_allocation_probabilities must have one entry per view.");
+  }
+  
   mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior);
+  my_mdi.phi_slice = phi_slice;
   
   for(uword l = 0; l < L; l++) {
     // Only Gaussian process views use proposal windows
@@ -43,7 +54,12 @@ Rcpp::List runMDI(
   
   vec complete_likelihood_record(n_saved, arma::fill::zeros), 
     observed_likelihood_record(n_saved, arma::fill::zeros),
+    joint_likelihood_record(n_saved, arma::fill::zeros),
     evidence(n_saved, arma::fill::zeros);
+  mat pointwise_record;
+  if(save_pointwise) {
+    pointwise_record.zeros(n_saved, N);
+  }
   
   mat phis_record(n_saved, my_mdi.LC2, arma::fill::zeros), 
     mass_record(n_saved, L, arma::fill::zeros),
@@ -62,7 +78,8 @@ Rcpp::List runMDI(
   field< vec > acceptance_count(L);
   
   for(uword l = 0; l < L; l++) {
-    alloc(l) = zeros<cube>(N, K(l), n_saved);
+    // Only needed for semi-supervised views; N x K x draws is large
+    alloc(l) = save_allocation_probabilities(l) ? zeros<cube>(N, K(l), n_saved) : zeros<cube>(0, 0, 0);
     hyper_record(l) = zeros< mat >(n_saved, 3 * K(l));
     pooled_record(l) = zeros< mat >(n_saved, my_mdi.mixtures[l]->density_ptr->pooledHyperparameters().n_elem);
     acceptance_count(l) = zeros< vec >(3 * K(l));
@@ -88,7 +105,9 @@ Rcpp::List runMDI(
     for(uword l = 0; l < L; l++) {
       class_record.slice(l).row(s) = my_mdi.labels.col(l).t();
       weight_record.slice(l).row(s) = my_mdi.w.col(l).t();
-      alloc(l).slice(s) = my_mdi.mixtures[l]->alloc;
+      if(save_allocation_probabilities(l)) {
+        alloc(l).slice(s) = my_mdi.mixtures[l]->alloc;
+      }
       outlier_record.slice(l).row(s) = my_mdi.mixtures[l]->outliers.t();
       outlier_weight_record(s, l) = my_mdi.mixtures[l]->outlierComponent_ptr->outlier_weight;
       
@@ -108,9 +127,14 @@ Rcpp::List runMDI(
         }
       }
     }
+    const arma::vec pointwise = my_mdi.pointwiseLogLikelihood();
+    joint_likelihood_record(s) = accu(pointwise);
+    if(save_pointwise) {
+      pointwise_record.row(s) = pointwise.t();
+    }
     complete_likelihood_record(s) = my_mdi.complete_likelihood;
     observed_likelihood_record(s) = my_mdi.observed_likelihood;
-    evidence(s) = my_mdi.Z;
+    evidence(s) = my_mdi.Z_start;
     mass_record.row(s) = my_mdi.mass.t();
     phis_record.row(s) = my_mdi.phis.t();
     N_k_record.slice(s) = my_mdi.N_k;
@@ -149,6 +173,8 @@ Rcpp::List runMDI(
       Named("N_k") = N_k_record,
       Named("complete_likelihood") = complete_likelihood_record,
       Named("observed_likelihood") = observed_likelihood_record,
+      Named("joint_likelihood") = joint_likelihood_record,
+      Named("pointwise_likelihood") = pointwise_record,
       Named("evidence") = evidence,
       Named("hypers") = hyper_record,
       Named("acceptance_count") = acceptance_count,

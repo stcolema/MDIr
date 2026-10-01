@@ -28,6 +28,17 @@ outlierComponent::outlierComponent(
   updateWeights(non_outliers, outliers);
 };
 
+void outlierComponent::replaceData(const arma::mat& X_new) {
+  X = X_new;
+  N = X.n_rows;
+  outliers = zeros<uvec>(N);
+  non_outliers = ones<uvec>(N);
+  outlier_likelihood = zeros< vec >(N);
+  if(active()) {
+    calculateAllLogLikelihoods();
+  }
+}
+
 void outlierComponent::calculateAllLogLikelihoods() {
   for(uword n = 0; n < N; n++) {
     outlier_likelihood(n) = calculateItemLogLikelihood(n);
