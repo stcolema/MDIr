@@ -71,7 +71,12 @@
   forward simulation of the prior); with different numbers of components the
   recorded weights had non-zero values in unused slots, and a view's weights
   could be moved entirely out of its real slots, making `Z` zero and stopping the
-  sampler with a `randg()` error. Chains with label swaps (every tenth sweep)
+  sampler (a `randg()` error or "Non-finite allocation probabilities"). In 240
+  random models of three to five views with unequal numbers of components and
+  30,000 sweeps each, the old move stopped 6 of 112 runs without a
+  single-component view and 95 of 128 with one, and left non-zero weights in
+  unused slots in nearly all runs; none of these occurred after the correction,
+  with semi-supervised and unsupervised views mixed. Chains with label swaps (every tenth sweep)
   change; results from earlier versions of models with several views are not
   reproduced exactly.
 
