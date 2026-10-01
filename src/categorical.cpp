@@ -195,3 +195,24 @@ arma::vec categorical::simulate(arma::uword k) const {
   }
   return x;
 }
+
+void categorical::replaceData(const arma::mat& X_new) {
+  density::replaceData(X_new);
+  Y.zeros(N, P);
+  for(uword n = 0; n < N; n++) {
+    const arma::uvec& obs_idx = observed_indices(n);
+    for(uword i = 0; i < obs_idx.n_elem; i++) {
+      const uword p = obs_idx(i);
+      const double value = X(n, p);
+      if(value < 0.0 || std::abs(value - std::round(value)) > 1e-8) {
+        Rcpp::stop("Categorical data must be non-negative integers (column %d).", (int) p + 1);
+      }
+      const uword category = (uword) std::llround(value);
+      if(category >= n_cat(p)) {
+        Rcpp::stop("Column %d holds category %d, which the model was not fitted with (it has %d categories).",
+                   (int) p + 1, (int) category, (int) n_cat(p));
+      }
+      Y(n, p) = category;
+    }
+  }
+}

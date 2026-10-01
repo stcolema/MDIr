@@ -162,6 +162,117 @@ Rcpp::List simulatePosteriorPredictiveCpp(
   return out;
 }
 
+//' @title Predict new items from saved MCMC draws
+//' @description For each saved draw, loads the weights, phis and component
+//' parameters and evaluates, for every new item, its marginal likelihood
+//' (summed over all joint component assignments) and its posterior probability of
+//' belonging to each component of each view. See `predictMDI()` in R.
+//' @param X List of the data the model was fitted to (used to rebuild the
+//' densities and the data-driven hyperparameters).
+//' @param X_new List of the new data matrices, with the same columns as `X`.
+//' @param K Number of components in each view.
+//' @param mixture_types Integer density codes.
+//' @param outlier_types Integer outlier component codes.
+//' @param parameters For each view, a matrix with a row per draw holding the
+//' flattened component parameters.
+//' @param weights Cube (draws x K_max x L) of the component weights.
+//' @param phis Matrix (draws x L(L - 1) / 2) of the phis.
+//' @param outlier_weights Matrix (draws x L) of the outlier weights.
+//' @param allocations Cube (draws x N x L) of the sampled labels of the fitted
+//' items (0-based), used for the co-clustering probabilities.
+//' @param coclustering Also return, for each view, the probability that each new
+//' item shares a component with each fitted item.
+//' @param prior Optional MDI-level prior vector (see `runMDI`).
+//' @param density_prior Density-level prior options (see `runMDI`).
+//' @return A list with `log_likelihood` (draws x new items), `class_probability`
+//' (a K_max x new items matrix for each view, averaged over draws) and, if
+//' requested, `coclustering` (a new items x N matrix for each view).
+//' @keywords internal
+// [[Rcpp::export]]
+Rcpp::List predictNewItemsCpp(
+    arma::field<arma::mat> X,
+    arma::field<arma::mat> X_new,
+    arma::uvec K,
+    arma::uvec mixture_types,
+    arma::uvec outlier_types,
+    arma::field<arma::mat> parameters,
+    arma::cube weights,
+    arma::mat phis,
+    arma::mat outlier_weights,
+    arma::cube allocations,
+    bool coclustering,
+    arma::vec prior,
+    arma::vec density_prior
+) {
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
+  const uword L = model->L, n_draws = weights.n_rows, n_new = X_new(0).n_rows;
+  const uword N = allocations.n_cols;
+  
+  for(uword l = 0; l < L; l++) {
+    if(X_new(l).n_rows != n_new) {
+      Rcpp::stop("The new data must have the same number of items in every view.");
+    }
+    model->mixtures[l]->density_ptr->replaceData(X_new(l));
+    model->mixtures[l]->outlierComponent_ptr->replaceData(X_new(l));
+  }
+  
+  arma::mat log_lik(n_draws, n_new);
+  arma::field<arma::mat> class_prob(L), cocluster(L);
+  for(uword l = 0; l < L; l++) {
+    class_prob(l).zeros(model->K_max, n_new);
+    if(coclustering) {
+      cocluster(l).zeros(n_new, N);
+    }
+  }
+  
+  arma::mat log_g;
+  for(uword r = 0; r < n_draws; r++) {
+    Rcpp::checkUserInterrupt();
+    for(uword l = 0; l < L; l++) {
+      for(uword k = 0; k < model->K_max; k++) {
+        model->w(k, l) = weights(r, k, l);
+      }
+    }
+    if(model->LC2 > 0 && L > 1) {
+      model->phis = phis.row(r).t();
+    }
+    for(uword l = 0; l < L; l++) {
+      auto& mixture = model->mixtures[l];
+      mixture->density_ptr->setParameters(parameters(l).row(r).t());
+      if(mixture->outlierComponent_ptr->active()) {
+        mixture->outlierComponent_ptr->outlier_weight = outlier_weights(r, l);
+        mixture->outlierComponent_ptr->non_outlier_weight = 1.0 - outlier_weights(r, l);
+      }
+    }
+    model->refreshPartitionTables();
+    const double log_Z = std::log(mdiPartitionSumFromC(model->w, model->K, model->partition_tables));
+    
+    for(uword j = 0; j < n_new; j++) {
+      model->componentLogLikelihoods(j, false, log_g);
+      double log_numerator = 0.0;
+      const arma::mat probs = mdiClassProbabilities(model->w, model->K, model->partition_tables, log_g, log_numerator);
+      log_lik(r, j) = log_numerator - log_Z;
+      for(uword l = 0; l < L; l++) {
+        class_prob(l).col(j) += probs.col(l) / (double) n_draws;
+        if(coclustering) {
+          for(uword i = 0; i < N; i++) {
+            cocluster(l)(j, i) += probs((uword) std::llround(allocations(r, i, l)), l) / (double) n_draws;
+          }
+        }
+      }
+    }
+  }
+  
+  Rcpp::List out = Rcpp::List::create(
+    Rcpp::Named("log_likelihood") = log_lik,
+    Rcpp::Named("class_probability") = class_prob
+  );
+  if(coclustering) {
+    out["coclustering"] = cocluster;
+  }
+  return out;
+}
+
 // Test hooks for the exact normalising-constant calculations ------------------
 
 //' @title Test hook: MDI normalising constant
@@ -314,6 +425,85 @@ arma::mat gpPopulationCheckCpp(arma::vec y, double centre, double center_sd,
     g.updatePopulation(y, m, s);
     out(it, 0) = m;
     out(it, 1) = s;
+  }
+  return out;
+}
+
+//' @title Test hook: log marginal likelihood of an item
+//' @description log Z(w * g) - log Z(w) for per-view component likelihoods
+//' (test hook).
+//' @param log_g K_max x L matrix of log component likelihoods (-Inf allowed).
+//' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+//' @return The log marginal likelihood.
+//' @keywords internal
+// [[Rcpp::export]]
+double mdiLogMarginalCpp(arma::mat log_g, arma::mat w, arma::uvec K, arma::mat phi) {
+  const std::vector<double> C = mdiConnectedSums(phi);
+  return mdiLogNumerator(w, K, C, log_g) - std::log(mdiPartitionSumFromC(w, K, C));
+}
+
+//' @title Test hook: class probabilities of an item
+//' @description Posterior probability of each component of each view given an
+//' item's data (test hook).
+//' @param log_g K_max x L matrix of log component likelihoods (-Inf allowed).
+//' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+//' @return A K_max x L matrix.
+//' @keywords internal
+// [[Rcpp::export]]
+arma::mat mdiClassProbabilitiesCpp(arma::mat log_g, arma::mat w, arma::uvec K, arma::mat phi) {
+  double log_numerator = 0.0;
+  return mdiClassProbabilities(w, K, mdiConnectedSums(phi), log_g, log_numerator);
+}
+
+//' @title Test hook: chain of draws from the collapsed conditional of a phi
+//' @description Runs the slice-sampling update of phi(l, m) repeatedly with the
+//' weights and the agreement count held fixed (test hook).
+//' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+//' @param l,m Views (0-based).
+//' @param N Number of items. @param N_lm Number of items with the same component in views l and m.
+//' @param shape,rate Gamma prior on phi(l, m).
+//' @param n_draws Number of updates.
+//' @return The draws.
+//' @keywords internal
+// [[Rcpp::export]]
+arma::vec phiSliceChainCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m,
+                           double N, double N_lm, double shape, double rate, arma::uword n_draws) {
+  const double B = mdiPhiRate(w, K, phi, l, m);
+  arma::mat phi_zero = phi;
+  phi_zero(l, m) = 0.0;
+  phi_zero(m, l) = 0.0;
+  const double A = mdiPartitionSum(w, K, phi_zero);
+  double current = phi(l, m);
+  arma::vec out(n_draws);
+  for(uword i = 0; i < n_draws; i++) {
+    current = mdiSamplePhiSlice(current, N_lm, N, A, B, shape, rate);
+    out(i) = current;
+  }
+  return out;
+}
+
+//' @title Test hook: log collapsed conditional of a phi
+//' @description Unnormalised log density of phi(l, m) with the strategic latent
+//' variable integrated out, as a function of phi (test hook).
+//' @param phi Values of phi(l, m). @param w Weights. @param K Components per view.
+//' @param phi_matrix L x L matrix of phis (the entry (l, m) is ignored).
+//' @param l,m Views (0-based).
+//' @param N Number of items. @param N_lm Agreement count.
+//' @param shape,rate Gamma prior.
+//' @return The log density (without the Jacobian of log phi).
+//' @keywords internal
+// [[Rcpp::export]]
+arma::vec phiConditionalLogDensityCpp(arma::vec phi, arma::mat w, arma::uvec K, arma::mat phi_matrix,
+                                      arma::uword l, arma::uword m, double N, double N_lm,
+                                      double shape, double rate) {
+  const double B = mdiPhiRate(w, K, phi_matrix, l, m);
+  arma::mat phi_zero = phi_matrix;
+  phi_zero(l, m) = 0.0;
+  phi_zero(m, l) = 0.0;
+  const double A = mdiPartitionSum(w, K, phi_zero);
+  arma::vec out(phi.n_elem);
+  for(uword i = 0; i < phi.n_elem; i++) {
+    out(i) = mdiLogPhiConditional(std::log(phi(i)), N_lm, N, A, B, shape, rate) - std::log(phi(i));
   }
   return out;
 }

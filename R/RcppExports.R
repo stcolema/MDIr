@@ -302,6 +302,36 @@ simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, p
     .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior)
 }
 
+#' @title Predict new items from saved MCMC draws
+#' @description For each saved draw, loads the weights, phis and component
+#' parameters and evaluates, for every new item, its marginal likelihood
+#' (summed over all joint component assignments) and its posterior probability of
+#' belonging to each component of each view. See `predictMDI()` in R.
+#' @param X List of the data the model was fitted to (used to rebuild the
+#' densities and the data-driven hyperparameters).
+#' @param X_new List of the new data matrices, with the same columns as `X`.
+#' @param K Number of components in each view.
+#' @param mixture_types Integer density codes.
+#' @param outlier_types Integer outlier component codes.
+#' @param parameters For each view, a matrix with a row per draw holding the
+#' flattened component parameters.
+#' @param weights Cube (draws x K_max x L) of the component weights.
+#' @param phis Matrix (draws x L(L - 1) / 2) of the phis.
+#' @param outlier_weights Matrix (draws x L) of the outlier weights.
+#' @param allocations Cube (draws x N x L) of the sampled labels of the fitted
+#' items (0-based), used for the co-clustering probabilities.
+#' @param coclustering Also return, for each view, the probability that each new
+#' item shares a component with each fitted item.
+#' @param prior Optional MDI-level prior vector (see `runMDI`).
+#' @param density_prior Density-level prior options (see `runMDI`).
+#' @return A list with `log_likelihood` (draws x new items), `class_probability`
+#' (a K_max x new items matrix for each view, averaged over draws) and, if
+#' requested, `coclustering` (a new items x N matrix for each view).
+#' @keywords internal
+predictNewItemsCpp <- function(X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior) {
+    .Call(`_mdir_predictNewItemsCpp`, X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior)
+}
+
 #' @title Test hook: MDI normalising constant
 #' @description Exact normalising constant Z of the MDI model (test hook).
 #' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
@@ -399,6 +429,56 @@ gpPopulationCheckCpp <- function(y, centre, center_sd, pool_sd_scale, n_iter) {
     .Call(`_mdir_gpPopulationCheckCpp`, y, centre, center_sd, pool_sd_scale, n_iter)
 }
 
+#' @title Test hook: log marginal likelihood of an item
+#' @description log Z(w * g) - log Z(w) for per-view component likelihoods
+#' (test hook).
+#' @param log_g K_max x L matrix of log component likelihoods (-Inf allowed).
+#' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+#' @return The log marginal likelihood.
+#' @keywords internal
+mdiLogMarginalCpp <- function(log_g, w, K, phi) {
+    .Call(`_mdir_mdiLogMarginalCpp`, log_g, w, K, phi)
+}
+
+#' @title Test hook: class probabilities of an item
+#' @description Posterior probability of each component of each view given an
+#' item's data (test hook).
+#' @param log_g K_max x L matrix of log component likelihoods (-Inf allowed).
+#' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+#' @return A K_max x L matrix.
+#' @keywords internal
+mdiClassProbabilitiesCpp <- function(log_g, w, K, phi) {
+    .Call(`_mdir_mdiClassProbabilitiesCpp`, log_g, w, K, phi)
+}
+
+#' @title Test hook: chain of draws from the collapsed conditional of a phi
+#' @description Runs the slice-sampling update of phi(l, m) repeatedly with the
+#' weights and the agreement count held fixed (test hook).
+#' @param w Weights (K_max x L). @param K Components per view. @param phi L x L matrix of phis.
+#' @param l,m Views (0-based).
+#' @param N Number of items. @param N_lm Number of items with the same component in views l and m.
+#' @param shape,rate Gamma prior on phi(l, m).
+#' @param n_draws Number of updates.
+#' @return The draws.
+#' @keywords internal
+phiSliceChainCpp <- function(w, K, phi, l, m, N, N_lm, shape, rate, n_draws) {
+    .Call(`_mdir_phiSliceChainCpp`, w, K, phi, l, m, N, N_lm, shape, rate, n_draws)
+}
+
+#' @title Test hook: log collapsed conditional of a phi
+#' @description Unnormalised log density of phi(l, m) with the strategic latent
+#' variable integrated out, as a function of phi (test hook).
+#' @param phi Values of phi(l, m). @param w Weights. @param K Components per view.
+#' @param phi_matrix L x L matrix of phis (the entry (l, m) is ignored).
+#' @param l,m Views (0-based).
+#' @param N Number of items. @param N_lm Agreement count.
+#' @param shape,rate Gamma prior.
+#' @return The log density (without the Jacobian of log phi).
+#' @keywords internal
+phiConditionalLogDensityCpp <- function(phi, w, K, phi_matrix, l, m, N, N_lm, shape, rate) {
+    .Call(`_mdir_phiConditionalLogDensityCpp`, phi, w, K, phi_matrix, l, m, N, N_lm, shape, rate)
+}
+
 #' @title Read MCMC Samples
 #' @description C++ function to read the files saved from 
 #' `runMDIWriteToFile.cpp` to disk and compile them into a matrix.
@@ -434,9 +514,17 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 #' @param density_prior Options of the density-level priors (variance scale 
 #' pooling and Gaussian process priors), see `densityPrior()` in R.
+#' @param save_allocation_probabilities For each view, 1 to record the allocation
+#' probabilities of every item at every saved iteration (an N x K x draws array, 
+#' needed only for semi-supervised views), 0 to leave them out. A single value is
+#' recycled over the views.
+#' @param save_pointwise Record the log-likelihood of every item at every saved 
+#' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
+#' @param phi_slice Update the phis with the strategic latent variable 
+#' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File

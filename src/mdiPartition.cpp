@@ -306,3 +306,150 @@ double mdiPhiRate(
   }
   return mdiPartitionSum(w_merged, K_merged, phi_merged);
 }
+
+// === Marginal likelihood of an item and its class probabilities ==============
+
+namespace {
+
+// w * g with each view's column rescaled by the maximum of its log g. Returns
+// false if a view has no finite entry. The summed rescaling is returned in shift.
+bool scaledWeights(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const arma::mat& log_g,
+    arma::mat& G,
+    double& shift
+) {
+  const uword L = w.n_cols;
+  G.zeros(w.n_rows, L);
+  shift = 0.0;
+  for(uword l = 0; l < L; l++) {
+    double m = -arma::datum::inf;
+    for(uword k = 0; k < K(l); k++) {
+      if(w(k, l) > 0.0) {
+        m = std::max(m, log_g(k, l));
+      }
+    }
+    if(!std::isfinite(m)) {
+      return false;
+    }
+    for(uword k = 0; k < K(l); k++) {
+      G(k, l) = w(k, l) * std::exp(log_g(k, l) - m);
+    }
+    shift += m;
+  }
+  return true;
+}
+
+}
+
+double mdiLogNumerator(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g
+) {
+  arma::mat G;
+  double shift = 0.0;
+  if(!scaledWeights(w, K, log_g, G, shift)) {
+    return -arma::datum::inf;
+  }
+  return std::log(mdiPartitionSumFromC(G, K, C)) + shift;
+}
+
+arma::mat mdiClassProbabilities(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g,
+    double& log_numerator
+) {
+  const uword L = w.n_cols;
+  arma::mat probs(w.n_rows, L, arma::fill::zeros);
+  arma::mat G;
+  double shift = 0.0;
+  if(!scaledWeights(w, K, log_g, G, shift)) {
+    log_numerator = -arma::datum::inf;
+    return probs;
+  }
+  const double Z_G = mdiPartitionSumFromC(G, K, C);
+  log_numerator = std::log(Z_G) + shift;
+  for(uword l = 0; l < L; l++) {
+    const arma::vec rates = mdiWeightRates(G, K, C, l);
+    for(uword k = 0; k < K(l); k++) {
+      probs(k, l) = G(k, l) * rates(k) / Z_G;
+    }
+  }
+  return probs;
+}
+
+// === Collapsed conditional of a phi ==========================================
+
+namespace {
+
+inline double logAddExp(double a, double b) {
+  if(a == -arma::datum::inf) return b;
+  if(b == -arma::datum::inf) return a;
+  const double m = std::max(a, b);
+  return m + std::log(std::exp(a - m) + std::exp(b - m));
+}
+
+}
+
+double mdiLogPhiConditional(
+    double u,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+) {
+  const double phi = std::exp(u);
+  const double log_Z = logAddExp(std::log(A), std::log(B) + u);
+  return shape * u - rate * phi + N_lm * std::log1p(phi) - N * log_Z;
+}
+
+double mdiSamplePhiSlice(
+    double phi,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+) {
+  const double width = 1.0;
+  const int max_steps = 50, max_shrink = 200;
+  auto f = [&](double u) { return mdiLogPhiConditional(u, N_lm, N, A, B, shape, rate); };
+
+  const double u0 = std::log(phi);
+  const double log_level = f(u0) + std::log(arma::randu());
+
+  // Stepping out (Neal, 2003, Figure 3)
+  double left = u0 - width * arma::randu(), right = left + width;
+  int j = (int) std::floor(max_steps * arma::randu());
+  int k = (max_steps - 1) - j;
+  while(j > 0 && f(left) > log_level) {
+    left -= width;
+    j--;
+  }
+  while(k > 0 && f(right) > log_level) {
+    right += width;
+    k--;
+  }
+
+  // Shrinkage (Neal, 2003, Figure 5)
+  for(int i = 0; i < max_shrink; i++) {
+    const double u1 = left + arma::randu() * (right - left);
+    if(f(u1) > log_level) {
+      return std::exp(u1);
+    }
+    if(u1 < u0) {
+      left = u1;
+    } else {
+      right = u1;
+    }
+  }
+  return phi;
+}

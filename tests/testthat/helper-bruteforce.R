@@ -47,3 +47,44 @@ grid_moments <- function(x, logdens) {
   m <- sum(w * x)
   c(mean = m, sd = sqrt(sum(w * x^2) - m^2))
 }
+
+# Brute-force marginal likelihood of one item: log of
+#   sum_{k_1..k_L} prod_l w[k_l, l] g[k_l, l] prod_{l<m} (1 + phi[l, m] 1[k_l = k_m])
+# minus log Z, with g the K_max x L matrix of per-view component likelihoods on
+# the log scale (-Inf or NA beyond K[l] or for excluded components).
+bf_log_marginal <- function(log_g, w, K, phi) {
+  g <- exp(log_g); g[!is.finite(log_g)] <- 0
+  list(
+    log_marginal = log(sum(bf_terms(w * g, K, phi)$term)) - log(bf_Z(w, K, phi)),
+    # p(c_l = k | x)
+    class_prob = {
+      tt <- bf_terms(w * g, K, phi)
+      tt$term <- tt$term / sum(tt$term)
+      sapply(seq_along(K), function(l) vapply(seq_len(max(K)), function(k) sum(tt$term[tt$grid[, l] == k]), numeric(1)))
+    }
+  )
+}
+
+# The state (weights, phi matrix) of saved draw s of a chain
+bf_state <- function(ch, s) {
+  L <- ch$V
+  w <- matrix(0, max(ch$K), L)
+  for (l in seq_len(L)) w[, l] <- ch$weights[s, , l]
+  phi <- matrix(0, L, L)
+  if (L > 1) {
+    pairs <- t(utils::combn(L, 2))
+    for (i in seq_len(nrow(pairs))) phi[pairs[i, 1], pairs[i, 2]] <- phi[pairs[i, 2], pairs[i, 1]] <- ch$phis[s, i]
+  }
+  list(w = w, phi = phi)
+}
+
+# Log-likelihood of the observed entries of item x (a vector, NA = missing) in
+# each component of a diagonal Gaussian view ("G") at saved draw s
+bf_gaussian_loglik <- function(ch, v, s, x) {
+  P <- length(x); K <- ch$K[v]
+  th <- ch$parameters[[v]][s, ]
+  mu <- matrix(th[seq_len(P * K)], P, K)
+  vr <- matrix(th[P * K + seq_len(P * K)], P, K)
+  obs <- !is.na(x)
+  vapply(seq_len(K), function(k) sum(stats::dnorm(x[obs], mu[obs, k], sqrt(vr[obs, k]), log = TRUE)), numeric(1))
+}

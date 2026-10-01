@@ -39,6 +39,10 @@ public:
     // Normalising constant
     Z = 0.0,
 
+    // Z at the start of the latest sweep (before any phi is updated), the value
+    // recorded as the evidence
+    Z_start = 0.0,
+
     // Strategic latent variable
     v = 0.0,
 
@@ -158,6 +162,31 @@ public:
   uword samplePhiShape(uword N_lm, double rate) const;
   void updatePhis();
 
+  // Draw each phi from its conditional with the strategic latent variable
+  // integrated out (see mdiSamplePhiSlice()). Together with the draw of v that
+  // follows it at the start of a sweep this is a joint draw of (phi, v) given
+  // the weights and labels. It must come before v is redrawn, because the 
+  // new phi makes the current v stale.
+  void updatePhisSlice();
+
+  // Use updatePhisSlice() (TRUE) or the Gibbs update given v (FALSE)
+  bool phi_slice = true;
+
+  // === Likelihood ============================================================
+
+  // log p(x_n | w, phi, theta) for every item at the current state: the data
+  // of item n marginalised over all joint component assignments (and outlier
+  // status), which is Z(w * g_n) / Z(w) (see mdiPartition.h). Items with an
+  // observed label in a view contribute the density of the data and of that label
+  // (the sum is restricted to the observed component), as the label is data.
+  arma::vec pointwiseLogLikelihood();
+
+  // The log of g(k, l) = p(x_nl | component k of view l) for every view, with
+  // the outlier distribution marginalised where a view has one, in the K_max x L
+  // matrix log_g (-Inf beyond K(l)). If use_fixed, a view in which item n has an
+  // observed label keeps only that component (and no outlier).
+  void componentLogLikelihoods(uword n, bool use_fixed, arma::mat& log_g);
+
   // === Allocations ===========================================================
 
   // Recompute the membership indicators and counts of view l from its labels
@@ -178,8 +207,10 @@ public:
   // log(1 + phi) for the items that share a label with item n in another view
   mat calculateUpweights(uword l) const;
 
-  // One full Gibbs sweep. The order is: strategic latent variable, mass, 
-  // weights and phis (given the current labels), then the component parameters
+  // One full Gibbs sweep. The order is: the phis with the strategic latent
+  // variable integrated out (if phi_slice; see updatePhisSlice()), the strategic
+  // latent variable, mass, weights and (otherwise) phis given it, then the
+  // component parameters
   // (given the labels and the current imputations), then the (label, outlier) 
   // draw followed by the imputation of missing values, and every tenth sweep a
   // label swap move within views.

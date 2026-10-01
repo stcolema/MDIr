@@ -127,6 +127,12 @@ public:
   // The data-driven hyperparameters of the priors, for reporting
   virtual Rcpp::List hyperparameterList() const { return Rcpp::List::create(); }
 
+  // === New data ==============================================================
+  // Replace the data (and its missing-value patterns) by new items with the same
+  // columns, so the likelihood of the new items can be evaluated at saved
+  // parameters. The hyperparameters set from the original data are kept.
+  virtual void replaceData(const arma::mat& X_new);
+
   // === Missing data ==========================================================
   void identifyMissingValues();
 
