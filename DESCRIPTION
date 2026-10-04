@@ -30,7 +30,7 @@ Description: Integrative clustering and semi-supervised prediction.
   distribution to handle outliers.
 Imports: Rcpp (>= 1.0.6), ggplot2, rlang, parallel, stringr, tidyr, salso, stats, utils
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: testthat (>= 3.0.0), posterior, knitr, rmarkdown, xml2
+Suggests: testthat (>= 3.0.0), posterior, loo, knitr, rmarkdown, xml2
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Encoding: UTF-8

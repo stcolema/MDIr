@@ -271,53 +271,79 @@ consensus_result <- compileConsensusClustering(consensus_chains)
 
 **When to use**: Poor chain mixing (chains converge to different clusterings), multimodal posteriors, or when you need results faster than a single very long chain would provide.
 
-### Parallel tempering: an ergodic alternative for multimodal posteriors
+### Multimodal posteriors: parallel tempering and weighted ensembles
 
-Parallel tempering (replica exchange) runs one copy of the sampler at each inverse
-temperature \(\beta\) in a ladder ending at 1. The copy at \(\beta\) targets
-\(L^\beta P\), where \(L\) is the likelihood of the data given the component
-assignments and parameters and \(P\) is the rest of the model, so \(\beta = 1\) is the
-posterior. Neighbouring copies exchange states with a Metropolis step, which lets the
-\(\beta = 1\) chain leave a mode through the flatter, hotter targets. Unlike pooling
-independent chains, it targets the posterior, so the \(\beta = 1\) chain is a posterior
-sample once the ladder has mixed, with the modes correctly weighted.
+A Gibbs chain is asymptotically exact (it converges to the posterior from any start under
+positivity of its conditionals), but its finite-time behaviour can be hopeless when modes
+are separated by barriers. Pooling independent chains does not repair this: the pooled
+estimate converges to the modes weighted by how often a chain *starts* in each basin of
+attraction, which is the posterior only if those probabilities equal the posterior masses.
+There is no estimator that fixes this from the chains' own samples alone; a correction
+needs something that links the modes. Two such tools are provided, with different guarantees
+(derivations, proofs and the exact status of each statement are in
+`verification/tempering/theory.md`).
+
+**Parallel tempering** (`betas`). One replica of the sampler runs at each inverse temperature
+in a ladder ending at 1 and neighbours exchange states; the replica at \(\beta\) targets
+\(L^\beta P\) (\(L\) the likelihood of the data given the labels and component parameters,
+\(P\) the rest of the model), so \(\beta = 1\) is the posterior.
 
 ```r
-betas <- ptLadder(8, beta_min = 0.05)           # a first guess; see ?adaptLadder
+betas <- ptLadder(8, beta_min = 0.05)           # any ladder is valid; it only affects efficiency
 fit <- callMDI(X, R = 5000, thin = 5, types = c("MVN", "MVN"), K = c(6, 6), betas = betas)
-ptDiagnostics(fit)                              # exchange rates, round trips
+ptDiagnostics(fit)                              # exchange rates, round trips (no guarantee)
 ```
 
-`fitMDI()` and `runMCMCChains()` take the same `betas`. The recorded draws are those of the
-copy at \(\beta = 1\). `adaptLadder()` moves the temperatures until the neighbouring
-exchange rates are equal (Syed et al., 2022).
+`fitMDI()` and `runMCMCChains()` take the same `betas`. *Guaranteed*: each exchange, round and
+iteration leaves the product of tempered targets invariant, so the \(\beta = 1\) chain targets
+the posterior for any ladder (proved in Lean for finite spaces; ergodic averages converge
+under the positivity argued in the theory note). *Not guaranteed*: faster mixing, which is the
+reason to use it. The plain chain has the same asymptotic guarantee, and no finite-time bound
+is available here.
 
-**Guarantees.** Every exchange, every product of exchanges and the even-odd schedule leave the
-product of the tempered targets invariant, so the \(\beta = 1\) marginal is the posterior for
-any ladder (checked in Lean, in exact arithmetic on a small chain, and against exact
-posteriors by simulation, see `verification/tempering/`). That is an asymptotic statement:
-nothing here bounds the finite-time error, and a ladder that does not bridge the prior and
-the posterior gives the same answer as a single chain, only more slowly.
+**Weighted ensembles** (`smcMDI()`, `smcReplicates()`). Many chains start from exact draws of
+the prior, are annealed to the posterior along the same path and weighted by their importance
+weights (annealed importance sampling / sequential Monte Carlo). *Guaranteed*: with a fixed
+schedule the weighted sum is *exactly unbiased* for the unnormalised posterior, and the evidence
+estimate is unbiased, for any number of particles and whether or not the Gibbs sweeps mix
+(proved in Lean for annealed importance sampling, exact rational enumeration for SMC with
+resampling); the ratio estimators are consistent as the number of independent runs grows, with
+any fixed number of particles per run. *Not guaranteed*: any bound on the variance. In the
+four-cluster example below the path from the prior to the posterior has a sharp transition,
+and 20,000 particles had an effective sample size of 1.6; with resampling the effective
+sample size looked healthy while the mode masses were wrong. An adaptive schedule is
+consistent but not exactly unbiased; `beta_start > 0` is conditional on a start that the
+sampler cannot certify (a proved bias bound is in the theory note).
 
-**Limits.**
+```r
+runs <- smcReplicates(X, c("MVN", "MVN"), n_runs = 8, n_particles = 200, K = c(6, 6))
+smcSE(runs, function(labels) paste(sort(table(labels[, 1])), collapse = "-"))  # jackknife SE over runs
+weightedConsensus(runs$combined)                # point estimate and weighted similarity matrix
+compareRuns(runs)                               # agreement between independent runs (no guarantee)
+```
 
-- Supported: complete data, `"G"`, `"MVN"` and `"C"` views, no outlier component (`"TAGM"`
-  views and Gaussian process views are refused with an error). The cost is `length(betas)`
-  times that of a single chain.
-- A sparse finite mixture prior combined with a weak (hot) likelihood puts every replica
-  with small \(\beta\) into one occupied component, and the path to the posterior then
-  crosses a sharp transition, where the log-likelihood jumps by hundreds of nats. Exchange
-  rates across it are close to zero unless the ladder is dense there, and the tuning is noisy
-  because the transition moves between pilot runs. In the example in
-  `verification/tempering/` hot replicas never completed a round trip, and
-  the round-trip rate predicted from the exchange rates (0.046 per round) was several hundred
-  times what occurred (0 to 3 trips in 20,000 rounds), so `ptDiagnostics()` can be
-  optimistic. The cold chain still moved between modes through the warmer part of the ladder,
-  and pooled over 12 runs it recovered the exact mode weights, but a single run of 20,000
-  sweeps was still noisy (total variation distance to the exact weights 0.06 to 0.28, against
-  0.48 to 0.90 for single plain chains).
-- Diagnose by checking that independent runs agree on quantities that depend on the mode
-  (for example, how often two items co-cluster), not only by the exchange rates.
+Helpers: `smcWeights()`, `smcDiagnostics()`, `smcWeightDiagnostic()` (Pareto \(\hat k\)
+of the weights of an unresampled run), `weightedPSM()`, `smcPosterior()` (weighted
+distribution of any function of the partition, for example the mass of a mode),
+`resampleSMC()`, `smcAsChain()` (feeds `processMCMCChain()`), `combineSMC()`,
+`smcSE()`, `compareRuns()`.
+
+**Supported**: complete data, `"G"`, `"MVN"` and `"C"` views, no outlier component
+(`"TAGM"`, Gaussian process views and missing values are refused); weighted ensembles also need
+unsupervised views. Cost: `length(betas)` times a chain for tempering; memory proportional to
+the number of particles times the data size for the ensembles.
+
+**What the four-cluster example shows** (`verification/tempering/`; one dataset, one model;
+four well-separated clusters fitted with three components, exact posterior masses of the merge
+patterns 0.52, 0.30, 0.10, 0.08): single plain chains stayed in one pattern in 10 of 12 runs, and
+160 pooled chains had total variation distance 0.31 from the exact masses; the parallel
+tempering cold chain recovered the exact masses to within noise when 12 runs were pooled (single runs
+were noisy: 0.06 to 0.28); weighted ensembles from the prior failed (wrong, unstable masses),
+as explained above; starting particles at \(\beta^* = 0.7\) improved the pooled masses to
+0.43/0.32/0.13/0.13, which is an illustration and not a guarantee. Predicted round
+trips for tempering (about 900) were far above those observed (0 to 3), so exchange rates alone
+do not show that tempering works here. Agreement of independent runs (`compareRuns()`) is the check
+to use; it can show failure and cannot prove success.
 
 ## Interpreting Results
 

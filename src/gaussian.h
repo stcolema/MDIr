@@ -51,6 +51,7 @@ public:
   void sampleFromPriors() override;
   void updatePooledHyperparameters(const arma::uvec& occupied) override;
   arma::vec pooledHyperparameters() const override;
+  void setPooledHyperparameters(const arma::vec& pooled) override;
 
   void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
 

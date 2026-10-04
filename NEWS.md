@@ -1,5 +1,32 @@
 # mdir (development version)
 
+## New: weighted ensembles, and a map of what is guaranteed
+
+* **`smcMDI()`** runs many particles from exact draws of the prior to the posterior along the
+  likelihood-tempered path and weights them (annealed importance sampling / sequential Monte
+  Carlo, with a conditional-ESS adaptive or a fixed schedule, systematic or multinomial
+  resampling). **`smcReplicates()`** fixes the schedule from a pilot run and runs independent
+  ensembles; **`combineSMC()`** pools them by their evidence estimates.
+* Guarantees, each with its status in `verification/tempering/theory.md`: with a fixed schedule
+  the weighted sum is exactly unbiased for the unnormalised posterior and the evidence estimate is
+  unbiased, for any number of particles and without any mixing assumption (Lean 4 for annealed
+  importance sampling; exact rational enumeration for resampling schemes; Del Moral, 2004); the
+  ratio estimators are consistent as the number of independent runs or particles grows. An
+  adaptive schedule is consistent but exactly biased (shown by enumeration). Starting above the
+  prior (`beta_start`) is conditional on an exact start, with a proved bound on the bias in
+  terms of the start's total-variation error (Lean 4). No bound on the variance is available.
+* In the four-cluster example the variance is the problem: with a sharp transition on the
+  path from prior to posterior, 20,000 particles had an effective sample size of 1.6, and with
+  resampling the effective sample size looked healthy while the mode masses were wrong. Pooling
+  independent plain chains converges to the basin weights (total variation distance 0.31 from the
+  exact masses with 160 chains).
+* Helpers: `smcDiagnostics()`, `smcWeightDiagnostic()` (Pareto k-hat of Vehtari et al., 2024, for
+  unresampled runs), `smcWeights()`, `weightedPSM()`, `weightedConsensus()`, `smcPosterior()`,
+  `resampleSMC()`, `smcAsChain()` (feeds `processMCMCChain()`), `smcSE()` (jackknife over
+  independent runs), `compareRuns()` (agreement of independent runs, for tempered chains too).
+  Diagnostics are labelled as having no guarantee.
+* Supported: complete data, `G`/`MVN`/`C` views, no outlier component, unsupervised views.
+
 ## New: parallel tempering
 
 * **`betas`** (in `callMDI()`, `runMCMCChains()` and `fitMDI()`) runs one replica of the

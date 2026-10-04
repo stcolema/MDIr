@@ -29,6 +29,15 @@ using namespace arma ;
 // Gamma(N, Z) (Kirk et al., 2012), so every parameter has a tractable full
 // conditional.
 
+// The complete state of one sampler, enough to copy a particle (see mdi::saveState)
+struct mdiState {
+  arma::umat labels;
+  arma::mat w;
+  arma::vec phis, mass;
+  double v = 0.0, Z = 0.0;
+  std::vector<arma::vec> theta, pooled;
+};
+
 class mdi {
 
 public:
@@ -190,6 +199,21 @@ public:
   // the item at its component. Unchanged by a relabelling that exchanges 
   // component parameters with the labels (updateLabels()).
   double dataLogLikelihood();
+
+  // Copy a state out of, and into, a sampler (used to resample particles). The
+  // state holds the labels, weights, phis, masses, strategic latent variable, the
+  // component parameters and the pooled hyperparameters; everything else is
+  // recomputed. Supported for the densities whose parameters() and
+  // setParameters() are complete (G, MVN, C).
+  mdiState saveState() const;
+  void loadState(const mdiState& state);
+
+  // Replace the state by an exact draw from the prior: masses, phis, weights,
+  // component parameters and pooled hyperparameters from their priors, then the
+  // labels of every item from p(c | w, phi). The strategic latent variable is
+  // drawn from its conditional given the weights and phis. This is a draw from
+  // the beta = 0 target.
+  void initialiseFromPrior();
 
   // === Likelihood ============================================================
 

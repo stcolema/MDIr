@@ -104,6 +104,12 @@ arma::vec gaussian::pooledHyperparameters() const {
   return scale;
 }
 
+void gaussian::setPooledHyperparameters(const arma::vec& pooled) {
+  if(pooled.n_elem == P) {
+    scale = pooled;
+  }
+}
+
 void gaussian::sampleFromPriors() {
   if(scale_shape > 0.0) {
     for(uword p = 0; p < P; p++) {

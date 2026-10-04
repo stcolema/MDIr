@@ -30,7 +30,11 @@ The rates come from the exchange attempts of a finished run
 (\code{\link{ptDiagnostics}}); each is estimated as one minus the mean
 acceptance probability over the attempts, not the fraction accepted.
 Estimates from a short run that has not reached equilibrium are noisy and can
-be biased; \code{\link{adaptLadder}} repeats the update.
+be biased; \code{\link{adaptLadder}} repeats the update. The validity of
+parallel tempering does not depend on the ladder (every ladder leaves the
+posterior invariant); that equal rejection rates maximise the round-trip rate
+is shown by Syed et al. (2022) only under the assumptions in
+\code{\link{ptDiagnostics}}, which this sampler does not satisfy exactly.
 }
 \references{
 Syed, S., Bouchard-Cote, A., Deligiannidis, G. and Doucet, A.

@@ -50,12 +50,21 @@ The `beta = 1` replica's draws are returned.
 | Sampler (single tempered chain, and PT cold chain) reproduces the exact label posterior, one and two views | exact enumeration (categorical; Gaussian with fixed scale) and Monte Carlo prior for two views; negative controls with the wrong `beta` are rejected | `run_L1.R`, `run_L2.R`, `run_L1_gauss.R`, `exact_reference.R` |
 | Benefit and exactness in a multimodal case | exact masses of the merge patterns against plain chains and PT | `mode_mass.R`, `pooled_plain.R` |
 | Ladder update equalises rejection rates | known Gaussian path | `test-tempering.R` |
+| Annealed importance sampling is exactly unbiased for the unnormalised target (any number of particles, no mixing needed) | Lean (`annealMeasure_eq_last`, `ais_unbiased`) | `lean/Tempering/AIS.lean` |
+| Bias of a start that is not exact is at most `B prod R_k sum|mu_0 - pi_0|` | Lean (`bias_bound`) | `AIS.lean` |
+| SMC with resampling (never/always/ESS-triggered; multinomial/systematic) is exactly unbiased for a fixed schedule; an adaptive schedule is exactly biased; the self-normalised estimator is biased at finite N | exact rational arithmetic | `sympy_smc_exact.py` |
+| SMC evidence and unnormalised posterior unbiased against the exact values (categorical, 300 runs) | simulation; mutant (weights scaled by 0.9) caught | `smc_unbiased_L1.R`, `test-smc.R` |
+| Weighted ensembles from the prior on the four-cluster example | wrong or unstable mode masses; AIS ESS 5.7 and 1.6 | `smc_explore.R` |
+| Start above the prior | masses move toward exact values as start sweeps grow (illustration, no guarantee) | `smc_start.R` |
 
 Tests were also run against two deliberately broken versions (wrong sign in the exchange,
 counts not tempered in the MVN update); each was caught.
 
 ## What was not checked
 
+* Finite-time mixing of tempering, and any bound on the variance of the weights of a sampler
+  from the prior; a certificate of mixing (couplings) is not built. `theory.md` classifies
+  every claim as exact, asymptotic, conditional or diagnostic.
 * Lean covers finite state spaces and real arithmetic. It does not cover general state
   spaces, the continuous full conditionals (checked symbolically and by simulation
   instead), irreducibility, ergodicity or any rate of convergence. It also does not
@@ -78,6 +87,9 @@ Rscript run_L1_gauss.R <lib> 20 120000 2
 Rscript make_ladder.R <lib> 2.5 mm.rds.ladder.rds
 Rscript mode_mass.R <lib> 2.5 12 20000 1 mm.rds
 Rscript pooled_plain.R <lib> mm.rds 160 6000 1
+python3 sympy_smc_exact.py
+Rscript smc_unbiased_L1.R <lib> 300 100 2
+Rscript smc_explore.R <lib>; Rscript smc_start.R <lib>
 # Lean: Mathlib v4.33.0 with its cache fetched (lake exe cache get), Lean 4.33.0
 cd lean && ./check.sh /path/to/mathlib4 SwapKernel ProductSwap Conjugate PTKernel Check
 ```

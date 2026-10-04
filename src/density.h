@@ -112,6 +112,7 @@ public:
   // Hyperparameters shared across components (partial pooling)
   virtual void updatePooledHyperparameters(const arma::uvec& occupied) { }
   virtual arma::vec pooledHyperparameters() const { return arma::vec(); }
+  virtual void setPooledHyperparameters(const arma::vec& pooled) { }
 
   // === Likelihood ============================================================
   // Log-likelihood of the *observed* entries of item n in each / one component

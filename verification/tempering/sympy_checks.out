@@ -1,0 +1,15 @@
+PASS  tempered NIG: prior x L^beta = posterior x m_beta, symbolically (identity in mu, sigma2)
+PASS  tempered NIG update = untempered update with n_eff = beta n and scatter beta*SS
+PASS  marginal likelihood m_beta matches 2-d quadrature (rel. err 1.1e-16)
+PASS  tempered NIW (P = 2): completing the square, symbolic identity in (mu, Sigma)
+PASS  tempered NIW degrees of freedom nu + beta n: the log|Sigma| coefficients agree (symbolic)
+PASS  tempered Dirichlet: integral of prod theta^(alpha - 1 + beta n) = B(alpha + beta n) (quadrature)
+PASS  exchange ratio = exp((beta_i - beta_j)(ell_j - ell_i)); priors cancel
+PASS  local Metropolis kernels are invariant for their tempered targets (exact)
+PASS  product of local kernels is invariant for the product target (exact)
+PASS  each swap kernel is invariant and reversible (exact)
+PASS  DEO (even then odd) and SEO (random parity) exchange kernels are invariant (exact)
+PASS  DEO two-round kernel is invariant but NOT reversible; SEO is reversible (exact)
+PASS  local sweep + even round + local sweep + odd round is invariant (exact)
+PASS  cold-coordinate marginal of the product target is the normalised pi_cold (exact)
+all symbolic / exact checks passed

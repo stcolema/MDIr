@@ -87,7 +87,11 @@ ptLadder <- function(n_temperatures, beta_min = 0.01, spacing = c("geometric", "
 #' (\code{\link{ptDiagnostics}}); each is estimated as one minus the mean
 #' acceptance probability over the attempts, not the fraction accepted.
 #' Estimates from a short run that has not reached equilibrium are noisy and can
-#' be biased; \code{\link{adaptLadder}} repeats the update.
+#' be biased; \code{\link{adaptLadder}} repeats the update. The validity of
+#' parallel tempering does not depend on the ladder (every ladder leaves the
+#' posterior invariant); that equal rejection rates maximise the round-trip rate
+#' is shown by Syed et al. (2022) only under the assumptions in
+#' \code{\link{ptDiagnostics}}, which this sampler does not satisfy exactly.
 #' @param betas The ladder the rejection rates were measured at.
 #' @param rejection_rate Estimated rejection rate of each neighbouring pair
 #' (\code{length(betas) - 1} values in [0, 1]).
