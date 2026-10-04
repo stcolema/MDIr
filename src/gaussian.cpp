@@ -146,13 +146,15 @@ void gaussian::sampleKthComponentParameters(
   if(n_k > 0){
     const arma::mat component_data = X.rows( rel_inds ) ;
     const arma::vec sample_mean = mean(component_data, 0).t();
-    const double kappa_n = kappa + (double) n_k, nu_n = nu + (double) n_k;
-    const arma::vec mu_n = (xi * kappa + (double) n_k * sample_mean) / kappa_n;
+    // Tempered conjugate update (see mvn::sampleKthComponentParameters)
+    const double n_eff = beta * (double) n_k;
+    const double kappa_n = kappa + n_eff, nu_n = nu + n_eff;
+    const arma::vec mu_n = (xi * kappa + n_eff * sample_mean) / kappa_n;
 
     for(uword p = 0; p < P; p++) {
       const double sum_sq = arma::accu(arma::square(component_data.col(p) - sample_mean(p)));
-      const double scale_np = scale(p) + sum_sq
-        + ((double) n_k * kappa / kappa_n) * std::pow(sample_mean(p) - xi(p), 2.0);
+      const double scale_np = scale(p) + beta * sum_sq
+        + (n_eff * kappa / kappa_n) * std::pow(sample_mean(p) - xi(p), 2.0);
 
       // sigma^2 | . ~ InvGamma(nu_n / 2, scale_np / 2); mu | sigma^2, . ~ N(mu_n, sigma^2 / kappa_n)
       setKthVariance(k, p, 1.0 / rGamma(0.5 * nu_n, 0.5 * scale_np));

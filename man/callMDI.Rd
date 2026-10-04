@@ -21,7 +21,10 @@ callMDI(
   density_prior = densityPrior(),
   check_prior = TRUE,
   save_pointwise = FALSE,
-  phi_update = c("slice", "gibbs")
+  phi_update = c("slice", "gibbs"),
+  betas = 1,
+  swap_scheme = c("deo", "seo"),
+  swap_every = 1L
 )
 }
 \arguments{
@@ -89,6 +92,25 @@ latent variable integrated out, using one slice-sampling update (Neal, 2003)
 that needs no tuning. ``"gibbs"`` is the update conditional on the
 strategic latent variable used before version 0.11. Both have the same target;
 the slice update mixes faster (see ``NEWS.md``).}
+
+\item{betas}{Inverse temperatures for parallel tempering: a strictly
+increasing vector in (0, 1] whose last element is 1 (the posterior), for
+example from \code{\link{ptLadder}}. One replica of the sampler runs at
+each temperature and neighbouring replicas exchange states, which lets the
+chain at \code{beta = 1} cross barriers between modes that a single chain
+crosses rarely. The default, \code{1}, is the ordinary sampler. A single
+value other than 1 samples the likelihood-tempered target and is only useful
+for testing. Tempering requires complete data, \code{"G"}, \code{"MVN"} or
+\code{"C"} views and no outlier component. It multiplies the run time by
+\code{length(betas)} and guarantees nothing about finite-time mixing; see
+\code{\link{ptDiagnostics}}.}
+
+\item{swap_scheme}{How replicas are paired for exchange. \code{"deo"}
+(default) alternates deterministically between even and odd neighbouring
+pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
+the parity at random (reversible). Both leave the tempered targets invariant.}
+
+\item{swap_every}{Attempt exchanges after every \code{swap_every} sweeps.}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the

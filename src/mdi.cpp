@@ -307,6 +307,26 @@ arma::vec mdi::pointwiseLogLikelihood() {
   return out;
 }
 
+// === Tempering ===============================================================
+
+void mdi::setBeta(double beta_new) {
+  for(uword l = 0; l < L; l++) {
+    mixtures[l]->setBeta(beta_new);
+  }
+  beta = beta_new;
+}
+
+double mdi::dataLogLikelihood() {
+  double total = 0.0;
+  for(uword l = 0; l < L; l++) {
+    const auto& density = mixtures[l]->density_ptr;
+    for(uword n = 0; n < N; n++) {
+      total += density->logLikelihood(n, labels(n, l));
+    }
+  }
+  return total;
+}
+
 // === Priors ==================================================================
 
 void mdi::sampleFromPriors() {

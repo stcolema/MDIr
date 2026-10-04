@@ -1,0 +1,7 @@
+data: 0 0 0 1 2 0 1  alpha: 0.5714286 0.2857143 0.1428571 
+single chain beta = 1                                          TV 0.0095 (chain noise ~0.0094) | states 60 | max|z| 3.50 | mean z^2 1.12 (expect ~1.12)
+single chain beta = 0.4 (tempered target)                      TV 0.0107 (chain noise ~0.0103) | states 9 | max|z| 1.97 | mean z^2 1.21 (expect ~1.12)
+PT cold chain, ladder (0.2, 0.5, 1)                            TV 0.0098 (chain noise ~0.0093) | states 60 | max|z| 3.47 | mean z^2 1.15 (expect ~1.12)
+PT cold chain, ladder (0.05, 0.15, 0.4, 1)                     TV 0.0095 (chain noise ~0.0093) | states 60 | max|z| 2.65 | mean z^2 0.98 (expect ~1.12)
+CONTROL: single chain beta = 0.4 vs exact beta = 1             TV 0.3001 (chain noise ~0.0103) | states 60 | max|z| 478.64 | mean z^2 27377.85 (expect ~1.12)
+CONTROL: single chain beta = 1 vs exact beta = 0.7             TV 0.1654 (chain noise ~0.0094) | states 27 | max|z| 106.57 | mean z^2 2371.41 (expect ~1.12)

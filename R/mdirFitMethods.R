@@ -122,6 +122,12 @@ print.mdir_fit <- function(x, ...) {
       if (x$missing_proportion[v] > 0) paste0(", ", views$missing[v], " missing") else ""
     ))
   }
+  if (!is.null(x$tempering)) {
+    cat(sprintf(
+      "  parallel tempering: %d replicas, beta from %s to 1 (see ptDiagnostics())\n",
+      length(x$tempering$betas), format(signif(min(x$tempering$betas), 3))
+    ))
+  }
   if (.mdirIsProcessed(x)) {
     cat(sprintf(
       "  R = %d, thin = %d; burn = %d applied, %d samples retained\n",

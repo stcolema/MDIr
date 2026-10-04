@@ -107,6 +107,12 @@ public:
   // Exchange components k and k'
   void swapComponents(uword k, uword kprime);
   
+  // Set the inverse temperature of the tempered target (see mdi::beta). The
+  // allocation uses beta times the component log-likelihood and the density
+  // draws its parameters from the tempered conditional.
+  void setBeta(double beta_new);
+  double beta = 1.0;
+  
   // The data with missing entries replaced by the current imputation
   const arma::mat& imputedData() const { return density_ptr->X; }
   

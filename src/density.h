@@ -67,6 +67,13 @@ public:
   // The data, with any missing entries replaced by their current imputation
   mat X;
 
+  // Inverse temperature of the tempered target pi_beta proportional to
+  // L(data | labels, theta)^beta * prior (see mdi::beta). The component
+  // parameters are drawn from the tempered conditional: each member contributes
+  // beta, not one, to the counts and sufficient statistics. At beta = 1 (the
+  // default) every update is the untempered one.
+  double beta = 1.0;
+
   // Missing value storage (common to all densities)
   arma::field<arma::uvec> missing_indices;
   arma::field<arma::uvec> observed_indices;

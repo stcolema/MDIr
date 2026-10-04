@@ -24,7 +24,10 @@ fitMDI(
   verbose = !isTRUE(getOption("mdir.quiet")),
   save_pointwise = FALSE,
   phi_update = c("slice", "gibbs"),
-  n_cores = NULL
+  n_cores = NULL,
+  betas = 1,
+  swap_scheme = c("deo", "seo"),
+  swap_every = 1L
 )
 }
 \arguments{
@@ -71,7 +74,8 @@ point estimates in \code{\link{processMCMCChains}}.}
 messages. Defaults to \code{TRUE} unless \code{options(mdir.quiet = TRUE)}
 is set.}
 
-\item{save_pointwise, phi_update, n_cores}{See \code{\link{runMCMCChains}}.}
+\item{save_pointwise, phi_update, n_cores, betas, swap_scheme, swap_every}{See
+\code{\link{runMCMCChains}}.}
 }
 \value{
 An object of class \code{mdir_fit_list} (see
