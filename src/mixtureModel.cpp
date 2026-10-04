@@ -121,6 +121,11 @@ void mixtureModel::updateItemAllocation(
   const vec ll = density_ptr->itemLogLikelihood(n);
   const vec log_component_weight = log_weights + log_upweights;
   
+  // The allocation targets the tempered conditional, in which the component 
+  // log-likelihood enters multiplied by beta. The recorded likelihoods below
+  // stay untempered.
+  const vec ll_sampling = (beta == 1.0) ? ll : vec(beta * ll);
+  
   const double ll_out = has_outliers ? outlierComponent_ptr->outlier_likelihood(n) : -arma::datum::inf;
   const double log_w_non = has_outliers ? std::log(outlierComponent_ptr->non_outlier_weight) : 0.0;
   const double log_w_out = has_outliers ? std::log(outlierComponent_ptr->outlier_weight) : -arma::datum::inf;
@@ -138,7 +143,7 @@ void mixtureModel::updateItemAllocation(
     // Joint draw of the component and the outlier status. Component and 
     // outlier status are sampled together, so each conditional is exact.
     vec log_prob(has_outliers ? 2 * K : K);
-    log_prob.subvec(0, K - 1) = log_component_weight + ll + log_w_non;
+    log_prob.subvec(0, K - 1) = log_component_weight + ll_sampling + log_w_non;
     if(has_outliers) {
       log_prob.subvec(K, 2 * K - 1) = log_component_weight + ll_out + log_w_out;
     }
@@ -207,6 +212,19 @@ void mixtureModel::initialiseMixture(
   observed_likelihood = accu(observed_likelihood_vec);
   complete_likelihood = accu(complete_likelihood_vec);
   { uvec occupied = unique(labels); K_occ = occupied.n_elem; }
+}
+
+void mixtureModel::setBeta(double beta_new) {
+  if(!(beta_new >= 0.0 && beta_new <= 1.0)) {
+    Rcpp::stop("The inverse temperature must lie in [0, 1].");
+  }
+  const bool has_missing = density_ptr->has_missing.n_elem > 0 && accu(density_ptr->has_missing) > 0;
+  if(beta_new != 1.0 && (outlierComponent_ptr->active() || has_missing || mixture_type == 3)) {
+    Rcpp::stop("Tempering supports complete data, no outlier component and "
+               "'G', 'MVN' or 'C' densities only.");
+  }
+  beta = beta_new;
+  density_ptr->beta = beta_new;
 }
 
 void mixtureModel::swapComponents(uword k, uword kprime) {

@@ -20,7 +20,10 @@ runMDI(
   density_prior,
   save_allocation_probabilities,
   save_pointwise,
-  phi_slice
+  phi_slice,
+  betas,
+  swap_scheme,
+  swap_every
 )
 }
 \arguments{
@@ -69,6 +72,16 @@ iteration (see `pointwiseLogLikelihood`); the total is always recorded.}
 
 \item{phi_slice}{Update the phis with the strategic latent variable 
 integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).}
+
+\item{betas}{Inverse temperatures of the replicas for parallel tempering,
+strictly increasing, the last equal to one (the posterior). Empty or a single
+one is an ordinary run. A single value other than one samples that tempered
+target and is for testing only.}
+
+\item{swap_scheme}{How replicas are paired for exchange: 0, deterministic
+even-odd (non-reversible); 1, stochastic even-odd (reversible).}
+
+\item{swap_every}{Attempt replica exchanges after every `swap_every` sweeps.}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

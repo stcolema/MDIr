@@ -126,7 +126,10 @@ callMixtureModel <- function(X,
     as.numeric(density_prior),
     save_allocation_probabilities = as.integer(any(fixed == 1)),
     save_pointwise = FALSE,
-    phi_slice = TRUE
+    phi_slice = TRUE,
+    betas = numeric(0),
+    swap_scheme = 0L,
+    swap_every = 1L
   )
 
   t_1 <- Sys.time()

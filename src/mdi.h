@@ -172,6 +172,25 @@ public:
   // Use updatePhisSlice() (TRUE) or the Gibbs update given v (FALSE)
   bool phi_slice = true;
 
+  // === Tempering =============================================================
+
+  // Inverse temperature. The tempered target is
+  //   pi_beta(state) proportional to L(state)^beta P(state),
+  // where L is the likelihood of the data given the labels and the component
+  // parameters, sum_{l,n} log f_l(x_nl | theta_{l, c_nl}), and P is everything
+  // else (the priors, the coupling of the labels through the weights and phis,
+  // and the strategic latent variable). beta = 1 is the posterior. Only the 
+  // allocation and the component parameters involve L, so only those updates 
+  // change with beta; the weights, phis, masses, pooled hyperparameters and the
+  // strategic latent variable have the same conditionals at every beta.
+  double beta = 1.0;
+  void setBeta(double beta_new);
+
+  // log L at the current state: sum over views and items of the log-density of
+  // the item at its component. Unchanged by a relabelling that exchanges 
+  // component parameters with the labels (updateLabels()).
+  double dataLogLikelihood();
+
   // === Likelihood ============================================================
 
   // log p(x_n | w, phi, theta) for every item at the current state: the data

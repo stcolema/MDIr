@@ -137,13 +137,17 @@ void mvn::sampleKthComponentParameters(
     const arma::mat sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
     const arma::vec dist = sample_mean - xi;
 
-    const double kappa_n = kappa + (double) n_k;
-    const arma::mat scale_n = scale + sample_cov
-      + ((kappa * (double) n_k) / kappa_n) * (dist * dist.t());
+    // Tempered conjugate update: the likelihood enters as L^beta, which is the
+    // untempered update with n_k replaced by beta n_k in the counts and
+    // beta S for the scatter (the sample mean is unchanged).
+    const double n_eff = beta * (double) n_k;
+    const double kappa_n = kappa + n_eff;
+    const arma::mat scale_n = scale + beta * sample_cov
+      + ((kappa * n_eff) / kappa_n) * (dist * dist.t());
 
-    cov.slice(k) = iwishrnd(scale_n, nu + (double) n_k);
+    cov.slice(k) = iwishrnd(scale_n, nu + n_eff);
 
-    const arma::vec mu_n = (kappa * xi + (double) n_k * sample_mean) / kappa_n;
+    const arma::vec mu_n = (kappa * xi + n_eff * sample_mean) / kappa_n;
     mu.col(k) = rmvnormChol(mu_n, cov.slice(k) / kappa_n);
   } else{
     // Empty components are drawn from the prior

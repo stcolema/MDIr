@@ -1,0 +1,7 @@
+data: -2.21 -2.17 -1.51 1.33 1.48 1.36 
+MVN (P = 1) single chain beta = 1                          TV 0.0384 (chain noise ~0.0239) | states 2 | max|z| 1.17 | mean z^2 1.36 (expect ~1.12)
+MVN (P = 1) single chain beta = 0.3                        TV 0.0020 (chain noise ~0.0023) | states 36 | max|z| 2.62 | mean z^2 0.97 (expect ~1.12)
+MVN (P = 1) PT cold chain (0.1, 0.4, 1)                    TV 0.0015 (chain noise ~0.0016) | states 2 | max|z| 0.81 | mean z^2 0.61 (expect ~1.12)
+G single chain beta = 0.3                                  TV 0.0020 (chain noise ~0.0023) | states 36 | max|z| 2.62 | mean z^2 0.97 (expect ~1.12)
+G PT cold chain (0.1, 0.4, 1)                              TV 0.0015 (chain noise ~0.0016) | states 2 | max|z| 0.81 | mean z^2 0.61 (expect ~1.12)
+CONTROL: MVN single chain beta = 0.3 vs exact beta = 1     TV 0.5594 (chain noise ~0.0023) | states 2 | max|z| 350.53 | mean z^2 115754.96 (expect ~1.12)

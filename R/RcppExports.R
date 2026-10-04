@@ -522,9 +522,16 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
 #' @param phi_slice Update the phis with the strategic latent variable 
 #' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
+#' @param betas Inverse temperatures of the replicas for parallel tempering,
+#' strictly increasing, the last equal to one (the posterior). Empty or a single
+#' one is an ordinary run. A single value other than one samples that tempered
+#' target and is for testing only.
+#' @param swap_scheme How replicas are paired for exchange: 0, deterministic
+#' even-odd (non-reversible); 1, stochastic even-odd (reversible).
+#' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File

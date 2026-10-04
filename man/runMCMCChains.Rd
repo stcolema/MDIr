@@ -23,7 +23,10 @@ runMCMCChains(
   verbose = FALSE,
   save_pointwise = FALSE,
   phi_update = c("slice", "gibbs"),
-  n_cores = NULL
+  n_cores = NULL,
+  betas = 1,
+  swap_scheme = c("deo", "seo"),
+  swap_every = 1L
 )
 }
 \arguments{
@@ -76,6 +79,9 @@ number of cores; it is not the same as the serial result for the same seed.
 The number is capped at the number of chains and of cores available, and at
 two while a package is being checked (\code{_R_CHECK_LIMIT_CORES_} is set), as
 CRAN requires. Progress messages are given when the chains have finished.}
+
+\item{betas, swap_scheme, swap_every}{Parallel tempering within each chain; see
+\code{\link{callMDI}}.}
 }
 \value{
 An object of class \code{mdir_fit_list}: a list with one

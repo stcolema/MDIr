@@ -24,6 +24,8 @@
 #' third is for the noise. These are not used in other mixture types.
 #' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
 #' @param save_pointwise,phi_update See ``callMDI``.
+#' @param betas,swap_scheme,swap_every Parallel tempering within each chain; see
+#' \code{\link{callMDI}}.
 #' @param n_cores Number of cores on which to run the chains. The default, one,
 #' runs them in turn exactly as before; \code{options(mdir.cores = )} changes the
 #' default. With more than one, each chain has its own L'Ecuyer-CMRG random
@@ -82,8 +84,12 @@ runMCMCChains <- function(X,
                           verbose = FALSE,
                           save_pointwise = FALSE,
                           phi_update = c("slice", "gibbs"),
-                          n_cores = NULL) {
+                          n_cores = NULL,
+                          betas = 1,
+                          swap_scheme = c("deo", "seo"),
+                          swap_every = 1L) {
   phi_update <- match.arg(phi_update)
+  swap_scheme <- match.arg(swap_scheme)
   if (!is.numeric(n_chains) || length(n_chains) != 1 || is.na(n_chains) || n_chains < 1) {
     stop("`n_chains` must be a single positive integer.", call. = FALSE)
   }
@@ -110,7 +116,10 @@ runMCMCChains <- function(X,
       density_prior = density_prior,
       check_prior = FALSE,
       save_pointwise = save_pointwise,
-      phi_update = phi_update
+      phi_update = phi_update,
+      betas = betas,
+      swap_scheme = swap_scheme,
+      swap_every = swap_every
     )
   }
 

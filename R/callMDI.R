@@ -49,6 +49,22 @@
 #' that needs no tuning. ``"gibbs"`` is the update conditional on the
 #' strategic latent variable used before version 0.11. Both have the same target;
 #' the slice update mixes faster (see ``NEWS.md``).
+#' @param betas Inverse temperatures for parallel tempering: a strictly
+#' increasing vector in (0, 1] whose last element is 1 (the posterior), for
+#' example from \code{\link{ptLadder}}. One replica of the sampler runs at
+#' each temperature and neighbouring replicas exchange states, which lets the
+#' chain at \code{beta = 1} cross barriers between modes that a single chain
+#' crosses rarely. The default, \code{1}, is the ordinary sampler. A single
+#' value other than 1 samples the likelihood-tempered target and is only useful
+#' for testing. Tempering requires complete data, \code{"G"}, \code{"MVN"} or
+#' \code{"C"} views and no outlier component. It multiplies the run time by
+#' \code{length(betas)} and guarantees nothing about finite-time mixing; see
+#' \code{\link{ptDiagnostics}}.
+#' @param swap_scheme How replicas are paired for exchange. \code{"deo"}
+#' (default) alternates deterministically between even and odd neighbouring
+#' pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
+#' the parity at random (reversible). Both leave the tempered targets invariant.
+#' @param swap_every Attempt exchanges after every \code{swap_every} sweeps.
 #' @return An object of class \code{mdir_fit}: a named list containing the
 #' sampled partitions, component weights, phi and mass parameters, model fit
 #' measures and some details on the model call. It prints as a short report
@@ -109,9 +125,17 @@ callMDI <- function(X,
                     density_prior = densityPrior(),
                     check_prior = TRUE,
                     save_pointwise = FALSE,
-                    phi_update = c("slice", "gibbs")) {
+                    phi_update = c("slice", "gibbs"),
+                    betas = 1,
+                    swap_scheme = c("deo", "seo"),
+                    swap_every = 1L) {
 
   phi_update <- match.arg(phi_update)
+  swap_scheme <- match.arg(swap_scheme)
+  betas <- .mdirCheckLadder(betas)
+  if (!is.numeric(swap_every) || length(swap_every) != 1 || is.na(swap_every) || swap_every < 1) {
+    stop("`swap_every` must be a positive integer.", call. = FALSE)
+  }
   if (!is.logical(save_pointwise) || length(save_pointwise) != 1 || is.na(save_pointwise)) {
     stop("`save_pointwise` must be TRUE or FALSE.", call. = FALSE)
   }
@@ -197,7 +221,10 @@ callMDI <- function(X,
     as.numeric(density_prior),
     save_allocation_probabilities = as.integer(is_semisupervised),
     save_pointwise = save_pointwise,
-    phi_slice = (phi_update == "slice")
+    phi_slice = (phi_update == "slice"),
+    betas = betas,
+    swap_scheme = as.integer(swap_scheme == "seo"),
+    swap_every = as.integer(swap_every)
   )
   
   # Traces are returned as one-column matrices; use plain vectors
@@ -238,6 +265,8 @@ callMDI <- function(X,
   mcmc_output$prior <- prior
   mcmc_output$density_prior <- density_prior
   mcmc_output$phi_update <- phi_update
+  mcmc_output$betas <- betas
+  mcmc_output$tempering <- .mdirTidyTempering(mcmc_output$tempering, betas, swap_scheme)
 
   # Indicate if the model was semi-supervised or unsupervised
   mcmc_output$Semisupervised <- is_semisupervised

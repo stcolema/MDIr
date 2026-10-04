@@ -375,8 +375,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice);
-RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice, arma::vec betas, arma::uword swap_scheme, arma::uword swap_every);
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP swap_schemeSEXP, SEXP swap_everySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -396,7 +396,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uvec >::type save_allocation_probabilities(save_allocation_probabilitiesSEXP);
     Rcpp::traits::input_parameter< bool >::type save_pointwise(save_pointwiseSEXP);
     Rcpp::traits::input_parameter< bool >::type phi_slice(phi_sliceSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice));
+    Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type swap_scheme(swap_schemeSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type swap_every(swap_everySEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -447,7 +450,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_phiSliceChainCpp", (DL_FUNC) &_mdir_phiSliceChainCpp, 10},
     {"_mdir_phiConditionalLogDensityCpp", (DL_FUNC) &_mdir_phiConditionalLogDensityCpp, 10},
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
-    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 16},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 19},
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
     {NULL, NULL, 0}
 };

@@ -90,7 +90,8 @@ void categorical::sampleKthComponentParameters(
       counts(Y(relevant_indices(i), p)) += 1.0;
     }
     for(uword ii = 0; ii < n_cat(p); ii++) {
-      category_probabilities(p)(ii, k) = rGamma(cat_prior_probability(p)(ii) + counts(ii), 1.0);
+      // Tempered Dirichlet update: each member counts beta times
+      category_probabilities(p)(ii, k) = rGamma(cat_prior_probability(p)(ii) + beta * counts(ii), 1.0);
     }
     category_probabilities(p).col(k) /= accu(category_probabilities(p).col(k));
   }

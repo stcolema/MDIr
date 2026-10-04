@@ -1,5 +1,39 @@
 # mdir (development version)
 
+## New: parallel tempering
+
+* **`betas`** (in `callMDI()`, `runMCMCChains()` and `fitMDI()`) runs one replica of the
+  sampler at each inverse temperature of a ladder ending at 1 and exchanges neighbouring
+  replicas. The replica at `beta` targets `L^beta P`, with `L` the likelihood of the data
+  given the labels and component parameters and `P` the rest of the model (priors, the
+  coupling of the views through the weights and phis, the strategic latent variable); the
+  recorded draws are those of the replica at `beta = 1`. Exchanges are accepted with
+  probability `min(1, exp((beta_i - beta_j)(l_j - l_i)))`, `l` the data log-likelihood, and use the
+  deterministic even-odd schedule of Syed et al. (2022) by default (`swap_scheme = "deo"`;
+  `"seo"` is its reversible, stochastic-parity counterpart). `betas = 1` (the default)
+  is the previous sampler, draw for draw (checked on seeded chains of every density,
+  with missing data and outliers).
+* `ptLadder()` builds a ladder, `ptDiagnostics()` reports exchange rates, the
+  estimated communication barrier and round trips, `tuneLadder()` and `adaptLadder()`
+  equalise neighbouring rejection rates (Syed et al., 2022, Algorithm 2).
+* Supported: complete data, `"G"`, `"MVN"` and `"C"` views, no outlier component; other
+  models stop with an error (the tempered conditionals of the missing-data, t-outlier and
+  Gaussian process updates are not implemented).
+* What was checked (`verification/tempering/`, `tests/testthat/test-tempering.R`): the
+  tempered conjugate updates against the closed forms, symbolically (SymPy) and by
+  simulation; the exchange acceptance, detailed balance, invariance of every exchange round
+  and the cold marginal in Lean 4 with Mathlib (finite state spaces, no `sorry`); the same
+  in exact rational arithmetic for a small chain, including that the even-odd scheme is
+  invariant but not reversible; and the sampler's label posterior against exact references
+  for tiny categorical models (one and two views) and Gaussian models, with negative
+  controls that must fail.
+* What parallel tempering does not guarantee: finite-time convergence. The
+  ergodicity of the product chain and the bounds on mixing are not proved here. In a
+  four-cluster example the model's tempering path has a sharp transition, hot replicas
+  made 0 to 3 round trips in 20,000 rounds although the exchange rates predicted about
+  900, and the cold chain nevertheless recovered the exact mode weights when 12 runs were
+  pooled (single runs were still noisy); see the README.
+
 ## New: likelihood of the whole model, and prediction
 
 * **`joint_likelihood`** is recorded at every saved draw: the log-likelihood of the
