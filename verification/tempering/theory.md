@@ -172,6 +172,16 @@ the visiting order as `prod_t s_t` and the proposal is `prod_t s_t / Z_t`, the M
 independent of the state, so the mixture is invariant (`invariant_mix`). The target is the collapsed
 conditional of the labels of the view given the weights, the coupling factors and the fixed items;
 `u` is held fixed during the move.
+**Outlier component (TAGM).** Each item's state is a pair (component, flag). A non-outlier
+score is as above times `(1 - eps)`; an outlier score is `w_c u_{c,n} eps l_out(n)`, where `l_out(n)` is the
+fixed global-t density of the item (its parameters never change in this sampler; only `eps` is updated
+and it is held fixed during the move) and the block statistics are unchanged by the item. Flagged items
+are excluded from the collapsed statistics, as in the parameter update. The step normaliser sums four
+terms; (i) and (ii) apply unchanged, so Proposition SM1 covers it. Outlier views with missing values are
+**refused**: `l_out` uses observed entries only, so a flag flip would need the density of the imputed
+entries under the outlier law as well, which the move does not include. Tempering still refuses outlier
+components (the outlier density is not raised to `beta` in the allocation step).
+
 **Conditions not proved here [C]:** that the collapsed marginals equal the integral of the tempered
 likelihood against the prior (checked against quadrature and closed forms to 1e-8 to 1e-14, not
 proved in Lean); that the C++ implements the stated ratio (checked below).
@@ -187,6 +197,13 @@ proved in Lean); that the C++ implements the stated ratio (checked below).
   against the exact label posterior, unsupervised and with two observed labels: consistent with
   exact; controls rejected. One cell (plain, `beta = 1`, unsupervised) had mean z^2 1.45 against 1.12
   expected for 60 states (about 1.8 standard deviations), the others 0.68 to 1.08.
+* `run_splitmerge_outlier.R` (outlier component, move alone, `eps` fixed): exact enumeration over
+  (label, flag) of the free items (N = 5, K = 3, 72 to 87 states with non-negligible mass) for `eps` 0.1 and 0.4 and with two
+  observed labels: TV at chain-noise level, mean z^2 0.96 to 1.19; control (chain `eps` 0.1 against exact `eps` 0.4) TV 0.77.
+  A mutant whose reverse walk ignores the current flags gives TV 0.12 and mean z^2 up to 676.
+* `run_splitmerge_tagm.R`: full sampler, TAGM view alone and TAGM + MVN (MDI), plain chain vs split-merge chain,
+  co-clustering and per-item outlier probabilities (45 quantities): max |z| 2.64 and 2.29, mean z^2 1.97 and 1.15; the 1.97
+  became 0.57 with 48 independent chains, so I read it as noise. Agreement of two samplers, not an exact reference.
 * `run_L2_sm.R`: two views (MDI coupling), N = 4, K = 2, split-merge on, plain / `beta = 0.5` / PT cold
   chain against the exact posterior (MC prior reference, TV contribution of its error <= 1e-4): TV at chain-noise
   level; control rejected (TV 0.22). K = 2 makes the pair choice trivial.

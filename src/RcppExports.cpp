@@ -473,8 +473,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // splitMergeOnlyCpp
-Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior, arma::uvec labels, arma::uvec fixed, arma::vec w, arma::uword n_iter, double beta);
-RcppExport SEXP _mdir_splitMergeOnlyCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typeSEXP, SEXP density_priorSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP wSEXP, SEXP n_iterSEXP, SEXP betaSEXP) {
+Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior, arma::uvec labels, arma::uvec fixed, arma::vec w, arma::uword n_iter, double beta, arma::uword outlier_type, double outlier_weight, arma::uvec outliers_init);
+RcppExport SEXP _mdir_splitMergeOnlyCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typeSEXP, SEXP density_priorSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP wSEXP, SEXP n_iterSEXP, SEXP betaSEXP, SEXP outlier_typeSEXP, SEXP outlier_weightSEXP, SEXP outliers_initSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -487,7 +487,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type n_iter(n_iterSEXP);
     Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
-    rcpp_result_gen = Rcpp::wrap(splitMergeOnlyCpp(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta));
+    Rcpp::traits::input_parameter< arma::uword >::type outlier_type(outlier_typeSEXP);
+    Rcpp::traits::input_parameter< double >::type outlier_weight(outlier_weightSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outliers_init(outliers_initSEXP);
+    rcpp_result_gen = Rcpp::wrap(splitMergeOnlyCpp(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -521,7 +524,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
     {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 21},
     {"_mdir_collapsedLogMarginalCpp", (DL_FUNC) &_mdir_collapsedLogMarginalCpp, 6},
-    {"_mdir_splitMergeOnlyCpp", (DL_FUNC) &_mdir_splitMergeOnlyCpp, 9},
+    {"_mdir_splitMergeOnlyCpp", (DL_FUNC) &_mdir_splitMergeOnlyCpp, 12},
     {NULL, NULL, 0}
 };
 

@@ -1,0 +1,4 @@
+MVN + t outlier, eps = 0.1                         TV 0.0152 (noise ~0.0143) | states 72 | max|z| 3.38 | mean z^2 1.16 (expect ~1.15) | acc 0.44 | outlier share 0.222
+MVN + t outlier, eps = 0.4                         TV 0.0187 (noise ~0.0179) | states 87 | max|z| 2.70 | mean z^2 0.96 (expect ~1.15) | acc 0.81 | outlier share 0.772
+MVN + t outlier, eps = 0.1, items 1-2 observed     TV 0.0035 (noise ~0.0027) | states 47 | max|z| 3.09 | mean z^2 1.19 (expect ~1.15) | acc 0.93 | outlier share 0.304
+CONTROL: chain eps = 0.1 vs exact eps = 0.4        TV 0.7690 (noise ~0.0143) | states 87 | max|z| 1717.95 | mean z^2 636048.04 (expect ~1.15) | acc 0.44 | outlier share 0.772

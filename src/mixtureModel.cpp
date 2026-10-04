@@ -234,11 +234,17 @@ void mixtureModel::swapComponents(uword k, uword kprime) {
 
 
 void mixtureModel::refreshLikelihoods(const arma::vec& log_weights) {
+  const bool has_outliers = outlierComponent_ptr->active();
   const vec log_pi = log_weights - logSumExp(log_weights);
   for(uword n = 0; n < N; n++) {
     const vec ll = density_ptr->itemLogLikelihood(n);
-    observed_likelihood_vec(n) = logSumExp(log_pi + ll);
-    complete_likelihood_vec(n) = ll(labels(n));
+    double observed = logSumExp(log_pi + ll);
+    if(has_outliers) {
+      observed = logSumExp(vec({std::log(outlierComponent_ptr->non_outlier_weight) + observed,
+                                std::log(outlierComponent_ptr->outlier_weight) + outlierComponent_ptr->outlier_likelihood(n)}));
+    }
+    observed_likelihood_vec(n) = observed;
+    complete_likelihood_vec(n) = (outliers(n) == 1) ? outlierComponent_ptr->outlier_likelihood(n) : ll(labels(n));
   }
   observed_likelihood = accu(observed_likelihood_vec);
   complete_likelihood = accu(complete_likelihood_vec);
@@ -251,15 +257,21 @@ bool mixtureModel::splitMergeMove(
 ) {
   const double beta_now = beta;
   const uword comp[2] = {a, b};
+  const bool has_outliers = outlierComponent_ptr->active();
+  const double log_w_non = has_outliers ? std::log(outlierComponent_ptr->non_outlier_weight) : 0.0;
+  const double log_w_out = has_outliers ? std::log(outlierComponent_ptr->outlier_weight) : -arma::datum::inf;
 
   // The free items of the two components and the statistics of the fixed ones
+  // (an item flagged as an outlier does not enter the statistics of its component)
   collapsedStats base[2] = {density_ptr->emptyStats(), density_ptr->emptyStats()};
   std::vector<uword> items;
   for(uword n = 0; n < N; n++) {
     for(uword j = 0; j < 2; j++) {
       if(labels(n) == comp[j]) {
         if(fixed(n) == 1) {
-          density_ptr->addItemToStats(base[j], n);
+          if(outliers(n) == 0) {
+            density_ptr->addItemToStats(base[j], n);
+          }
         } else {
           items.push_back(n);
         }
@@ -278,8 +290,10 @@ bool mixtureModel::splitMergeMove(
   }
 
   // Walk the items in order, following either a random allocation (the proposal) or the 
-  // current labels, and return the sum of the log normalisers of the allocation 
-  // probabilities and the labels followed
+  // current state, and return the sum of the log normalisers of the allocation 
+  // probabilities. Each item chooses among (component, outlier flag): a non-outlier adds 
+  // the collapsed predictive ratio of the component, an outlier adds the fixed outlier
+  // density and leaves the component's statistics unchanged. A path entry is 2 * j + flag.
   auto walk = [&](bool follow_current, std::vector<uword>& path) {
     collapsedStats stats[2] = {base[0], base[1]};
     double lm[2] = {density_ptr->logMarginalLikelihood(stats[0], beta_now), 
@@ -289,27 +303,58 @@ bool mixtureModel::splitMergeMove(
     for(uword t = 0; t < m; t++) {
       const uword n = items[t];
       collapsedStats cand[2] = {stats[0], stats[1]};
-      double lm_cand[2], score[2];
+      double lm_cand[2];
+      double score[4];
       for(uword j = 0; j < 2; j++) {
         density_ptr->addItemToStats(cand[j], n);
         lm_cand[j] = density_ptr->logMarginalLikelihood(cand[j], beta_now);
-        score[j] = log_weights(comp[j]) + log_upweights(comp[j], n) + (lm_cand[j] - lm[j]);
+        const double base_score = log_weights(comp[j]) + log_upweights(comp[j], n);
+        score[2 * j] = base_score + log_w_non + (lm_cand[j] - lm[j]);
+        score[2 * j + 1] = has_outliers ? base_score + log_w_out + outlierComponent_ptr->outlier_likelihood(n)
+                                        : -arma::datum::inf;
       }
-      const double mx = std::max(score[0], score[1]);
-      const double log_norm = mx + std::log(std::exp(score[0] - mx) + std::exp(score[1] - mx));
+      double mx = score[0];
+      for(uword o = 1; o < 4; o++) {
+        mx = std::max(mx, score[o]);
+      }
+      double acc = 0.0;
+      for(uword o = 0; o < 4; o++) {
+        acc += std::exp(score[o] - mx);
+      }
+      const double log_norm = mx + std::log(acc);
       if(!std::isfinite(log_norm)) {
         Rcpp::stop("Non-finite allocation probabilities in the split-merge move.");
       }
       total += log_norm;
       uword pick = 0;
       if(follow_current) {
-        pick = (labels(n) == comp[1]) ? 1 : 0;
+        pick = 2 * ((labels(n) == comp[1]) ? 1 : 0) + ((outliers(n) == 1) ? 1 : 0);
       } else {
-        pick = (randu() < std::exp(score[1] - log_norm)) ? 1 : 0;
+        const double u = randu();
+        double cum = 0.0;
+        pick = 3;
+        for(uword o = 0; o < 4; o++) {
+          cum += std::exp(score[o] - log_norm);
+          if(u < cum) {
+            pick = o;
+            break;
+          }
+        }
+        if(score[pick] == -arma::datum::inf) {
+          // rounding at the upper end of the cumulative sum: take the last feasible option
+          for(uword o = 4; o-- > 0;) {
+            if(std::isfinite(score[o])) {
+              pick = o;
+              break;
+            }
+          }
+        }
       }
       path[t] = pick;
-      stats[pick] = cand[pick];
-      lm[pick] = lm_cand[pick];
+      if(pick % 2 == 0) {
+        stats[pick / 2] = cand[pick / 2];
+        lm[pick / 2] = lm_cand[pick / 2];
+      }
     }
     return total;
   };
@@ -321,8 +366,10 @@ bool mixtureModel::splitMergeMove(
   const bool accept = (std::log(randu()) < log_accept);
   if(accept) {
     for(uword t = 0; t < m; t++) {
-      labels(items[t]) = comp[proposed_path[t]];
+      labels(items[t]) = comp[proposed_path[t] / 2];
+      outliers(items[t]) = proposed_path[t] % 2;
     }
+    non_outliers = 1 - outliers;
   }
   return accept;
 }

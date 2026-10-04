@@ -62,6 +62,8 @@ The `beta = 1` replica's draws are returned.
 | The move alone reproduces the exact collapsed label posterior (C, G, MVN, `beta = 0.5`, observed labels); control rejected | exact enumeration | `run_splitmerge.R`, `test-splitmerge.R` |
 | Full sampler with split-merge (plain, PT) reproduces the exact label posterior, unsupervised and semi-supervised | exact enumeration | `run_L1_sm.R`, `run_L1_semisup.R`, `run_L2_sm.R` (two views) |
 | Split-merge with missing data targets the same posterior as the plain chain | agreement of two samplers (no exact reference) | `run_splitmerge_missing.R` |
+| Split-merge with an outlier component: joint law of (label, outlier flag); mutant and control rejected | exact enumeration | `run_splitmerge_outlier.R`, `test-splitmerge.R` |
+| TAGM full sampler with split-merge agrees with plain chain (alone, and coupled to an MVN view) | agreement of two samplers | `run_splitmerge_tagm.R` |
 | Four-cluster example, plain chains with split-merge, pooled | exact group-unit masses; TV 0.015 (sep 2.5), 0.001 (sep 4) | `pooled_plain_sm.R` |
 
 Tests were also run against two deliberately broken versions (wrong sign in the exchange,
@@ -77,7 +79,7 @@ counts not tempered in the MVN update); each was caught.
   instead), irreducibility, ergodicity or any rate of convergence. It also does not
   verify that the C++ implements the algorithm; that link is the simulation and the
   independent recomputation of `l`.
-* Split-merge: mixing is not guaranteed (only invariance); the missing-data case has no exact reference.
+* Split-merge: mixing is not guaranteed (only invariance); the missing-data and full-sampler TAGM cases have no exact reference; outlier component plus missing values is refused.
 * Models other than complete-data `G`, `MVN`, `C` views without an outlier component. The
   missing-data, t-outlier and Gaussian-process updates are not tempered, and a ladder is
   refused for them.
@@ -99,6 +101,7 @@ python3 sympy_smc_exact.py
 Rscript smc_unbiased_L1.R <lib> 300 100 2
 Rscript smc_explore.R <lib>; Rscript smc_start.R <lib>
 python3 sympy_splitmerge_exact.py
+Rscript run_splitmerge_outlier.R <lib> 16 150000 4; Rscript run_splitmerge_tagm.R <lib> 24 40000 4
 Rscript run_splitmerge.R <lib> 16 120000 4; Rscript run_L1_sm.R <lib> 20 150000 4
 Rscript run_L1_semisup.R <lib> 20 120000 4; Rscript run_splitmerge_missing.R <lib> 24 40000 4
 Rscript pooled_plain_sm.R <lib> mm.rds 160 6000 4

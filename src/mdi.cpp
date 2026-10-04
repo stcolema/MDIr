@@ -656,8 +656,13 @@ void mdi::updateLabelsViewL(uword lstar) {
 void mdi::setSplitMerge(uword moves) {
   if(moves > 0) {
     for(uword l = 0; l < L; l++) {
-      if(!mixtures[l]->density_ptr->hasCollapsedMarginal() || mixtures[l]->outlierComponent_ptr->active()) {
-        Rcpp::stop("The split-merge move needs 'G', 'MVN' or 'C' views without an outlier component.");
+      const auto& mix = mixtures[l];
+      if(!mix->density_ptr->hasCollapsedMarginal()) {
+        Rcpp::stop("The split-merge move needs 'G', 'MVN' or 'C' views (a collapsed marginal likelihood).");
+      }
+      const bool has_missing = mix->density_ptr->has_missing.n_elem > 0 && accu(mix->density_ptr->has_missing) > 0;
+      if(mix->outlierComponent_ptr->active() && has_missing) {
+        Rcpp::stop("The split-merge move does not support an outlier component together with missing values.");
       }
     }
   }
@@ -684,6 +689,8 @@ void mdi::updateSplitMergeViewL(uword l) {
       split_merge_accepts++;
     }
     labels.col(l) = mixture->labels;
+    non_outliers.col(l) = mixture->non_outliers;
+    outliers.col(l) = mixture->outliers;
     refreshMembersViewL(l);
     // Redraw the parameters of the two components given the new labels (also after
     // a rejection: the move is a kernel on the labels with the parameters collapsed,
