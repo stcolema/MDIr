@@ -498,6 +498,9 @@ void mdi::sweep(uword iteration) {
     mixtures[l]->sampleParameters();
   }
   updateAllocation();
+  if(split_merge_moves > 0) {
+    updateSplitMerge();
+  }
   if((iteration + 1) % 10 == 0) {
     updateLabels();
   }
@@ -646,3 +649,58 @@ void mdi::updateLabelsViewL(uword lstar) {
     }
   }
 };
+
+
+// === Split-merge ==============================================================
+
+void mdi::setSplitMerge(uword moves) {
+  if(moves > 0) {
+    for(uword l = 0; l < L; l++) {
+      if(!mixtures[l]->density_ptr->hasCollapsedMarginal() || mixtures[l]->outlierComponent_ptr->active()) {
+        Rcpp::stop("The split-merge move needs 'G', 'MVN' or 'C' views without an outlier component.");
+      }
+    }
+  }
+  split_merge_moves = moves;
+}
+
+void mdi::updateSplitMergeViewL(uword l) {
+  if(K(l) < 2) {
+    return;
+  }
+  const vec log_weights = log(w(span(0, K(l) - 1), l));
+  const mat log_upweights = calculateUpweights(l);
+  auto& mixture = mixtures[l];
+  for(uword move = 0; move < split_merge_moves; move++) {
+    // two distinct components, uniformly
+    const uword a = std::min<uword>((uword) std::floor(randu() * (double) K(l)), K(l) - 1);
+    uword b = std::min<uword>((uword) std::floor(randu() * (double) (K(l) - 1)), K(l) - 2);
+    if(b >= a) {
+      b++;
+    }
+    const bool accepted = mixture->splitMergeMove(a, b, log_weights, log_upweights);
+    split_merge_attempts++;
+    if(accepted) {
+      split_merge_accepts++;
+    }
+    labels.col(l) = mixture->labels;
+    refreshMembersViewL(l);
+    // Redraw the parameters of the two components given the new labels (also after
+    // a rejection: the move is a kernel on the labels with the parameters collapsed,
+    // followed by a draw of the parameters from their conditional)
+    mixture->density_ptr->labels = mixture->labels;
+    mixture->density_ptr->sampleKthComponentParameters(a, mixture->members, mixture->non_outliers);
+    mixture->density_ptr->sampleKthComponentParameters(b, mixture->members, mixture->non_outliers);
+  }
+  mixture->refreshLikelihoods(log_weights);
+  complete_likelihood_vec(l) = mixture->complete_likelihood;
+  observed_likelihood_vec(l) = mixture->observed_likelihood;
+}
+
+void mdi::updateSplitMerge() {
+  for(uword l = 0; l < L; l++) {
+    updateSplitMergeViewL(l);
+  }
+  complete_likelihood = accu(complete_likelihood_vec);
+  observed_likelihood = accu(observed_likelihood_vec);
+}

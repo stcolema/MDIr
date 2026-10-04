@@ -375,8 +375,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice, arma::vec betas, arma::uword swap_scheme, arma::uword swap_every);
-RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP swap_schemeSEXP, SEXP swap_everySEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice, arma::vec betas, arma::uword swap_scheme, arma::uword swap_every, arma::uword split_merge);
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP swap_schemeSEXP, SEXP swap_everySEXP, SEXP split_mergeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -399,7 +399,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type swap_scheme(swap_schemeSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type swap_every(swap_everySEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every));
+    Rcpp::traits::input_parameter< arma::uword >::type split_merge(split_mergeSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -425,8 +426,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDISMC
-Rcpp::List runMDISMC(arma::uword n_particles, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat fixed, arma::vec prior, arma::vec density_prior, bool phi_slice, arma::vec betas, bool adaptive, double cess_target, double resample_threshold, arma::uword resample_scheme, arma::uword sweeps_per_step, arma::uword max_steps, arma::uword final_sweeps, arma::uword final_thin, double beta_start, arma::uword start_sweeps);
-RcppExport SEXP _mdir_runMDISMC(SEXP n_particlesSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP fixedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP adaptiveSEXP, SEXP cess_targetSEXP, SEXP resample_thresholdSEXP, SEXP resample_schemeSEXP, SEXP sweeps_per_stepSEXP, SEXP max_stepsSEXP, SEXP final_sweepsSEXP, SEXP final_thinSEXP, SEXP beta_startSEXP, SEXP start_sweepsSEXP) {
+Rcpp::List runMDISMC(arma::uword n_particles, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat fixed, arma::vec prior, arma::vec density_prior, bool phi_slice, arma::vec betas, bool adaptive, double cess_target, double resample_threshold, arma::uword resample_scheme, arma::uword sweeps_per_step, arma::uword max_steps, arma::uword final_sweeps, arma::uword final_thin, double beta_start, arma::uword start_sweeps, arma::uword split_merge);
+RcppExport SEXP _mdir_runMDISMC(SEXP n_particlesSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP fixedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP adaptiveSEXP, SEXP cess_targetSEXP, SEXP resample_thresholdSEXP, SEXP resample_schemeSEXP, SEXP sweeps_per_stepSEXP, SEXP max_stepsSEXP, SEXP final_sweepsSEXP, SEXP final_thinSEXP, SEXP beta_startSEXP, SEXP start_sweepsSEXP, SEXP split_mergeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -450,7 +451,43 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type final_thin(final_thinSEXP);
     Rcpp::traits::input_parameter< double >::type beta_start(beta_startSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type start_sweeps(start_sweepsSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDISMC(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps));
+    Rcpp::traits::input_parameter< arma::uword >::type split_merge(split_mergeSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDISMC(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge));
+    return rcpp_result_gen;
+END_RCPP
+}
+// collapsedLogMarginalCpp
+double collapsedLogMarginalCpp(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior, arma::uvec rows, double beta);
+RcppExport SEXP _mdir_collapsedLogMarginalCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typeSEXP, SEXP density_priorSEXP, SEXP rowsSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type mixture_type(mixture_typeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type rows(rowsSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(collapsedLogMarginalCpp(X, K, mixture_type, density_prior, rows, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// splitMergeOnlyCpp
+Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior, arma::uvec labels, arma::uvec fixed, arma::vec w, arma::uword n_iter, double beta);
+RcppExport SEXP _mdir_splitMergeOnlyCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typeSEXP, SEXP density_priorSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP wSEXP, SEXP n_iterSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type mixture_type(mixture_typeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type fixed(fixedSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_iter(n_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(splitMergeOnlyCpp(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -480,9 +517,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_phiSliceChainCpp", (DL_FUNC) &_mdir_phiSliceChainCpp, 10},
     {"_mdir_phiConditionalLogDensityCpp", (DL_FUNC) &_mdir_phiConditionalLogDensityCpp, 10},
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
-    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 19},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 20},
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
-    {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 20},
+    {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 21},
+    {"_mdir_collapsedLogMarginalCpp", (DL_FUNC) &_mdir_collapsedLogMarginalCpp, 6},
+    {"_mdir_splitMergeOnlyCpp", (DL_FUNC) &_mdir_splitMergeOnlyCpp, 9},
     {NULL, NULL, 0}
 };
 

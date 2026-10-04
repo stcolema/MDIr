@@ -1,0 +1,5 @@
+data: 0 0 0 1 2 0 1  alpha: 0.5714286 0.2857143 0.1428571 
+split-merge on: single chain beta = 1                          TV 0.0093 (chain noise ~0.0092) | states 60 | max|z| 3.84 | mean z^2 1.45 (expect ~1.12)
+split-merge on: single chain beta = 0.4                        TV 0.0108 (chain noise ~0.0102) | states 9 | max|z| 1.59 | mean z^2 0.68 (expect ~1.12)
+split-merge on: PT cold chain, ladder (0.2, 0.5, 1)            TV 0.0092 (chain noise ~0.0092) | states 60 | max|z| 3.21 | mean z^2 0.77 (expect ~1.12)
+CONTROL: split-merge on, beta = 0.4 vs exact beta = 1          TV 0.3002 (chain noise ~0.0102) | states 60 | max|z| 484.12 | mean z^2 26810.04 (expect ~1.12)

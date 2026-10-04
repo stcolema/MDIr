@@ -24,7 +24,8 @@ callMDI(
   phi_update = c("slice", "gibbs"),
   betas = 1,
   swap_scheme = c("deo", "seo"),
-  swap_every = 1L
+  swap_every = 1L,
+  split_merge = 0L
 )
 }
 \arguments{
@@ -113,6 +114,18 @@ pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
 the parity at random (reversible). Both leave the tempered targets invariant.}
 
 \item{swap_every}{Attempt exchanges after every \code{swap_every} sweeps.}
+
+\item{split_merge}{Number of attempts per view and sweep of a split-merge style
+move: two components are chosen at random, the free items in them are
+re-allocated one at a time in random order with probability proportional to the
+item's prior factor times the collapsed predictive density, and the
+proposal is accepted or rejected exactly (an independence Metropolis-Hastings
+step; Dahl, 2005). It targets the same posterior (invariance proved for
+finite spaces, \code{verification/tempering/theory.md}); that it improves mixing
+is not guaranteed. \code{0} (default) turns it off. Requires \code{"G"},
+\code{"MVN"} or \code{"C"} views without an outlier component; observed labels
+(semi-supervised views) and missing values are allowed, and \code{betas} may be
+combined with it.}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the

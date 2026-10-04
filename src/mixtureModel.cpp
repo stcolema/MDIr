@@ -231,3 +231,98 @@ void mixtureModel::swapComponents(uword k, uword kprime) {
   density_ptr->swapComponents(k, kprime);
   alloc.swap_cols(k, kprime);
 }
+
+
+void mixtureModel::refreshLikelihoods(const arma::vec& log_weights) {
+  const vec log_pi = log_weights - logSumExp(log_weights);
+  for(uword n = 0; n < N; n++) {
+    const vec ll = density_ptr->itemLogLikelihood(n);
+    observed_likelihood_vec(n) = logSumExp(log_pi + ll);
+    complete_likelihood_vec(n) = ll(labels(n));
+  }
+  observed_likelihood = accu(observed_likelihood_vec);
+  complete_likelihood = accu(complete_likelihood_vec);
+}
+
+bool mixtureModel::splitMergeMove(
+    uword a, uword b,
+    const arma::vec& log_weights,
+    const arma::mat& log_upweights
+) {
+  const double beta_now = beta;
+  const uword comp[2] = {a, b};
+
+  // The free items of the two components and the statistics of the fixed ones
+  collapsedStats base[2] = {density_ptr->emptyStats(), density_ptr->emptyStats()};
+  std::vector<uword> items;
+  for(uword n = 0; n < N; n++) {
+    for(uword j = 0; j < 2; j++) {
+      if(labels(n) == comp[j]) {
+        if(fixed(n) == 1) {
+          density_ptr->addItemToStats(base[j], n);
+        } else {
+          items.push_back(n);
+        }
+      }
+    }
+  }
+  const uword m = items.size();
+  if(m == 0) {
+    return false;
+  }
+
+  // A uniformly random order (Fisher-Yates)
+  for(uword i = m - 1; i > 0; i--) {
+    const uword j = std::min<uword>((uword) std::floor(randu() * (double) (i + 1)), i);
+    std::swap(items[i], items[j]);
+  }
+
+  // Walk the items in order, following either a random allocation (the proposal) or the 
+  // current labels, and return the sum of the log normalisers of the allocation 
+  // probabilities and the labels followed
+  auto walk = [&](bool follow_current, std::vector<uword>& path) {
+    collapsedStats stats[2] = {base[0], base[1]};
+    double lm[2] = {density_ptr->logMarginalLikelihood(stats[0], beta_now), 
+                    density_ptr->logMarginalLikelihood(stats[1], beta_now)};
+    double total = 0.0;
+    path.assign(m, 0);
+    for(uword t = 0; t < m; t++) {
+      const uword n = items[t];
+      collapsedStats cand[2] = {stats[0], stats[1]};
+      double lm_cand[2], score[2];
+      for(uword j = 0; j < 2; j++) {
+        density_ptr->addItemToStats(cand[j], n);
+        lm_cand[j] = density_ptr->logMarginalLikelihood(cand[j], beta_now);
+        score[j] = log_weights(comp[j]) + log_upweights(comp[j], n) + (lm_cand[j] - lm[j]);
+      }
+      const double mx = std::max(score[0], score[1]);
+      const double log_norm = mx + std::log(std::exp(score[0] - mx) + std::exp(score[1] - mx));
+      if(!std::isfinite(log_norm)) {
+        Rcpp::stop("Non-finite allocation probabilities in the split-merge move.");
+      }
+      total += log_norm;
+      uword pick = 0;
+      if(follow_current) {
+        pick = (labels(n) == comp[1]) ? 1 : 0;
+      } else {
+        pick = (randu() < std::exp(score[1] - log_norm)) ? 1 : 0;
+      }
+      path[t] = pick;
+      stats[pick] = cand[pick];
+      lm[pick] = lm_cand[pick];
+    }
+    return total;
+  };
+
+  std::vector<uword> proposed_path, current_path;
+  const double log_w_proposed = walk(false, proposed_path);
+  const double log_w_current = walk(true, current_path);
+  const double log_accept = log_w_proposed - log_w_current;
+  const bool accept = (std::log(randu()) < log_accept);
+  if(accept) {
+    for(uword t = 0; t < m; t++) {
+      labels(items[t]) = comp[proposed_path[t]];
+    }
+  }
+  return accept;
+}

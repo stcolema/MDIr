@@ -65,6 +65,12 @@ public:
   
   void replaceData(const arma::mat& X_new) override;
   
+  // Collapsed Dirichlet-multinomial marginal likelihood
+  bool hasCollapsedMarginal() const override { return true; }
+  collapsedStats emptyStats() const override;
+  void addItemToStats(collapsedStats& st, arma::uword n) const override;
+  double logMarginalLikelihood(const collapsedStats& st, double beta) const override;
+
   void swapComponents(uword k, uword kprime) override;
   
   // Layout: category_probabilities(0), category_probabilities(1), ..., each 

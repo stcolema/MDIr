@@ -95,6 +95,10 @@
 #' valid for the weighted sample, but a draw is highly dependent on the particle
 #' it comes from, so these add little against more particles.
 #' @param thin Thinning of the extra sweeps.
+#' @param split_merge Split-merge style moves in every sweep of every particle; see
+#' \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
+#' guarantees below are unchanged; they can only change the variance.
+#' @param fixed Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).
 #' @param beta_start,start_sweeps Start the particles at inverse temperature
 #' \code{beta_start} after \code{start_sweeps} sweeps there, instead of at the prior. Conditional
 #' procedure: read the corresponding item under \emph{What is guaranteed}.
@@ -156,7 +160,13 @@ smcMDI <- function(X,
                    max_steps = 2000L,
                    check_prior = TRUE,
                    beta_start = 0,
-                   start_sweeps = 0L) {
+                   start_sweeps = 0L,
+                   split_merge = 0L,
+                   fixed = NULL) {
+  if (!is.null(fixed)) {
+    stop("smcMDI is unsupervised only: the particles start from exact draws of the prior, which are not available ",
+      "given observed labels. Use callMDI(..., betas = ) (parallel tempering) for semi-supervised models.")
+  }
   schedule <- match.arg(schedule)
   resample <- match.arg(resample)
   phi_update <- match.arg(phi_update)
@@ -165,6 +175,7 @@ smcMDI <- function(X,
   .mdirCheckCount(sweeps_per_step, "sweeps_per_step", 1)
   .mdirCheckCount(thin, "thin", 1)
   .mdirCheckCount(max_steps, "max_steps", 1)
+  .mdirCheckCount(split_merge, "split_merge", 0)
   if (!is.numeric(final_sweeps) || length(final_sweeps) != 1 || is.na(final_sweeps) || final_sweeps < 0) {
     stop("`final_sweeps` must be a non-negative integer.", call. = FALSE)
   }
@@ -232,7 +243,8 @@ smcMDI <- function(X,
     final_sweeps = as.integer(final_sweeps),
     final_thin = as.integer(thin),
     beta_start = beta_start,
-    start_sweeps = as.integer(start_sweeps)
+    start_sweeps = as.integer(start_sweeps),
+    split_merge = as.integer(split_merge)
   )
   time_taken <- Sys.time() - t_0
 

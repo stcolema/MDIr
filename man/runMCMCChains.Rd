@@ -26,7 +26,8 @@ runMCMCChains(
   n_cores = NULL,
   betas = 1,
   swap_scheme = c("deo", "seo"),
-  swap_every = 1L
+  swap_every = 1L,
+  split_merge = 0L
 )
 }
 \arguments{
@@ -81,6 +82,9 @@ two while a package is being checked (\code{_R_CHECK_LIMIT_CORES_} is set), as
 CRAN requires. Progress messages are given when the chains have finished.}
 
 \item{betas, swap_scheme, swap_every}{Parallel tempering within each chain; see
+\code{\link{callMDI}}.}
+
+\item{split_merge}{Split-merge style moves within each chain; see
 \code{\link{callMDI}}.}
 }
 \value{

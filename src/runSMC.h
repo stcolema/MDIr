@@ -43,6 +43,7 @@ using namespace arma ;
 //' prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
 //' \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.
 //' @param start_sweeps Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).
+//' @param split_merge Split-merge attempts per view and sweep (see `runMDI`).
 //' @return A list with the particles' recorded draws and weights, the evidence
 //' estimate and the trace of the run.
 // [[Rcpp::export]]
@@ -66,7 +67,8 @@ Rcpp::List runMDISMC(
   arma::uword final_sweeps,
   arma::uword final_thin,
   double beta_start,
-  arma::uword start_sweeps
+  arma::uword start_sweeps,
+  arma::uword split_merge
 );
 
 #endif /* RUNSMC_H */

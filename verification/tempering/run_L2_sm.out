@@ -1,0 +1,11 @@
+view 1: 0 1 1 0  view 2: 1 2 0 0 
+alpha: 0.5 0.5 | 0.5 0.25 0.25 
+prior MC done in 116s; max relative MC se of cell prior: 0.0021
+split-merge on, two views: single chain beta = 1        TV 0.0024 (chain noise ~0.0026) | states 76 | max|z| 3.12 | mean z^2 1.37 (expect ~1.12)
+    exact-reference MC error: TV contribution <= 0.0001
+split-merge on, two views: beta = 0.5                   TV 0.0026 (chain noise ~0.0028) | states 80 | max|z| 1.89 | mean z^2 0.77 (expect ~1.12)
+    exact-reference MC error: TV contribution <= 0.0001
+split-merge on, two views: PT (0.2, 0.5, 1)             TV 0.0027 (chain noise ~0.0026) | states 76 | max|z| 2.76 | mean z^2 1.12 (expect ~1.12)
+    exact-reference MC error: TV contribution <= 0.0001
+CONTROL: split-merge on, beta = 1 vs exact beta = 0.5   TV 0.2208 (chain noise ~0.0026) | states 80 | max|z| 286.68 | mean z^2 7898.07 (expect ~1.12)
+    exact-reference MC error: TV contribution <= 0.0001

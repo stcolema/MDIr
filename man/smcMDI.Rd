@@ -24,7 +24,9 @@ smcMDI(
   max_steps = 2000L,
   check_prior = TRUE,
   beta_start = 0,
-  start_sweeps = 0L
+  start_sweeps = 0L,
+  split_merge = 0L,
+  fixed = NULL
 )
 }
 \arguments{
@@ -95,6 +97,12 @@ than empties superfluous components (see \code{\link{mdiPrior}}). Set
 \item{beta_start, start_sweeps}{Start the particles at inverse temperature
 \code{beta_start} after \code{start_sweeps} sweeps there, instead of at the prior. Conditional
 procedure: read the corresponding item under \emph{What is guaranteed}.}
+
+\item{split_merge}{Split-merge style moves in every sweep of every particle; see
+\code{\link{callMDI}}. The moves leave each tempered target invariant, so the
+guarantees below are unchanged; they can only change the variance.}
+
+\item{fixed}{Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).}
 }
 \value{
 An object of class \code{mdir_smc}: a list with

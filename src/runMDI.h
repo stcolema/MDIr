@@ -56,6 +56,8 @@ using namespace arma ;
 //' @param swap_scheme How replicas are paired for exchange: 0, deterministic
 //' even-odd (non-reversible); 1, stochastic even-odd (reversible).
 //' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
+//' @param split_merge Attempts per view and sweep of the sequentially-allocated 
+//' re-partition of two randomly chosen components (0 turns it off).
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -77,7 +79,8 @@ Rcpp::List runMDI(
   bool phi_slice,
   arma::vec betas,
   arma::uword swap_scheme,
-  arma::uword swap_every
+  arma::uword swap_every,
+  arma::uword split_merge
 );
 
 #endif /* RUNMDI_H */

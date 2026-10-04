@@ -56,6 +56,13 @@ The `beta = 1` replica's draws are returned.
 | SMC evidence and unnormalised posterior unbiased against the exact values (categorical, 300 runs) | simulation; mutant (weights scaled by 0.9) caught | `smc_unbiased_L1.R`, `test-smc.R` |
 | Weighted ensembles from the prior on the four-cluster example | wrong or unstable mode masses; AIS ESS 5.7 and 1.6 | `smc_explore.R` |
 | Start above the prior | masses move toward exact values as start sweeps grow (illustration, no guarantee) | `smc_start.R` |
+| Metropolis-Hastings with any positive proposal leaves `pi` invariant; for a sequential proposal the ratio is `prod Z(proposed) / prod Z(current)` | Lean (`mhK_invariant`, `seq_ratio`) | `lean/Tempering/SplitMerge.lean` |
+| Sequentially allocated split-merge kernel: detailed balance, invariance, normalised proposal, over all visiting orders; mutant caught | exact rational arithmetic | `sympy_splitmerge_exact.py` |
+| Collapsed marginal likelihoods (G, MVN, C, at `beta`) equal the integral of tempered likelihood times prior | quadrature, closed forms, identity at random points | `tests/testthat/test-splitmerge.R` |
+| The move alone reproduces the exact collapsed label posterior (C, G, MVN, `beta = 0.5`, observed labels); control rejected | exact enumeration | `run_splitmerge.R`, `test-splitmerge.R` |
+| Full sampler with split-merge (plain, PT) reproduces the exact label posterior, unsupervised and semi-supervised | exact enumeration | `run_L1_sm.R`, `run_L1_semisup.R`, `run_L2_sm.R` (two views) |
+| Split-merge with missing data targets the same posterior as the plain chain | agreement of two samplers (no exact reference) | `run_splitmerge_missing.R` |
+| Four-cluster example, plain chains with split-merge, pooled | exact group-unit masses; TV 0.015 (sep 2.5), 0.001 (sep 4) | `pooled_plain_sm.R` |
 
 Tests were also run against two deliberately broken versions (wrong sign in the exchange,
 counts not tempered in the MVN update); each was caught.
@@ -70,6 +77,7 @@ counts not tempered in the MVN update); each was caught.
   instead), irreducibility, ergodicity or any rate of convergence. It also does not
   verify that the C++ implements the algorithm; that link is the simulation and the
   independent recomputation of `l`.
+* Split-merge: mixing is not guaranteed (only invariance); the missing-data case has no exact reference.
 * Models other than complete-data `G`, `MVN`, `C` views without an outlier component. The
   missing-data, t-outlier and Gaussian-process updates are not tempered, and a ladder is
   refused for them.
@@ -90,8 +98,12 @@ Rscript pooled_plain.R <lib> mm.rds 160 6000 1
 python3 sympy_smc_exact.py
 Rscript smc_unbiased_L1.R <lib> 300 100 2
 Rscript smc_explore.R <lib>; Rscript smc_start.R <lib>
+python3 sympy_splitmerge_exact.py
+Rscript run_splitmerge.R <lib> 16 120000 4; Rscript run_L1_sm.R <lib> 20 150000 4
+Rscript run_L1_semisup.R <lib> 20 120000 4; Rscript run_splitmerge_missing.R <lib> 24 40000 4
+Rscript pooled_plain_sm.R <lib> mm.rds 160 6000 4
 # Lean: Mathlib v4.33.0 with its cache fetched (lake exe cache get), Lean 4.33.0
-cd lean && ./check.sh /path/to/mathlib4 SwapKernel ProductSwap Conjugate PTKernel Check
+cd lean && ./check.sh /path/to/mathlib4 SwapKernel ProductSwap Conjugate PTKernel AIS SplitMerge Check
 ```
 
 `lean/lakefile.toml` pins Mathlib `v4.33.0`; it was not used to build (the files were

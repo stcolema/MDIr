@@ -266,6 +266,17 @@ public:
   void initialiseMDI();
   void initialiseDatasetL(uword l);
 
+  // === Split-merge ===========================================================
+
+  // Attempts per view and sweep of the sequentially-allocated re-partition of two
+  // randomly chosen components (mixtureModel::splitMergeMove); 0 turns the move off. The
+  // weights, phis and the other views' labels are held fixed, so Z and the
+  // strategic latent variable are unchanged.
+  uword split_merge_moves = 0, split_merge_attempts = 0, split_merge_accepts = 0;
+  void setSplitMerge(uword moves);
+  void updateSplitMerge();
+  void updateSplitMergeViewL(uword l);
+
   // === Label swapping ========================================================
 
   // Metropolis-Hastings relabelling moves within a view. Swaps the labels,

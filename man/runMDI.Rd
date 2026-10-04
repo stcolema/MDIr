@@ -23,7 +23,8 @@ runMDI(
   phi_slice,
   betas,
   swap_scheme,
-  swap_every
+  swap_every,
+  split_merge
 )
 }
 \arguments{
@@ -82,6 +83,9 @@ target and is for testing only.}
 even-odd (non-reversible); 1, stochastic even-odd (reversible).}
 
 \item{swap_every}{Attempt replica exchanges after every `swap_every` sweeps.}
+
+\item{split_merge}{Attempts per view and sweep of the sequentially-allocated 
+re-partition of two randomly chosen components (0 turns it off).}
 }
 \value{
 Named list of the different quantities drawn by the sampler.
