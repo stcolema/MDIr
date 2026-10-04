@@ -1,5 +1,85 @@
 # mdir (development version)
 
+## New: likelihood of the whole model, and prediction
+
+* **`joint_likelihood`** is recorded at every saved draw: the log-likelihood of the
+  data under the MDI model with every item's component assignments in all views
+  summed out, `log Z(w g) - log Z(w)` per item, where `g` holds the per-view
+  component likelihoods (outliers marginalised). It is exact, reuses the
+  recursion that gives `Z`, and is checked against enumeration of the joint
+  assignments, including missing data and ragged `K`. The existing
+  `observed_likelihood` sums over each view separately with that view's own
+  normalised weights, which ignores the coupling between views; it equals the
+  joint likelihood only when every `phi` is zero (one view, or `phi = 0`), and is
+  left unchanged. In a semi-supervised view the observed labels are treated as
+  data. The joint likelihood is also monitored by `assessConvergence()` and shown
+  by `summary()`. Recording it added no measurable run time (a 3-view, 500-item
+  chain took 0.44 s for 200 sweeps recorded every sweep, before and after).
+* **`pointwiseLogLik()`** returns the log-likelihood of each item at each draw
+  (`save_pointwise = TRUE`), as the draws x items matrix that `loo::waic()` and
+  `loo::loo()` take, with the chain of each row.
+* **`predictMDI()`** evaluates new items at every saved draw without refitting:
+  the log posterior predictive density of each, the probability that it shares a
+  component with each fitted item, and, for semi-supervised views, class
+  probabilities. Items may have missing entries or whole views missing. The
+  calculation is exact given a draw and agrees with enumeration. Class
+  probabilities are not returned for unsupervised views, whose labels are not
+  identified across draws.
+
+## New: parallel chains
+
+* `runMCMCChains()` and `fitMDI()` gain **`n_cores`** (default 1, or
+  `options(mdir.cores)`). Each chain gets its own L'Ecuyer-CMRG stream drawn from
+  the user's generator, so results follow `set.seed()` and do not depend on the
+  number of cores, nor on whether workers are forked (Unix-alikes) or sockets
+  (Windows); the user's generator kind and state are restored. Parallel results
+  differ from the serial results for the same seed. As `data.table` does, at most
+  two cores are used when `_R_CHECK_LIMIT_CORES_` is set (as `R CMD check
+  --as-cran` does); `parallel` (a base package) is the only addition to
+  `Imports`. Parallel execution still never starts unless asked.
+
+## Sampling
+
+* **The phis are updated with the strategic latent variable integrated out**
+  (`phi_update = "slice"`, the default). `Z` is linear in each `phi`, `Z = A + B
+  phi`, so the conditional of `phi` given the weights and labels is explicit and
+  one-dimensional, and a slice-sampling update (Neal, 2003) draws from it with
+  nothing to tune: the width only affects the number of evaluations, each O(1)
+  once `A` and `B` are known. It is a joint draw of `(phi, v)` given the
+  weights and labels, so the target is unchanged. The previous update given
+  `v` remains available as `phi_update = "gibbs"`, and reproduces the previous
+  version's chains exactly for the same seed (checked with three views, missing
+  data and outliers).
+  * Checked: the draws match the exact conditional (quantiles, L = 3 and 5) with
+    lag-1 autocorrelation below 0.05 at very different scales; the sampler
+    recovers the prior of every `phi` and mass under a constant likelihood with
+    four and five views, as it did with two and three; the posterior of the phis
+    agrees with the Gibbs update with three views (16 independent chains each).
+    Changing the power of `Z` in the update on purpose makes the full-sampler
+    tests fail (checked by hand).
+  * Efficiency, measured on simulated data: with two strongly associated views
+    (600 items) the effective sample size of `phi` rose about 15-fold (124 to
+    1800 per 4000 draws); with three to five moderately associated views (300
+    items) the median `phi` effective sample size rose between 1.2 and 2 times
+    (three replicates, noisy), with the same run time. Mixing of `mass` and of the
+    cluster structure, which limit most fits, is unchanged. With four views and a
+    small data set both updates leave a few chains in a slower, higher-`phi`
+    mode, so several chains remain necessary.
+  * Cost: each `phi` needs two evaluations of the partition recursion (`A` and
+    `B`), so for up to eight views the run time is unchanged; with ten views a
+    sweep took 11 ms instead of 4.5 ms (100 items, K = 4). Use
+    `phi_update = "gibbs"` if the number of views is large and the densities are cheap.
+* The recorded `evidence` is unchanged: `Z` at the start of the sweep.
+
+## Output size
+
+* **Allocation probabilities are recorded for semi-supervised views only.** The
+  N x K x draws array of `allocation_probabilities` was recorded for every view
+  but used only by semi-supervised ones (92 MB against 0.9 MB for the allocations
+  in a two-view run with K = 100 and 200 draws; about 1.2 GB per view per chain for
+  1000 items, K = 500 and 300 draws). It is now `NULL` for other views.
+  `calcAllocProb()` says so if asked for one.
+
 ## Console output and workflow
 
 * **Fits print as reports.** `callMDI()` returns an `mdir_fit` and
@@ -33,6 +113,52 @@
   described the full set).
 * Progress and the convergence verdict respect `options(mdir.quiet = TRUE)`,
   which already silenced the prior-sparsity message.
+
+## Performance
+
+* **Faster sampling with many views.** The sums over set partitions that give
+  the MDI normalising constant and the rates of the weight conditionals now
+  reuse the part that depends on the `phi`s alone, and take the rates of all
+  the weights of a view from one pass instead of one pass per weight. On one
+  machine a 100-iteration chain took about 0.5 s for 8 views and 2.4 s for 10
+  views before, and 0.15 s and 0.55 s after. Fewer than five views are
+  unaffected, because the densities dominate there.
+* **Faster multivariate normal likelihood** for complete items (no per-item,
+  per-component allocation): about 1.7 times faster for a two-view MVN chain
+  with 500 items and ten components.
+* Apart from the label-swap correction below, the targets and the random number
+  streams are unchanged. Compared with the previous version before that
+  correction, allocations and all other discrete output were identical and
+  continuous output agreed to about 1e-13 relative (bit-identical for one and
+  two views); the last digits can differ with more views because the sums are
+  accumulated in a different order.
+
+## Corrections
+
+* **Label swaps now exchange the weights of one view only.** The move that
+  exchanges two components of a view (labels, weights and component parameters)
+  also exchanged the weights of every other view, without their labels. The
+  same permutation of all views leaves the normalising constant `Z` unchanged, so
+  the `-v (Z' - Z)` term of the acceptance ratio was always zero, and the other
+  views' weights no longer matched their labels; the ratio was not the ratio of
+  the model's target. The acceptance ratio is now `sum_m log(1 + phi_m,l) (A' -
+  A) - v (Z' - Z)` with `Z'` from exchanging the two weights of view `l` alone,
+  and equals the exact log ratio of the target (checked against enumeration and
+  symbolically). Effects of the old move: with equal numbers of components the
+  sampler's stationary distribution was slightly wrong (with a constant
+  likelihood, 3 components in each of two views and 10 items, the share of items in
+  the largest-weight component of a view was about 0.011 too low, against a
+  forward simulation of the prior); with different numbers of components the
+  recorded weights had non-zero values in unused slots, and a view's weights
+  could be moved entirely out of its real slots, making `Z` zero and stopping the
+  sampler (a `randg()` error or "Non-finite allocation probabilities"). In 240
+  random models of three to five views with unequal numbers of components and
+  30,000 sweeps each, the old move stopped 6 of 112 runs without a
+  single-component view and 95 of 128 with one, and left non-zero weights in
+  unused slots in nearly all runs; none of these occurred after the correction,
+  with semi-supervised and unsupervised views mixed. Chains with label swaps (every tenth sweep)
+  change; results from earlier versions of models with several views are not
+  reproduced exactly.
 
 # mdir 0.10.2
 

@@ -198,6 +198,11 @@ summary.mdir_fit <- function(object, burn = NULL, ...) {
       } else {
         mean(object$observed_likelihood[index])
       },
+      joint_likelihood = if (is.null(object$joint_likelihood)) {
+        NA_real_
+      } else {
+        mean(object$joint_likelihood[index])
+      },
       mass_acceptance_rate = object$mass_acceptance_rate,
       time = object$Time,
       clustering = clustering
@@ -238,10 +243,14 @@ print.summary.mdir_fit <- function(x, digits = 3, ...) {
   }
 
   cat(sprintf(
-    "\nMean log-likelihood: complete-data = %s, observed-data = %s\n",
+    "\nMean log-likelihood: complete-data = %s, observed-data = %s",
     format(signif(x$complete_likelihood, 5)),
     if (is.na(x$observed_likelihood)) "not recorded" else format(signif(x$observed_likelihood, 5))
   ))
+  if (!is.null(x$joint_likelihood) && !is.na(x$joint_likelihood)) {
+    cat(sprintf(", joint = %s", format(signif(x$joint_likelihood, 5))))
+  }
+  cat("\n")
   cat("Run time: ", .mdirFormatTime(x$time), "\n", sep = "")
 
   if (x$processed) {

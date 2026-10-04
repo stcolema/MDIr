@@ -41,6 +41,14 @@ using namespace arma ;
 //' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 //' @param density_prior Options of the density-level priors (variance scale 
 //' pooling and Gaussian process priors), see `densityPrior()` in R.
+//' @param save_allocation_probabilities For each view, 1 to record the allocation
+//' probabilities of every item at every saved iteration (an N x K x draws array, 
+//' needed only for semi-supervised views), 0 to leave them out. A single value is
+//' recycled over the views.
+//' @param save_pointwise Record the log-likelihood of every item at every saved 
+//' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
+//' @param phi_slice Update the phis with the strategic latent variable 
+//' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -56,7 +64,10 @@ Rcpp::List runMDI(
   bool save_parameters,
   bool save_imputed,
   arma::vec prior,
-  arma::vec density_prior
+  arma::vec density_prior,
+  arma::uvec save_allocation_probabilities,
+  bool save_pointwise,
+  bool phi_slice
 );
 
 #endif /* RUNMDI_H */

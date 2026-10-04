@@ -13,20 +13,97 @@ inline uword lowBit(uword x) {
   return x & (~x + 1);
 }
 
+// Index of the highest set bit of x (x > 0)
+inline uword highIndex(uword x) {
+  uword h = 0;
+  while((x >> (h + 1)) != 0) {
+    h++;
+  }
+  return h;
 }
 
-double mdiPartitionSum(
-    const arma::mat& w,
-    const arma::uvec& K,
-    const arma::mat& phi
-) {
-  const uword L = w.n_cols;
+void checkNumberOfViews(uword L) {
   if(L == 0 || L > MAX_VIEWS) {
     Rcpp::stop("mdiPartitionSum: the number of views must be between 1 and %d.", (int) MAX_VIEWS);
   }
-  const uword n_sets = (uword) 1 << L, full = n_sets - 1;
+}
 
-  std::vector<double> P(n_sets, 1.0), C(n_sets, 0.0), s(n_sets, 0.0), G(n_sets, 0.0);
+// Fills K_min[X], the smallest number of components over the views in X
+// (w.n_rows for the empty set), and the index of the highest view in X.
+void subsetTables(
+    const arma::mat& w,
+    const arma::uvec& K,
+    std::vector<uword>& K_min,
+    std::vector<uword>& high
+) {
+  const uword L = w.n_cols, n_sets = (uword) 1 << L;
+  K_min.assign(n_sets, (uword) w.n_rows);
+  high.assign(n_sets, 0);
+  for(uword X = 1; X < n_sets; X++) {
+    const uword h = highIndex(X);
+    high[X] = h;
+    K_min[X] = std::min(K_min[X ^ ((uword) 1 << h)], (uword) K(h));
+  }
+}
+
+// s_X: sum over the components present in every view of X of the product of
+// their weights. The products are built by adding the views of X in increasing
+// order, the same order as a direct loop over the views.
+void weightProductSums(
+    const arma::mat& w,
+    const std::vector<uword>& K_min,
+    const std::vector<uword>& high,
+    std::vector<double>& s
+) {
+  const uword L = w.n_cols, n_sets = (uword) 1 << L;
+  s.assign(n_sets, 0.0);
+  std::vector<double> prod_w(n_sets, 1.0);
+  for(uword k = 0; k < w.n_rows; k++) {
+    for(uword X = 1; X < n_sets; X++) {
+      const uword h = high[X];
+      prod_w[X] = prod_w[X ^ ((uword) 1 << h)] * w(k, h);
+      if(k < K_min[X]) {
+        s[X] += prod_w[X];
+      }
+    }
+  }
+}
+
+// G_X: sum over the set partitions of X of prod_{B} C_B s_B. G[full] is Z.
+void setPartitionSums(
+    const std::vector<double>& C,
+    const std::vector<double>& s,
+    std::vector<double>& G
+) {
+  const uword n_sets = C.size();
+  std::vector<double> Cs(n_sets);
+  for(uword X = 0; X < n_sets; X++) {
+    Cs[X] = C[X] * s[X];
+  }
+  G.assign(n_sets, 0.0);
+  G[0] = 1.0;
+  for(uword X = 1; X < n_sets; X++) {
+    const uword low = lowBit(X), rest = X ^ low;
+    double g = 0.0;
+    uword sub = rest;
+    while(true) {
+      const uword A = sub | low;
+      g += Cs[A] * G[X ^ A];
+      if(sub == 0) break;
+      sub = (sub - 1) & rest;
+    }
+    G[X] = g;
+  }
+}
+
+}
+
+std::vector<double> mdiConnectedSums(const arma::mat& phi) {
+  const uword L = phi.n_cols;
+  checkNumberOfViews(L);
+  const uword n_sets = (uword) 1 << L;
+
+  std::vector<double> P(n_sets, 1.0), C(n_sets, 0.0);
 
   // P_X: product of (1 + phi) over the pairs within X
   for(uword X = 1; X < n_sets; X++) {
@@ -42,33 +119,11 @@ double mdiPartitionSum(
     P[X] = p;
   }
 
-  // s_X: sum over components present in every view of X of the weight product
-  for(uword X = 1; X < n_sets; X++) {
-    uword K_min = w.n_rows;
-    for(uword l = 0; l < L; l++) {
-      if(X & ((uword) 1 << l)) {
-        K_min = std::min(K_min, (uword) K(l));
-      }
-    }
-    double total = 0.0;
-    for(uword k = 0; k < K_min; k++) {
-      double prod_w = 1.0;
-      for(uword l = 0; l < L; l++) {
-        if(X & ((uword) 1 << l)) {
-          prod_w *= w(k, l);
-        }
-      }
-      total += prod_w;
-    }
-    s[X] = total;
-  }
-
-  // C_X (connected spanning edge sets), then G_X (sum over set partitions of X)
-  // Proper subsets always have smaller numeric value, so a forward pass works.
-  G[0] = 1.0;
+  // C_X (connected spanning edge sets). Proper subsets always have smaller
+  // numeric value, so a forward pass works.
   for(uword X = 1; X < n_sets; X++) {
     const uword low = lowBit(X), rest = X ^ low;
-    double c = P[X], g = 0.0;
+    double c = P[X];
 
     // Enumerate A = low | sub for every sub of rest
     uword sub = rest;
@@ -81,17 +136,121 @@ double mdiPartitionSum(
       sub = (sub - 1) & rest;
     }
     C[X] = c;
-
-    sub = rest;
-    while(true) {
-      const uword A = sub | low;
-      g += C[A] * s[A] * G[X ^ A];
-      if(sub == 0) break;
-      sub = (sub - 1) & rest;
-    }
-    G[X] = g;
   }
-  return G[full];
+  return C;
+}
+
+double mdiPartitionSumFromC(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C
+) {
+  const uword L = w.n_cols;
+  checkNumberOfViews(L);
+  if(C.size() != ((uword) 1 << L)) {
+    Rcpp::stop("mdiPartitionSum: the connected sums do not match the number of views.");
+  }
+  std::vector<uword> K_min, high;
+  std::vector<double> s, G;
+  subsetTables(w, K, K_min, high);
+  weightProductSums(w, K_min, high, s);
+  setPartitionSums(C, s, G);
+  return G[((uword) 1 << L) - 1];
+}
+
+double mdiPartitionSum(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const arma::mat& phi
+) {
+  checkNumberOfViews(w.n_cols);
+  return mdiPartitionSumFromC(w, K, mdiConnectedSums(phi));
+}
+
+arma::vec mdiWeightRates(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    arma::uword lstar
+) {
+  const uword L = w.n_cols;
+  checkNumberOfViews(L);
+  if(C.size() != ((uword) 1 << L)) {
+    Rcpp::stop("mdiWeightRates: the connected sums do not match the number of views.");
+  }
+  const uword n_sets = (uword) 1 << L, full = n_sets - 1, lbit = (uword) 1 << lstar;
+  const uword rest_mask = full ^ lbit;
+
+  std::vector<uword> K_min, high;
+  std::vector<double> s, G;
+  subsetTables(w, K, K_min, high);
+  weightProductSums(w, K_min, high, s);
+  setPartitionSums(C, s, G);
+
+  // Z is linear in w(kstar, lstar). Collecting the terms by the block B of the
+  // set partition that holds lstar gives
+  //   dZ / dw(k, lstar) = sum_B C_B prod_{j in B \ lstar} w(k, j) G[full \ B],
+  // over the blocks B in which every other view has more than k components.
+  // G[full \ B] does not involve view lstar.
+  arma::vec rates(K(lstar), arma::fill::zeros);
+  std::vector<double> prod_w(n_sets, 1.0);
+  for(uword k = 0; k < K(lstar); k++) {
+    for(uword X = 1; X < n_sets; X++) {
+      if(X & lbit) {
+        continue;
+      }
+      const uword h = high[X];
+      prod_w[X] = prod_w[X ^ ((uword) 1 << h)] * w(k, h);
+    }
+    double total = 0.0;
+    uword sub = rest_mask;
+    while(true) {
+      if(k < K_min[sub]) {
+        const uword B = sub | lbit;
+        total += C[B] * prod_w[sub] * G[full ^ B];
+      }
+      if(sub == 0) break;
+      sub = (sub - 1) & rest_mask;
+    }
+    rates(k) = total;
+  }
+  return rates;
+}
+
+double mdiSwapLogRatio(
+    const arma::umat& labels,
+    const arma::mat& phi,
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    double v,
+    arma::uword lstar,
+    arma::uword k,
+    arma::uword kprime,
+    double Z_current,
+    double& Z_swapped
+) {
+  const uword N = labels.n_rows, L = labels.n_cols;
+
+  double log_phi_term = 0.0;
+  for(uword m = 0; m < L; m++) {
+    if(m == lstar) {
+      continue;
+    }
+    uword agree = 0, agree_swapped = 0;
+    for(uword n = 0; n < N; n++) {
+      const uword c_l = labels(n, lstar), c_m = labels(n, m);
+      const uword c_l_swapped = (c_l == k) ? kprime : ((c_l == kprime) ? k : c_l);
+      agree += (c_l == c_m) ? 1 : 0;
+      agree_swapped += (c_l_swapped == c_m) ? 1 : 0;
+    }
+    log_phi_term += std::log1p(phi(m, lstar)) * ((double) agree_swapped - (double) agree);
+  }
+
+  arma::mat w_swapped = w;
+  std::swap(w_swapped(k, lstar), w_swapped(kprime, lstar));
+  Z_swapped = mdiPartitionSumFromC(w_swapped, K, C);
+  return log_phi_term - v * (Z_swapped - Z_current);
 }
 
 double mdiWeightRate(
@@ -146,4 +305,151 @@ double mdiPhiRate(
     }
   }
   return mdiPartitionSum(w_merged, K_merged, phi_merged);
+}
+
+// === Marginal likelihood of an item and its class probabilities ==============
+
+namespace {
+
+// w * g with each view's column rescaled by the maximum of its log g. Returns
+// false if a view has no finite entry. The summed rescaling is returned in shift.
+bool scaledWeights(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const arma::mat& log_g,
+    arma::mat& G,
+    double& shift
+) {
+  const uword L = w.n_cols;
+  G.zeros(w.n_rows, L);
+  shift = 0.0;
+  for(uword l = 0; l < L; l++) {
+    double m = -arma::datum::inf;
+    for(uword k = 0; k < K(l); k++) {
+      if(w(k, l) > 0.0) {
+        m = std::max(m, log_g(k, l));
+      }
+    }
+    if(!std::isfinite(m)) {
+      return false;
+    }
+    for(uword k = 0; k < K(l); k++) {
+      G(k, l) = w(k, l) * std::exp(log_g(k, l) - m);
+    }
+    shift += m;
+  }
+  return true;
+}
+
+}
+
+double mdiLogNumerator(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g
+) {
+  arma::mat G;
+  double shift = 0.0;
+  if(!scaledWeights(w, K, log_g, G, shift)) {
+    return -arma::datum::inf;
+  }
+  return std::log(mdiPartitionSumFromC(G, K, C)) + shift;
+}
+
+arma::mat mdiClassProbabilities(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g,
+    double& log_numerator
+) {
+  const uword L = w.n_cols;
+  arma::mat probs(w.n_rows, L, arma::fill::zeros);
+  arma::mat G;
+  double shift = 0.0;
+  if(!scaledWeights(w, K, log_g, G, shift)) {
+    log_numerator = -arma::datum::inf;
+    return probs;
+  }
+  const double Z_G = mdiPartitionSumFromC(G, K, C);
+  log_numerator = std::log(Z_G) + shift;
+  for(uword l = 0; l < L; l++) {
+    const arma::vec rates = mdiWeightRates(G, K, C, l);
+    for(uword k = 0; k < K(l); k++) {
+      probs(k, l) = G(k, l) * rates(k) / Z_G;
+    }
+  }
+  return probs;
+}
+
+// === Collapsed conditional of a phi ==========================================
+
+namespace {
+
+inline double logAddExp(double a, double b) {
+  if(a == -arma::datum::inf) return b;
+  if(b == -arma::datum::inf) return a;
+  const double m = std::max(a, b);
+  return m + std::log(std::exp(a - m) + std::exp(b - m));
+}
+
+}
+
+double mdiLogPhiConditional(
+    double u,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+) {
+  const double phi = std::exp(u);
+  const double log_Z = logAddExp(std::log(A), std::log(B) + u);
+  return shape * u - rate * phi + N_lm * std::log1p(phi) - N * log_Z;
+}
+
+double mdiSamplePhiSlice(
+    double phi,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+) {
+  const double width = 1.0;
+  const int max_steps = 50, max_shrink = 200;
+  auto f = [&](double u) { return mdiLogPhiConditional(u, N_lm, N, A, B, shape, rate); };
+
+  const double u0 = std::log(phi);
+  const double log_level = f(u0) + std::log(arma::randu());
+
+  // Stepping out (Neal, 2003, Figure 3)
+  double left = u0 - width * arma::randu(), right = left + width;
+  int j = (int) std::floor(max_steps * arma::randu());
+  int k = (max_steps - 1) - j;
+  while(j > 0 && f(left) > log_level) {
+    left -= width;
+    j--;
+  }
+  while(k > 0 && f(right) > log_level) {
+    right += width;
+    k--;
+  }
+
+  // Shrinkage (Neal, 2003, Figure 5)
+  for(int i = 0; i < max_shrink; i++) {
+    const double u1 = left + arma::randu() * (right - left);
+    if(f(u1) > log_level) {
+      return std::exp(u1);
+    }
+    if(u1 < u0) {
+      left = u1;
+    } else {
+      right = u1;
+    }
+  }
+  return phi;
 }

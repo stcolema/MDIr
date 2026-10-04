@@ -171,8 +171,18 @@ double mdi::calcPhiRate(uword l, uword m) const {
   return v * mdiPhiRate(w, K, phiMatrix(), l, m);
 }
 
+void mdi::refreshPartitionTables() {
+  if(partition_tables.empty()
+       || partition_tables_phis.n_elem != phis.n_elem
+       || !all(partition_tables_phis == phis)) {
+    partition_tables = mdiConnectedSums(phiMatrix());
+    partition_tables_phis = phis;
+  }
+}
+
 void mdi::updateNormalisingConstant() {
-  Z = mdiPartitionSum(w, K, phiMatrix());
+  refreshPartitionTables();
+  Z = mdiPartitionSumFromC(w, K, partition_tables);
 }
 
 void mdi::sampleStrategicLatentVariable() {
@@ -183,13 +193,14 @@ void mdi::updateWeightsViewL(uword l) {
 
   // The phi matrix and the other views' weights are fixed while the weights of
   // view l are updated, and w(k, l) enters Z linearly, so each weight has a
-  // Gamma full conditional given the others.
-  arma::mat phi_mat = phiMatrix();
+  // Gamma full conditional given the others. The rate of w(k, l) does not
+  // involve view l, so all K(l) rates come from a single pass.
+  refreshPartitionTables();
+  const arma::vec rates = mdiWeightRates(w, K, partition_tables, l);
 
   for(uword k = 0; k < K(l); k++) {
-    double rate = v * mdiWeightRate(w, K, phi_mat, l, k);
     double posterior_shape = (mass(l) / (double) K(l)) + (double) N_k(k, l);
-    double posterior_rate = w_rate_prior + rate;
+    double posterior_rate = w_rate_prior + v * rates(k);
     w(k, l) = rGamma(posterior_shape, posterior_rate);
   }
 }
@@ -235,6 +246,66 @@ void mdi::updatePhis() {
     }
   }
 };
+
+void mdi::updatePhisSlice() {
+  if(L == 1) {
+    return;
+  }
+  for(uword l = 0; l + 1 < L; l++) {
+    for(uword m = l + 1; m < L; m++) {
+      const uword idx = phi_map(l, m);
+      const double N_lm = (double) accu(labels.col(l) == labels.col(m));
+
+      // Z is linear in phi(l, m): Z = A + B phi
+      arma::mat phi_mat = phiMatrix();
+      const double B = mdiPhiRate(w, K, phi_mat, l, m);
+      phi_mat(l, m) = 0.0;
+      phi_mat(m, l) = 0.0;
+      const double A = mdiPartitionSum(w, K, phi_mat);
+
+      phis(idx) = mdiSamplePhiSlice(phis(idx), N_lm, (double) N, A, B, phi_shape_prior, phi_rate_prior);
+    }
+  }
+}
+
+// === Likelihood ==============================================================
+
+void mdi::componentLogLikelihoods(uword n, bool use_fixed, arma::mat& log_g) {
+  log_g.set_size(K_max, L);
+  log_g.fill(-arma::datum::inf);
+  for(uword l = 0; l < L; l++) {
+    auto& mixture = mixtures[l];
+    const arma::vec ll = mixture->density_ptr->itemLogLikelihood(n);
+    if(use_fixed && fixed(n, l) == 1) {
+      // An observed label: the item belongs to that component, never to the outlier
+      log_g(labels(n, l), l) = ll(labels(n, l));
+    } else if(mixture->outlierComponent_ptr->active()) {
+      const double log_w_non = std::log(mixture->outlierComponent_ptr->non_outlier_weight);
+      const double log_w_out = std::log(mixture->outlierComponent_ptr->outlier_weight);
+      const double ll_out = log_w_out + mixture->outlierComponent_ptr->outlier_likelihood(n);
+      for(uword k = 0; k < K(l); k++) {
+        log_g(k, l) = logSumExp(arma::vec({log_w_non + ll(k), ll_out}));
+      }
+    } else {
+      for(uword k = 0; k < K(l); k++) {
+        log_g(k, l) = ll(k);
+      }
+    }
+  }
+}
+
+arma::vec mdi::pointwiseLogLikelihood() {
+  refreshPartitionTables();
+  const double log_Z = std::log(mdiPartitionSumFromC(w, K, partition_tables));
+
+  arma::vec out(N);
+  arma::mat log_g;
+  for(uword n = 0; n < N; n++) {
+    componentLogLikelihoods(n, true, log_g);
+    out(n) = mdiLogNumerator(w, K, partition_tables, log_g) - log_Z;
+  }
+  return out;
+}
 
 // === Priors ==================================================================
 
@@ -343,10 +414,18 @@ void mdi::initialiseDatasetL(uword l) {
 
 void mdi::sweep(uword iteration) {
   updateNormalisingConstant();
+  Z_start = Z;
+  if(phi_slice) {
+    // The collapsed update moves phi, so Z must be refreshed before v is drawn
+    updatePhisSlice();
+    updateNormalisingConstant();
+  }
   sampleStrategicLatentVariable();
   updateMassParameters();
   updateWeights();
-  updatePhis();
+  if(!phi_slice) {
+    updatePhis();
+  }
   for(uword l = 0; l < L; l++) {
     mixtures[l]->sampleParameters();
   }
@@ -400,6 +479,7 @@ arma::umat mdi::samplePriorLabels(uword n_items) const {
 void mdi::initialiseMDI() {
   initialiseMixtures();
   sampleFromPriors();
+  Z_start = Z;
   for(uword l = 0; l < L; l++) {
     initialiseDatasetL(l);
   }
@@ -442,17 +522,6 @@ void mdi::updateAllocation() {
 
 // === Label swapping ==========================================================
 
-double mdi::calcScore(uword lstar, const arma::umat& c) const {
-  double score = 0.0;
-  for(uword m = 0; m < L; m++) {
-    if(m != lstar) {
-      const double log_up = std::log1p(phis(phi_map(m, lstar)));
-      score += log_up * (double) accu(c.col(m) == c.col(lstar));
-    }
-  }
-  return score;
-}
-
 void mdi::updateLabels() {
   if(L == 1) {
     return;
@@ -468,7 +537,9 @@ void mdi::updateLabelsViewL(uword lstar) {
     return;
   }
 
+  refreshPartitionTables();
   const arma::mat phi_mat = phiMatrix();
+  double Z_current = mdiPartitionSumFromC(w, K, partition_tables);
 
   for(uword k = K_fixed(lstar); k < K(lstar); k++) {
 
@@ -483,31 +554,24 @@ void mdi::updateLabelsViewL(uword lstar) {
       continue;
     }
 
-    // The labels with components k and k' exchanged
-    umat swapped_labels = labels;
-    uvec loc_labs = labels.col(lstar);
-    uvec in_k = find(loc_labs == k), in_k_prime = find(loc_labs == k_prime);
-    loc_labs.elem(in_k).fill(k_prime);
-    loc_labs.elem(in_k_prime).fill(k);
-    swapped_labels.col(lstar) = loc_labs;
-
-    // Exchanging (labels, weights, component parameters) leaves the prior over
-    // weights and parameters, the weight products and the data likelihood
-    // unchanged. What changes is the phi coupling term and Z, which depends on
-    // the weights through the alignment with other views.
-    mat w_swapped = w;
-    w_swapped.swap_rows(k, k_prime);
-    const double Z_current = mdiPartitionSum(w, K, phi_mat);
-    const double Z_swapped = mdiPartitionSum(w_swapped, K, phi_mat);
-
-    const double log_acceptance = calcScore(lstar, swapped_labels)
-      - calcScore(lstar, labels)
-      - v * (Z_swapped - Z_current);
+    // Exchanging (labels, weights, component parameters) of this view leaves the
+    // prior over weights and parameters, the weight products and the data
+    // likelihood unchanged. What changes is the phi coupling term and Z, which
+    // depends on the weights through the alignment with the other views.
+    double Z_swapped = 0.0;
+    const double log_acceptance = mdiSwapLogRatio(
+      labels, phi_mat, w, K, partition_tables, v, lstar, k, k_prime, Z_current, Z_swapped
+    );
 
     if(std::log(randu()) < log_acceptance) {
       acceptance_count++;
-      labels = swapped_labels;
-      w = w_swapped;
+      uvec loc_labs = labels.col(lstar);
+      uvec in_k = find(loc_labs == k), in_k_prime = find(loc_labs == k_prime);
+      loc_labs.elem(in_k).fill(k_prime);
+      loc_labs.elem(in_k_prime).fill(k);
+      labels.col(lstar) = loc_labs;
+      std::swap(w(k, lstar), w(k_prime, lstar));
+      Z_current = Z_swapped;
       mixtures[lstar]->labels = labels.col(lstar);
       mixtures[lstar]->swapComponents(k, k_prime);
       refreshMembersViewL(lstar);

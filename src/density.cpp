@@ -62,6 +62,15 @@ void density::sampleParameters(const arma::umat& members, const arma::uvec& non_
   }
 };
 
+void density::replaceData(const arma::mat& X_new) {
+  if(X_new.n_cols != P) {
+    Rcpp::stop("The new data must have %d columns.", (int) P);
+  }
+  X = X_new;
+  N = X.n_rows;
+  identifyMissingValues();
+}
+
 void density::identifyMissingValues() {
   has_missing.set_size(N, P);
   has_missing.zeros();
