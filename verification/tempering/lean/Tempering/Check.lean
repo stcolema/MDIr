@@ -2,6 +2,7 @@ import Tempering.SwapKernel
 import Tempering.ProductSwap
 import Tempering.Conjugate
 import Tempering.PTKernel
+import Tempering.AIS
 
 -- Every theorem should depend only on the standard axioms (no `sorryAx`).
 #print axioms Tempering.swapK_detailedBalance
@@ -18,3 +19,8 @@ import Tempering.PTKernel
 #print axioms Tempering.tempered_power
 #print axioms Tempering.roundK_invariant
 #print axioms Tempering.pt_iteration_invariant
+#print axioms Tempering.annealMeasure_eq_last
+#print axioms Tempering.ais_unbiased
+#print axioms Tempering.annealMeasure_dual
+#print axioms Tempering.annealTest_bound
+#print axioms Tempering.bias_bound

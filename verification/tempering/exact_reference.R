@@ -54,7 +54,8 @@ exact_L1 <- function(X, K, alpha, beta) {
     lp[i] <- cache[[key]] + ll
   }
   p <- exp(lp - max(lp)); p <- p / sum(p)
-  list(grid = grid, prob = p)
+  # log of sum_c prior(c) prod marginal likelihoods: the evidence p(X) at this beta
+  list(grid = grid, prob = p, log_evidence = max(lp) + log(sum(exp(lp - max(lp)))))
 }
 
 # L = 2, K_1 = K_2 = K: the prior of the joint labels is E[prod_n pi_{c_n}] over

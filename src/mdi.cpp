@@ -327,6 +327,54 @@ double mdi::dataLogLikelihood() {
   return total;
 }
 
+mdiState mdi::saveState() const {
+  mdiState s;
+  s.labels = labels;
+  s.w = w;
+  s.phis = phis;
+  s.mass = mass;
+  s.v = v;
+  s.Z = Z;
+  for(uword l = 0; l < L; l++) {
+    s.theta.push_back(mixtures[l]->density_ptr->parameters());
+    s.pooled.push_back(mixtures[l]->density_ptr->pooledHyperparameters());
+  }
+  return s;
+}
+
+void mdi::loadState(const mdiState& s) {
+  labels = s.labels;
+  w = s.w;
+  phis = s.phis;
+  mass = s.mass;
+  v = s.v;
+  Z = s.Z;
+  partition_tables.clear();
+  partition_tables_phis.reset();
+  for(uword l = 0; l < L; l++) {
+    auto& density = mixtures[l]->density_ptr;
+    density->setParameters(s.theta[l]);
+    if(s.pooled[l].n_elem > 0) {
+      density->setPooledHyperparameters(s.pooled[l]);
+    }
+    mixtures[l]->labels = labels.col(l);
+    density->labels = labels.col(l);
+    refreshMembersViewL(l);
+  }
+}
+
+void mdi::initialiseFromPrior() {
+  sampleFromGlobalPriors();
+  sampleFromLocalPriors();
+  labels = samplePriorLabels(N);
+  for(uword l = 0; l < L; l++) {
+    mixtures[l]->labels = labels.col(l);
+    mixtures[l]->density_ptr->labels = labels.col(l);
+    refreshMembersViewL(l);
+  }
+  Z_start = Z;
+}
+
 // === Priors ==================================================================
 
 void mdi::sampleFromPriors() {

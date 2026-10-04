@@ -559,3 +559,38 @@ runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, label
     invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior))
 }
 
+#' @title Sequential Monte Carlo sampler for MDI (C++)
+#' @description Annealed importance sampling / sequential Monte Carlo over the
+#' likelihood-tempered targets \eqn{\pi_\beta \propto L^\beta P}, from the prior
+#' (\eqn{\beta = 0}, sampled exactly) to the posterior (\eqn{\beta = 1}). Each
+#' particle is moved by the tempered Gibbs sweep, which leaves \eqn{\pi_\beta}
+#' invariant.
+#' @param n_particles Number of particles.
+#' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,phi_slice As in `runMDI`.
+#' `fixed` must be all zero (unsupervised views only).
+#' @param betas Fixed schedule: strictly increasing values in (0, 1] ending at 1.
+#' Ignored if `adaptive`.
+#' @param adaptive Choose each next inverse temperature so that the conditional
+#' effective sample size of the incremental weights is `cess_target` times
+#' the number of particles (Zhou, Johansen and Aston, 2016, eq. 3.16).
+#' @param cess_target Target conditional ESS fraction, in (0, 1).
+#' @param resample_threshold Resample when the ESS of the weights falls below
+#' this fraction of the number of particles (0 never, 1 always).
+#' @param resample_scheme 0 systematic, 1 multinomial.
+#' @param sweeps_per_step Gibbs sweeps of every particle after each temperature change.
+#' @param max_steps Upper bound on the number of temperatures; if it is reached the
+#' next temperature is set to 1.
+#' @param final_sweeps Extra sweeps at beta = 1 after the last temperature, recorded
+#' every `final_thin` sweeps (the state at the end of annealing is always recorded).
+#' @param final_thin Thinning of the extra sweeps.
+#' @param beta_start Inverse temperature at which the population starts, in [0, 1).
+#' At 0 the particles are exact draws from the prior. Above 0 they are drawn from the
+#' prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
+#' \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.
+#' @param start_sweeps Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).
+#' @return A list with the particles' recorded draws and weights, the evidence
+#' estimate and the trace of the run.
+runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps) {
+    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps)
+}
+

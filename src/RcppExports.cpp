@@ -424,6 +424,36 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// runMDISMC
+Rcpp::List runMDISMC(arma::uword n_particles, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat fixed, arma::vec prior, arma::vec density_prior, bool phi_slice, arma::vec betas, bool adaptive, double cess_target, double resample_threshold, arma::uword resample_scheme, arma::uword sweeps_per_step, arma::uword max_steps, arma::uword final_sweeps, arma::uword final_thin, double beta_start, arma::uword start_sweeps);
+RcppExport SEXP _mdir_runMDISMC(SEXP n_particlesSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP fixedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP adaptiveSEXP, SEXP cess_targetSEXP, SEXP resample_thresholdSEXP, SEXP resample_schemeSEXP, SEXP sweeps_per_stepSEXP, SEXP max_stepsSEXP, SEXP final_sweepsSEXP, SEXP final_thinSEXP, SEXP beta_startSEXP, SEXP start_sweepsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::uword >::type n_particles(n_particlesSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    Rcpp::traits::input_parameter< bool >::type phi_slice(phi_sliceSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+    Rcpp::traits::input_parameter< double >::type cess_target(cess_targetSEXP);
+    Rcpp::traits::input_parameter< double >::type resample_threshold(resample_thresholdSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type resample_scheme(resample_schemeSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type sweeps_per_step(sweeps_per_stepSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type max_steps(max_stepsSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type final_sweeps(final_sweepsSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type final_thin(final_thinSEXP);
+    Rcpp::traits::input_parameter< double >::type beta_start(beta_startSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type start_sweeps(start_sweepsSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDISMC(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mdir_createSimilarityMat", (DL_FUNC) &_mdir_createSimilarityMat, 1},
@@ -452,6 +482,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
     {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 19},
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
+    {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 20},
     {NULL, NULL, 0}
 };
 

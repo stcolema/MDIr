@@ -101,6 +101,12 @@ arma::vec mvn::pooledHyperparameters() const {
   return scale.diag();
 }
 
+void mvn::setPooledHyperparameters(const arma::vec& pooled) {
+  if(pooled.n_elem == P) {
+    scale = arma::diagmat(pooled);
+  }
+}
+
 void mvn::sampleFromPriors() {
   if(scale_shape > 0.0) {
     arma::vec s(P);

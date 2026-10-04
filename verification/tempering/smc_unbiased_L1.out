@@ -1,0 +1,10 @@
+AIS (never resample), fixed          E[Zhat]/Z = 1.0068 (se 0.0063; z = 1.08) | E[Zhat fhat(c)]/Z vs pi(c) over top 12 configs: max|z| 1.79, mean z^2 0.97 | mean steps 25
+    pooled (evidence-weighted) estimate: TV to exact posterior 0.1349
+SMC systematic, fixed                E[Zhat]/Z = 1.0072 (se 0.0063; z = 1.15) | E[Zhat fhat(c)]/Z vs pi(c) over top 12 configs: max|z| 1.67, mean z^2 0.78 | mean steps 25
+    pooled (evidence-weighted) estimate: TV to exact posterior 0.1051
+SMC multinomial, fixed               E[Zhat]/Z = 1.0071 (se 0.0063; z = 1.14) | E[Zhat fhat(c)]/Z vs pi(c) over top 12 configs: max|z| 1.58, mean z^2 0.57 | mean steps 25
+    pooled (evidence-weighted) estimate: TV to exact posterior 0.1031
+SMC systematic, every step, fixed    E[Zhat]/Z = 1.0075 (se 0.0059; z = 1.27) | E[Zhat fhat(c)]/Z vs pi(c) over top 12 configs: max|z| 1.40, mean z^2 0.66 | mean steps 25
+    pooled (evidence-weighted) estimate: TV to exact posterior 0.0921
+SMC systematic, ADAPTIVE schedule    E[Zhat]/Z = 1.0069 (se 0.0074; z = 0.93) | E[Zhat fhat(c)]/Z vs pi(c) over top 12 configs: max|z| 1.30, mean z^2 0.40 | mean steps 9
+    pooled (evidence-weighted) estimate: TV to exact posterior 0.1046

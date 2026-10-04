@@ -52,14 +52,16 @@
 #' @param betas Inverse temperatures for parallel tempering: a strictly
 #' increasing vector in (0, 1] whose last element is 1 (the posterior), for
 #' example from \code{\link{ptLadder}}. One replica of the sampler runs at
-#' each temperature and neighbouring replicas exchange states, which lets the
-#' chain at \code{beta = 1} cross barriers between modes that a single chain
-#' crosses rarely. The default, \code{1}, is the ordinary sampler. A single
+#' each temperature and neighbouring replicas exchange states. The chain at
+#' \code{beta = 1} targets the posterior for any ladder: each exchange leaves the
+#' product of tempered targets invariant (proved for finite state spaces, see
+#' \code{verification/tempering/theory.md}). That the exchanges speed up mixing is
+#' \strong{not} guaranteed, and no finite-time bound is available; the plain chain
+#' (\code{betas = 1}, the default) has the same asymptotic guarantee. A single
 #' value other than 1 samples the likelihood-tempered target and is only useful
 #' for testing. Tempering requires complete data, \code{"G"}, \code{"MVN"} or
-#' \code{"C"} views and no outlier component. It multiplies the run time by
-#' \code{length(betas)} and guarantees nothing about finite-time mixing; see
-#' \code{\link{ptDiagnostics}}.
+#' \code{"C"} views and no outlier component, and multiplies the run time by
+#' \code{length(betas)}; see \code{\link{ptDiagnostics}}.
 #' @param swap_scheme How replicas are paired for exchange. \code{"deo"}
 #' (default) alternates deterministically between even and odd neighbouring
 #' pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
