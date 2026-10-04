@@ -11,8 +11,9 @@
   example it removed the basin-weight problem of pooled independent chains (total variation 0.31 to 0.015;
   0.001 at wider separation), which is an observation about that example.
 * Supported: `"G"`, `"MVN"`, `"C"` and `"TAGM"` (outlier component) views, unsupervised or semi-supervised,
-  one or several views. Missing values are allowed except together with an outlier component; tempering
-  refuses both missing values and outlier components. Refused: `"GP"` (no collapsed marginal).
+  one or several views, with or without missing values (for flagged items the missing cells are imputed from the outlier
+  density and the move scores them with the complete-vector outlier density). Tempering refuses both missing values and
+  outlier components. Refused: `"GP"` (no collapsed marginal).
   For TAGM the move acts on (component, outlier flag) pairs; checked by exact enumeration of the joint law
   and, for the full sampler, only by agreement with the plain chain.
 * `smcMDI()` now refuses `fixed` explicitly (exact prior draws are not available given observed labels).

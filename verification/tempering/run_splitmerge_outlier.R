@@ -17,7 +17,7 @@ X <- X[1:N, ]
 
 run_case <- function(name, eps, ref_eps = eps, n_fixed = 0) {
   fixed <- c(rep(1, n_fixed), rep(0, N - n_fixed)); lab_fixed <- c(seq_len(n_fixed) - 1, rep(0, N - n_fixed))
-  lo <- sm_only(X, K, 1, dp, lab_fixed, fixed, w, 0, 1, 1L, eps, integer(0))$outlier_loglik
+  lo <- sm_only(X, K, 1, dp, lab_fixed, fixed, w, 0, 1, 1L, eps, integer(0), matrix(0, 0, 0))$outlier_loglik
   free <- which(fixed == 0)
   grid <- as.matrix(expand.grid(rep(list(0:(2 * K - 1)), length(free))))   # state = label + K * flag
   lp <- apply(grid, 1, function(g) {
@@ -34,7 +34,7 @@ run_case <- function(name, eps, ref_eps = eps, n_fixed = 0) {
   chains <- parallel::mclapply(seq_len(n_chains), function(i) {
     set.seed(9000 + i)
     init <- sample(0:(K - 1), N, TRUE); init[fixed == 1] <- lab_fixed[fixed == 1]
-    out <- sm_only(X, K, 1, dp, init, fixed, w, n_iter, 1, 1L, eps, sample(0:1, N, TRUE))
+    out <- sm_only(X, K, 1, dp, init, fixed, w, n_iter, 1, 1L, eps, sample(0:1, N, TRUE), matrix(0, 0, 0))
     st <- out$labels[-(1:500), free, drop = FALSE] + K * out$outliers[-(1:500), free, drop = FALSE]
     list(codes = as.vector(st %*% (2 * K)^(seq_along(free) - 1)), acc = out$acceptance)
   }, mc.cores = n_cores)

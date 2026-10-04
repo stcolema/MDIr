@@ -660,10 +660,6 @@ void mdi::setSplitMerge(uword moves) {
       if(!mix->density_ptr->hasCollapsedMarginal()) {
         Rcpp::stop("The split-merge move needs 'G', 'MVN' or 'C' views (a collapsed marginal likelihood).");
       }
-      const bool has_missing = mix->density_ptr->has_missing.n_elem > 0 && accu(mix->density_ptr->has_missing) > 0;
-      if(mix->outlierComponent_ptr->active() && has_missing) {
-        Rcpp::stop("The split-merge move does not support an outlier component together with missing values.");
-      }
     }
   }
   split_merge_moves = moves;

@@ -261,6 +261,18 @@ bool mixtureModel::splitMergeMove(
   const double log_w_non = has_outliers ? std::log(outlierComponent_ptr->non_outlier_weight) : 0.0;
   const double log_w_out = has_outliers ? std::log(outlierComponent_ptr->outlier_weight) : -arma::datum::inf;
 
+  // The state of the move includes the imputed values of items with missing entries: a
+  // non-outlier's complete-data density is part of its component's collapsed marginal, an
+  // outlier's is the outlier law of the complete (observed + imputed) vector. The
+  // sampler draws the imputations from exactly these conditionals, so this is the joint
+  // they target. Without missing entries the two outlier densities coincide.
+  auto outlier_density = [&](uword n) {
+    if(density_ptr->missing_indices(n).n_elem == 0) {
+      return outlierComponent_ptr->outlier_likelihood(n);
+    }
+    return outlierComponent_ptr->completeLogDensity(density_ptr->X.row(n).t());
+  };
+
   // The free items of the two components and the statistics of the fixed ones
   // (an item flagged as an outlier does not enter the statistics of its component)
   collapsedStats base[2] = {density_ptr->emptyStats(), density_ptr->emptyStats()};
@@ -310,7 +322,7 @@ bool mixtureModel::splitMergeMove(
         lm_cand[j] = density_ptr->logMarginalLikelihood(cand[j], beta_now);
         const double base_score = log_weights(comp[j]) + log_upweights(comp[j], n);
         score[2 * j] = base_score + log_w_non + (lm_cand[j] - lm[j]);
-        score[2 * j + 1] = has_outliers ? base_score + log_w_out + outlierComponent_ptr->outlier_likelihood(n)
+        score[2 * j + 1] = has_outliers ? base_score + log_w_out + outlier_density(n)
                                         : -arma::datum::inf;
       }
       double mx = score[0];

@@ -78,8 +78,8 @@
 #' \code{"MVN"}, \code{"C"} or outlier-component (\code{"TAGM"}) views; with an outlier
 #' component each item chooses a (component, outlier flag) pair, the outlier option adding the fixed
 #' outlier density and leaving the component statistics unchanged. Observed labels
-#' (semi-supervised views) are allowed; missing values are allowed except together with an
-#' outlier component; \code{betas} may be combined with it for views without an outlier
+#' (semi-supervised views) and missing values are allowed (the move scores a flagged item with the
+#' outlier density of its complete, imputed vector); \code{betas} may be combined with it for views without an outlier
 #' component (tempering itself refuses outlier components).
 #' @return An object of class \code{mdir_fit}: a named list containing the
 #' sampled partitions, component weights, phi and mass parameters, model fit

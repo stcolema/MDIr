@@ -33,6 +33,10 @@ double mvt::calculateItemLogLikelihood(arma::uword n) {
   );
 }
 
+double mvt::completeLogDensity(const arma::vec& x) const {
+  return mvtLogLikelihood(x, global_mean, global_cov, df);
+}
+
 // If x ~ t_df(mu, S) then x_m | x_o ~ t_{df + p_o}(mu_m|o, S_m|o (df + d_o) / (df + p_o)) 
 // with d_o the squared Mahalanobis distance of x_o.
 arma::vec mvt::sampleMissingValues(arma::uword n) const {

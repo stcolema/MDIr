@@ -177,9 +177,14 @@ score is as above times `(1 - eps)`; an outlier score is `w_c u_{c,n} eps l_out(
 fixed global-t density of the item (its parameters never change in this sampler; only `eps` is updated
 and it is held fixed during the move) and the block statistics are unchanged by the item. Flagged items
 are excluded from the collapsed statistics, as in the parameter update. The step normaliser sums four
-terms; (i) and (ii) apply unchanged, so Proposition SM1 covers it. Outlier views with missing values are
-**refused**: `l_out` uses observed entries only, so a flag flip would need the density of the imputed
-entries under the outlier law as well, which the move does not include. Tempering still refuses outlier
+terms; (i) and (ii) apply unchanged, so Proposition SM1 covers it. Missing values: the sampler imputes a missing cell of a flagged item
+from the outlier law (conditional t) and of any other item from its component. The state of the move
+includes the imputations (held fixed during the move): a non-outlier's complete-data density is part of its
+component's collapsed marginal, an outlier's is the t density of the *complete* (observed + imputed) vector, so
+the move uses that, not the observed-only `l_out` of the allocation step. The joint that results,
+`p(c, o, theta, x_mis | x_obs)`, is the one the imputation draws target, so the move is a block update given the
+imputation and the usual allocation step (observed-only, marginalising the imputations) followed by
+re-imputation remains valid. [C: the argument; checked below.] Tempering still refuses outlier
 components (the outlier density is not raised to `beta` in the allocation step).
 
 **Conditions not proved here [C]:** that the collapsed marginals equal the integral of the tempered
@@ -201,6 +206,11 @@ proved in Lean); that the C++ implements the stated ratio (checked below).
   (label, flag) of the free items (N = 5, K = 3, 72 to 87 states with non-negligible mass) for `eps` 0.1 and 0.4 and with two
   observed labels: TV at chain-noise level, mean z^2 0.96 to 1.19; control (chain `eps` 0.1 against exact `eps` 0.4) TV 0.77.
   A mutant whose reverse walk ignores the current flags gives TV 0.12 and mean z^2 up to 676.
+* `run_splitmerge_outlier_missing.R`: as above with three items having missing cells, imputed values held fixed
+  (hook returns them and every subset's marginal): TV 0.017 (noise 0.016), mean z^2 1.20; the mutant that uses the observed-only outlier
+  density in the move gives TV 0.71. The observed-only and complete outlier log-densities differ by up to 3.1 for these items.
+* `run_splitmerge_tagm_missing.R`: full sampler, TAGM with four missing cells, alone and coupled to an MVN view, 48 chains each:
+  max |z| 1.92 and 2.45, mean z^2 0.89 and 1.02 (agreement of two samplers).
 * `run_splitmerge_tagm.R`: full sampler, TAGM view alone and TAGM + MVN (MDI), plain chain vs split-merge chain,
   co-clustering and per-item outlier probabilities (45 quantities): max |z| 2.64 and 2.29, mean z^2 1.97 and 1.15; the 1.97
   became 0.57 with 48 independent chains, so I read it as noise. Agreement of two samplers, not an exact reference.

@@ -37,6 +37,7 @@ public:
   
   double calculateItemLogLikelihood(arma::uword n) override; 
   arma::vec sampleMissingValues(arma::uword n) const override;
+  double completeLogDensity(const arma::vec& x) const override;
   arma::vec simulate() const override;
 };
 
