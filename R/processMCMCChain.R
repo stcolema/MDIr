@@ -105,6 +105,12 @@ processMCMCChain <- function(mcmc_output, burn,
   if (!is.null(mcmc_output$observed_likelihood)) {
     new_output$observed_likelihood <- mcmc_output$observed_likelihood[-dropped_indices]
   }
+  if (!is.null(mcmc_output$joint_likelihood)) {
+    new_output$joint_likelihood <- mcmc_output$joint_likelihood[-dropped_indices]
+  }
+  if (!is.null(mcmc_output$pointwise_likelihood)) {
+    new_output$pointwise_likelihood <- mcmc_output$pointwise_likelihood[-dropped_indices, , drop = FALSE]
+  }
   if (!is.null(mcmc_output$outlier_weights)) {
     new_output$outlier_weights <- mcmc_output$outlier_weights[-dropped_indices, , drop = FALSE]
   }

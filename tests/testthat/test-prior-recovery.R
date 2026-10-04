@@ -50,3 +50,42 @@ test_that("sampler recovers the prior under a constant likelihood", {
     expect_lt(abs(mean(nocc) - mean(ref[, "nocc"])), 0.15)
   }
 })
+
+# The label swap exchanges the labels, weights and parameters of two components
+# of one view. If the weights of the other views are moved too, the acceptance
+# ratio is wrong (Z is unchanged by the same permutation of every view) and
+# items sit in the heavy components of their own view less often than the prior
+# implies: the share of items in the largest-weight component was about 0.011
+# too low with K = (3, 3), N = 10, and the mean normalised weight of the assigned
+# component about 0.005 too low. The agreement and occupancy summaries above move
+# by less than their tolerances, so they cannot see this.
+test_that("sampler recovers the prior alignment of weights and labels", {
+  skip_on_cran()
+  K <- c(3L, 3L); N <- 10; L <- 2
+  stats_of <- function(cc, w) {
+    rho <- sweep(w, 2, colSums(w), "/")
+    top <- apply(w, 2, which.max)
+    c(own1 = mean(rho[cbind(cc[, 1], 1)]), own2 = mean(rho[cbind(cc[, 2], 2)]),
+      top1 = mean(cc[, 1] == top[1]), top2 = mean(cc[, 2] == top[2]))
+  }
+  forward <- function() {
+    mass <- rgamma(L, 2, 0.1); phi <- rgamma(1, 2, 0.2)
+    w <- sapply(seq_len(L), function(l) rgamma(K[l], mass[l] / K[l], 2))
+    grid <- as.matrix(expand.grid(lapply(K, seq_len)))
+    lp <- rowSums(sapply(seq_len(L), function(l) log(w[grid[, l], l]))) + log1p(phi * (grid[, 1] == grid[, 2]))
+    p <- exp(lp - max(lp)); p <- p / sum(p)
+    stats_of(grid[sample.int(nrow(grid), N, TRUE, p), , drop = FALSE], w)
+  }
+  set.seed(2024)
+  ref <- t(replicate(20000, forward()))
+  out <- prior_recovery_run(K, R = 400000, N = N, seed = 2025)
+  keep <- -(1:50)
+  al <- out$allocations[keep, , , drop = FALSE] + 1L
+  wt <- out$weights[keep, , , drop = FALSE]
+  mc <- t(vapply(seq_len(dim(al)[1]), function(s) stats_of(al[s, , ], wt[s, , ]), numeric(4)))
+  batch_se <- function(x, nb = 40) sd(vapply(split(x, cut(seq_along(x), nb, labels = FALSE)), mean, numeric(1))) / sqrt(nb)
+  for (j in colnames(ref)) {
+    se <- sqrt(batch_se(mc[, j])^2 + var(ref[, j]) / nrow(ref))
+    expect_lt(abs(mean(mc[, j]) - mean(ref[, j])), 5 * se, label = paste("prior mean of", j))
+  }
+})

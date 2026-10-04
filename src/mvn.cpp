@@ -179,17 +179,48 @@ void mvn::sampleMissingForObservation(arma::uword n) {
   }
 }
 
+namespace {
+
+// (x - mu)' S (x - mu) for a P x P symmetric S held column-major. The
+// difference is written into the scratch buffer d (length P). Plain loops avoid
+// the temporaries of the matrix expression, which dominate for the small P
+// typical of a component.
+inline double quadraticForm(
+    const double* x,
+    const double* mu,
+    const double* S,
+    arma::uword P,
+    double* d
+) {
+  for(arma::uword i = 0; i < P; i++) {
+    d[i] = x[i] - mu[i];
+  }
+  double q = 0.0;
+  for(arma::uword j = 0; j < P; j++) {
+    const double* S_j = S + j * P;
+    double col = 0.0;
+    for(arma::uword i = 0; i < P; i++) {
+      col += S_j[i] * d[i];
+    }
+    q += d[j] * col;
+  }
+  return q;
+}
+
+}
+
 double mvn::logLikelihood(arma::uword n, arma::uword k) {
   const arma::uvec& obs_idx = observed_indices(n);
   const uword P_obs = obs_idx.n_elem;
 
   if(P_obs == P) {
     // Complete data: use the cached inverse and log determinant
-    const arma::vec diff = X.row(n).t() - mu.col(k);
+    const arma::vec x = X.row(n).t();
+    arma::vec d(P);
     return -0.5 * (
       (double) P * std::log(2.0 * M_PI)
       + cov_log_det(k)
-      + arma::as_scalar(diff.t() * cov_inv.slice(k) * diff)
+      + quadraticForm(x.memptr(), mu.colptr(k), cov_inv.slice(k).memptr(), P, d.memptr())
     );
   } else if(P_obs > 0) {
     // Marginal density of the observed entries
@@ -206,6 +237,19 @@ double mvn::logLikelihood(arma::uword n, arma::uword k) {
 
 arma::vec mvn::itemLogLikelihood(arma::uword n) {
   arma::vec ll(K);
+  if(observed_indices(n).n_elem == P) {
+    // Complete data: read the item once rather than once per component
+    const arma::vec x = X.row(n).t();
+    arma::vec d(P);
+    for(uword k = 0; k < K; k++) {
+      ll(k) = -0.5 * (
+        (double) P * std::log(2.0 * M_PI)
+        + cov_log_det(k)
+        + quadraticForm(x.memptr(), mu.colptr(k), cov_inv.slice(k).memptr(), P, d.memptr())
+      );
+    }
+    return ll;
+  }
   for(uword k = 0; k < K; k++) {
     ll(k) = logLikelihood(n, k);
   }

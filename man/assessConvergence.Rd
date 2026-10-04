@@ -54,7 +54,7 @@ and tail ESS (\code{\link{rankNormalizedRhat}}) are computed for
 quantities that are invariant to the label switching that mixture models
 exhibit (cluster labels are only identified up to permutation, so
 diagnostics on raw component parameters can be misleading): the
-complete-data and observed-data log-likelihoods, the MDI dataset
+complete-data, observed-data and joint log-likelihoods, the MDI dataset
 association parameters \eqn{\phi}, the concentration masses, and the number
 of occupied components in each view. For the pairwise agreement of the
 clusterings it also reports \eqn{\hat{R}} for the fusion probabilities.
