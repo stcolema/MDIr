@@ -19,6 +19,7 @@
 #' convergence. Defaults to half of \code{R}. It only affects the diagnostics
 #' attached to the result, not the chains themselves; choose the burn in for
 #' point estimates in \code{\link{processMCMCChains}}.
+#' @param save_pointwise,phi_update,n_cores See \code{\link{runMCMCChains}}.
 #' @param verbose Logical. Report progress and the convergence verdict as
 #' messages. Defaults to \code{TRUE} unless \code{options(mdir.quiet = TRUE)}
 #' is set.
@@ -68,7 +69,11 @@ fitMDI <- function(X,
                    prior = mdiPrior(),
                    density_prior = densityPrior(),
                    burn = NULL,
-                   verbose = !isTRUE(getOption("mdir.quiet"))) {
+                   verbose = !isTRUE(getOption("mdir.quiet")),
+                   save_pointwise = FALSE,
+                   phi_update = c("slice", "gibbs"),
+                   n_cores = NULL) {
+  phi_update <- match.arg(phi_update)
   if (verbose && is.list(X) && length(X) > 0 && is.matrix(X[[1]])) {
     message(sprintf(
       "Fitting MDI to %d items in %s (%s): %s of %d iterations, thin = %d (%d samples saved per chain).",
@@ -89,7 +94,10 @@ fitMDI <- function(X,
     save_imputed = save_imputed,
     prior = prior,
     density_prior = density_prior,
-    verbose = verbose
+    verbose = verbose,
+    save_pointwise = save_pointwise,
+    phi_update = phi_update,
+    n_cores = n_cores
   )
 
   convergence <- tryCatch(

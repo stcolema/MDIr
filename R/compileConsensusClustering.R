@@ -102,7 +102,9 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
   for (v in view_inds) {
     cc_lst$outliers[[v]] <- cc_lst$allocations[[v]] <- matrix(0, W, N)
     cc_lst$N_k[[v]] <- cc_lst$weights[[v]] <- matrix(0, W, K[v])
-    cc_lst$allocation_probabilities[[v]] <- array(0, c(N, K[v], W))
+    if (is_semisupervised[v]) {
+      cc_lst$allocation_probabilities[[v]] <- array(0, c(N, K[v], W))
+    }
     cc_lst$hypers[[v]] <- cc_lst$acceptance_count[[v]] <- NA
     if (gp_used[v]) {
       cc_lst$acceptance_count[[v]] <- matrix(0, W, 3 * K[v])
@@ -128,7 +130,9 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
       cc_lst$outliers[[v]][w, ] <- .mcmc$outliers[sample_used, , v]
       cc_lst$N_k[[v]][w, ] <- .mcmc$N_k[seq(1, K[v]), v, sample_used]
       cc_lst$weights[[v]] <- .mcmc$weights[sample_used, , v]
-      cc_lst$allocation_probabilities[[v]][, , w] <- .mcmc$allocation_probabilities[[v]][, , sample_used]
+      if (is_semisupervised[v]) {
+        cc_lst$allocation_probabilities[[v]][, , w] <- .mcmc$allocation_probabilities[[v]][, , sample_used]
+      }
 
       if (gp_used[v]) {
         cc_lst$acceptance_count[[v]][w, ] <- .mcmc$acceptance_count[[v]]

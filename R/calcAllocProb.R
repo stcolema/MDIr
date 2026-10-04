@@ -45,6 +45,10 @@ calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "mean") {
   V <- mcmc_samples$V
   
   .alloc <- mcmc_samples$allocation_probabilities[[view]]
+  if (is.null(.alloc)) {
+    stop("No allocation probabilities were saved for view ", view, ". They are ",
+         "recorded only for semi-supervised views (those with fixed items).")
+  }
   
   if (burn > 0) {
     if (burn > R) {

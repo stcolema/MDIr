@@ -21,7 +21,10 @@ fitMDI(
   prior = mdiPrior(),
   density_prior = densityPrior(),
   burn = NULL,
-  verbose = !isTRUE(getOption("mdir.quiet"))
+  verbose = !isTRUE(getOption("mdir.quiet")),
+  save_pointwise = FALSE,
+  phi_update = c("slice", "gibbs"),
+  n_cores = NULL
 )
 }
 \arguments{
@@ -67,6 +70,8 @@ point estimates in \code{\link{processMCMCChains}}.}
 \item{verbose}{Logical. Report progress and the convergence verdict as
 messages. Defaults to \code{TRUE} unless \code{options(mdir.quiet = TRUE)}
 is set.}
+
+\item{save_pointwise, phi_update, n_cores}{See \code{\link{runMCMCChains}}.}
 }
 \value{
 An object of class \code{mdir_fit_list} (see

@@ -247,6 +247,66 @@ void mdi::updatePhis() {
   }
 };
 
+void mdi::updatePhisSlice() {
+  if(L == 1) {
+    return;
+  }
+  for(uword l = 0; l + 1 < L; l++) {
+    for(uword m = l + 1; m < L; m++) {
+      const uword idx = phi_map(l, m);
+      const double N_lm = (double) accu(labels.col(l) == labels.col(m));
+
+      // Z is linear in phi(l, m): Z = A + B phi
+      arma::mat phi_mat = phiMatrix();
+      const double B = mdiPhiRate(w, K, phi_mat, l, m);
+      phi_mat(l, m) = 0.0;
+      phi_mat(m, l) = 0.0;
+      const double A = mdiPartitionSum(w, K, phi_mat);
+
+      phis(idx) = mdiSamplePhiSlice(phis(idx), N_lm, (double) N, A, B, phi_shape_prior, phi_rate_prior);
+    }
+  }
+}
+
+// === Likelihood ==============================================================
+
+void mdi::componentLogLikelihoods(uword n, bool use_fixed, arma::mat& log_g) {
+  log_g.set_size(K_max, L);
+  log_g.fill(-arma::datum::inf);
+  for(uword l = 0; l < L; l++) {
+    auto& mixture = mixtures[l];
+    const arma::vec ll = mixture->density_ptr->itemLogLikelihood(n);
+    if(use_fixed && fixed(n, l) == 1) {
+      // An observed label: the item belongs to that component, never to the outlier
+      log_g(labels(n, l), l) = ll(labels(n, l));
+    } else if(mixture->outlierComponent_ptr->active()) {
+      const double log_w_non = std::log(mixture->outlierComponent_ptr->non_outlier_weight);
+      const double log_w_out = std::log(mixture->outlierComponent_ptr->outlier_weight);
+      const double ll_out = log_w_out + mixture->outlierComponent_ptr->outlier_likelihood(n);
+      for(uword k = 0; k < K(l); k++) {
+        log_g(k, l) = logSumExp(arma::vec({log_w_non + ll(k), ll_out}));
+      }
+    } else {
+      for(uword k = 0; k < K(l); k++) {
+        log_g(k, l) = ll(k);
+      }
+    }
+  }
+}
+
+arma::vec mdi::pointwiseLogLikelihood() {
+  refreshPartitionTables();
+  const double log_Z = std::log(mdiPartitionSumFromC(w, K, partition_tables));
+
+  arma::vec out(N);
+  arma::mat log_g;
+  for(uword n = 0; n < N; n++) {
+    componentLogLikelihoods(n, true, log_g);
+    out(n) = mdiLogNumerator(w, K, partition_tables, log_g) - log_Z;
+  }
+  return out;
+}
+
 // === Priors ==================================================================
 
 void mdi::sampleFromPriors() {
@@ -354,10 +414,18 @@ void mdi::initialiseDatasetL(uword l) {
 
 void mdi::sweep(uword iteration) {
   updateNormalisingConstant();
+  Z_start = Z;
+  if(phi_slice) {
+    // The collapsed update moves phi, so Z must be refreshed before v is drawn
+    updatePhisSlice();
+    updateNormalisingConstant();
+  }
   sampleStrategicLatentVariable();
   updateMassParameters();
   updateWeights();
-  updatePhis();
+  if(!phi_slice) {
+    updatePhis();
+  }
   for(uword l = 0; l < L; l++) {
     mixtures[l]->sampleParameters();
   }
@@ -411,6 +479,7 @@ arma::umat mdi::samplePriorLabels(uword n_items) const {
 void mdi::initialiseMDI() {
   initialiseMixtures();
   sampleFromPriors();
+  Z_start = Z;
   for(uword l = 0; l < L; l++) {
     initialiseDatasetL(l);
   }

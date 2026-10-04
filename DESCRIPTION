@@ -28,7 +28,7 @@ Description: Integrative clustering and semi-supervised prediction.
   implemented can only handle data with common time points of equal separation.
   The Gaussian and GP models can be augmented with a global multivariate t
   distribution to handle outliers.
-Imports: Rcpp (>= 1.0.6), ggplot2, rlang, stringr, tidyr, salso, stats, utils
+Imports: Rcpp (>= 1.0.6), ggplot2, rlang, parallel, stringr, tidyr, salso, stats, utils
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: testthat (>= 3.0.0), posterior, knitr, rmarkdown, xml2
 VignetteBuilder: knitr

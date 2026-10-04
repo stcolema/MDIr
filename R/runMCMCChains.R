@@ -23,6 +23,16 @@
 #' proposal window for the ampltiude, the second is for the length-scale and the
 #' third is for the noise. These are not used in other mixture types.
 #' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
+#' @param save_pointwise,phi_update See ``callMDI``.
+#' @param n_cores Number of cores on which to run the chains. The default, one,
+#' runs them in turn exactly as before; \code{options(mdir.cores = )} changes the
+#' default. With more than one, each chain has its own L'Ecuyer-CMRG random
+#' number stream (Unix-alikes fork the workers, Windows starts a socket cluster
+#' that loads \pkg{mdir}), so the result depends on the seed but not on the
+#' number of cores; it is not the same as the serial result for the same seed.
+#' The number is capped at the number of chains and of cores available, and at
+#' two while a package is being checked (\code{_R_CHECK_LIMIT_CORES_} is set), as
+#' CRAN requires. Progress messages are given when the chains have finished.
 #' @param verbose Logical. Report the start and end of each chain (with run
 #' time) as a message. \code{FALSE} by default here; \code{\link{fitMDI}}, which
 #' also assesses convergence, defaults to \code{TRUE}.
@@ -69,21 +79,22 @@ runMCMCChains <- function(X,
                           save_imputed = FALSE,
                           prior = mdiPrior(),
                           density_prior = densityPrior(),
-                          verbose = FALSE) {
+                          verbose = FALSE,
+                          save_pointwise = FALSE,
+                          phi_update = c("slice", "gibbs"),
+                          n_cores = NULL) {
+  phi_update <- match.arg(phi_update)
   if (!is.numeric(n_chains) || length(n_chains) != 1 || is.na(n_chains) || n_chains < 1) {
     stop("`n_chains` must be a single positive integer.", call. = FALSE)
   }
-  mcmc_lst <- vector("list", n_chains)
+  n_cores <- .mdirResolveCores(n_cores, n_chains)
 
   # report prior warnings once rather than for every chain
   if (is.null(K)) K_used <- rep(floor(nrow(X[[1]]) / 2), length(X)) else K_used <- K
   for (m in .checkSparsity(X, types, K_used, prior)) message(m)
 
-  for (ii in seq_len(n_chains)) {
-    if (verbose) {
-      message(sprintf("Chain %d/%d: running %d iterations...", ii, n_chains, R))
-    }
-    mcmc_lst[[ii]] <- callMDI(X,
+  fit_one <- function() {
+    callMDI(X,
       R,
       thin,
       types,
@@ -97,16 +108,41 @@ runMCMCChains <- function(X,
       save_imputed = save_imputed,
       prior = prior,
       density_prior = density_prior,
-      check_prior = FALSE
+      check_prior = FALSE,
+      save_pointwise = save_pointwise,
+      phi_update = phi_update
     )
+  }
 
-    # Record chain number
-    mcmc_lst[[ii]]$Chain <- ii
-
+  if (n_cores > 1) {
     if (verbose) {
-      message(sprintf(
-        "Chain %d/%d: finished in %s.", ii, n_chains, .mdirFormatTime(mcmc_lst[[ii]]$Time)
-      ))
+      message(sprintf("Running %d chains of %d iterations on %d cores...", n_chains, R, n_cores))
+    }
+    mcmc_lst <- .mdirRunChainsParallel(n_chains, n_cores, fit_one)
+    for (ii in seq_len(n_chains)) {
+      mcmc_lst[[ii]]$Chain <- ii
+      if (verbose) {
+        message(sprintf(
+          "Chain %d/%d: finished in %s.", ii, n_chains, .mdirFormatTime(mcmc_lst[[ii]]$Time)
+        ))
+      }
+    }
+  } else {
+    mcmc_lst <- vector("list", n_chains)
+    for (ii in seq_len(n_chains)) {
+      if (verbose) {
+        message(sprintf("Chain %d/%d: running %d iterations...", ii, n_chains, R))
+      }
+      mcmc_lst[[ii]] <- fit_one()
+
+      # Record chain number
+      mcmc_lst[[ii]]$Chain <- ii
+
+      if (verbose) {
+        message(sprintf(
+          "Chain %d/%d: finished in %s.", ii, n_chains, .mdirFormatTime(mcmc_lst[[ii]]$Time)
+        ))
+      }
     }
   }
 
