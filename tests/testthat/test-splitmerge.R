@@ -73,7 +73,7 @@ sm_tv <- function(X, K, w, beta, fixed, lab_fixed, ref_beta = beta, n_chains = 4
     set.seed(300 + i)
     init <- sample(0:(K - 1), length(fixed), TRUE)
     init[fixed == 1] <- lab_fixed[fixed == 1]
-    out <- mdir:::splitMergeOnlyCpp(X, K, 2, dp0, init, fixed, w, n_iter, beta)
+    out <- mdir:::splitMergeOnlyCpp(X, K, 2, dp0, init, fixed, w, n_iter, beta, 0L, 0.1, integer(0))
     lab <- out$labels[-(1:200), ex$free, drop = FALSE]
     counts <- counts + tabulate(code(lab) + 1, nrow(ex$grid))
   }
@@ -106,7 +106,14 @@ test_that("split-merge is accepted for G, MVN, C and combinations, and refused o
   fit2 <- callMDI(list(X), R = 60, thin = 1, types = "MVN", K = 3, initial_labels = lab, fixed = fx, split_merge = 1L,
     check_prior = FALSE)
   expect_true(all(apply(fit2$allocations[, 1:6, 1], 1, identical, as.numeric(lab[1:6, 1]))))
-  expect_error(callMDI(list(X), R = 20, thin = 1, types = "TAGM", K = 3, split_merge = 1L, check_prior = FALSE), "split-merge")
+  # TAGM (outlier component) is supported on complete data, not together with missing values
+  fit3 <- callMDI(list(X), R = 30, thin = 1, types = "TAGM", K = 3, split_merge = 2L, check_prior = FALSE)
+  expect_gt(fit3$split_merge$attempts, 0)
+  Xna <- X
+  Xna[3, 1] <- NA
+  expect_error(callMDI(list(Xna), R = 20, thin = 1, types = "TAGM", K = 3, split_merge = 1L, check_prior = FALSE),
+    "outlier component together with missing")
+  expect_error(callMDI(list(X), R = 20, thin = 1, types = "GP", K = 3, split_merge = 1L, check_prior = FALSE))
   expect_error(callMDI(list(X), R = 20, thin = 1, types = "MVN", K = 3, split_merge = -1L, check_prior = FALSE), "split_merge")
 })
 
@@ -116,4 +123,41 @@ test_that("split-merge changes the chain but not at zero moves", {
   set.seed(5); a <- callMDI(list(X), R = 30, thin = 1, types = "MVN", K = 3, check_prior = FALSE)
   set.seed(5); b <- callMDI(list(X), R = 30, thin = 1, types = "MVN", K = 3, split_merge = 0L, check_prior = FALSE)
   expect_identical(a$allocations, b$allocations)
+})
+
+test_that("with an outlier component the move leaves the joint law of (label, outlier flag) invariant", {
+  set.seed(21)
+  N <- 4; K <- 3; w <- c(0.5, 0.3, 0.2)
+  X <- rbind(matrix(rnorm(6, -1.5, 0.6), 3, 2), c(6, -5))
+  eps_run <- function(eps, ref_eps = eps, n_fixed = 0, n_chains = 4, n_iter = 100000) {
+    fixed <- c(rep(1, n_fixed), rep(0, N - n_fixed))
+    lab_fixed <- c(seq_len(n_fixed) - 1, rep(0, N - n_fixed))
+    lo <- mdir:::splitMergeOnlyCpp(X, K, 1, dp0, lab_fixed, fixed, w, 0, 1, 1L, eps, integer(0))$outlier_loglik
+    free <- which(fixed == 0)
+    grid <- as.matrix(expand.grid(rep(list(0:(2 * K - 1)), length(free))))
+    lp <- apply(grid, 1, function(g) {
+      lab <- lab_fixed; flag <- rep(0, N)
+      lab[free] <- g %% K; flag[free] <- g %/% K
+      s <- sum(log(w[lab + 1])) + sum(ifelse(flag == 1, log(ref_eps) + lo, log(1 - ref_eps)))
+      for (k in 0:(K - 1)) {
+        rows <- which(lab == k & flag == 0) - 1
+        if (length(rows)) s <- s + marg(X, K, 1, dp0, rows, 1)
+      }
+      s
+    })
+    p <- exp(lp - max(lp)); p <- p / sum(p)
+    counts <- numeric(nrow(grid))
+    for (i in seq_len(n_chains)) {
+      set.seed(400 + i)
+      init <- sample(0:(K - 1), N, TRUE); init[fixed == 1] <- lab_fixed[fixed == 1]
+      out <- mdir:::splitMergeOnlyCpp(X, K, 1, dp0, init, fixed, w, n_iter, 1, 1L, eps, sample(0:1, N, TRUE))
+      st <- out$labels[-(1:200), free, drop = FALSE] + K * out$outliers[-(1:200), free, drop = FALSE]
+      counts <- counts + tabulate(as.vector(st %*% (2 * K)^(seq_along(free) - 1)) + 1, nrow(grid))
+    }
+    0.5 * sum(abs(counts / sum(counts) - p))
+  }
+  expect_lt(eps_run(0.1), 0.03)
+  expect_lt(eps_run(0.4), 0.03)
+  expect_lt(eps_run(0.1, n_fixed = 2), 0.03)
+  expect_gt(eps_run(0.1, ref_eps = 0.4), 0.1)
 })

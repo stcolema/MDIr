@@ -123,9 +123,12 @@ proposal is accepted or rejected exactly (an independence Metropolis-Hastings
 step; Dahl, 2005). It targets the same posterior (invariance proved for
 finite spaces, \code{verification/tempering/theory.md}); that it improves mixing
 is not guaranteed. \code{0} (default) turns it off. Requires \code{"G"},
-\code{"MVN"} or \code{"C"} views without an outlier component; observed labels
-(semi-supervised views) and missing values are allowed, and \code{betas} may be
-combined with it.}
+\code{"MVN"}, \code{"C"} or outlier-component (\code{"TAGM"}) views; with an outlier
+component each item chooses a (component, outlier flag) pair, the outlier option adding the fixed
+outlier density and leaving the component statistics unchanged. Observed labels
+(semi-supervised views) are allowed; missing values are allowed except together with an
+outlier component; \code{betas} may be combined with it for views without an outlier
+component (tempering itself refuses outlier components).}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the

@@ -626,9 +626,13 @@ collapsedLogMarginalCpp <- function(X, K, mixture_type, density_prior, rows, bet
 #' @param w Component weights (length K).
 #' @param n_iter Number of move attempts.
 #' @param beta Inverse temperature.
-#' @return The labels after every attempt, and the acceptance rate.
+#' @param outlier_type Outlier component code (0 = none, 1 = multivariate t).
+#' @param outlier_weight Fixed weight of the outlier component (ignored if none).
+#' @param outliers_init Initial outlier flags (0/1), length N.
+#' @return The labels and outlier flags after every attempt, the acceptance rate and the
+#' outlier log-density of every item.
 #' @keywords internal
-splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta) {
-    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta)
+splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init) {
+    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init)
 }
 

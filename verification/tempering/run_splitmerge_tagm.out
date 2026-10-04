@@ -1,0 +1,2 @@
+one TAGM view                        24 chains x 40000 sweeps; 36 co-clustering + 9 outlier probabilities: max |diff| 0.0058; max |z| 2.64; mean z^2 1.97; outlier prob range 0.15 to 0.74
+TAGM + MVN views (view 1 reported)   24 chains x 40000 sweeps; 36 co-clustering + 9 outlier probabilities: max |diff| 0.0067; max |z| 2.29; mean z^2 1.15; outlier prob range 0.04 to 0.73

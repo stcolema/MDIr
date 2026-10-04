@@ -13,7 +13,10 @@ splitMergeOnlyCpp(
   fixed,
   w,
   n_iter,
-  beta
+  beta,
+  outlier_type,
+  outlier_weight,
+  outliers_init
 )
 }
 \arguments{
@@ -34,9 +37,16 @@ splitMergeOnlyCpp(
 \item{n_iter}{Number of move attempts.}
 
 \item{beta}{Inverse temperature.}
+
+\item{outlier_type}{Outlier component code (0 = none, 1 = multivariate t).}
+
+\item{outlier_weight}{Fixed weight of the outlier component (ignored if none).}
+
+\item{outliers_init}{Initial outlier flags (0/1), length N.}
 }
 \value{
-The labels after every attempt, and the acceptance rate.
+The labels and outlier flags after every attempt, the acceptance rate and the
+outlier log-density of every item.
 }
 \description{
 One view, weights held fixed at `w`, nothing else updated: the

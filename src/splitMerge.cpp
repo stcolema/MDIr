@@ -47,19 +47,25 @@ double collapsedLogMarginalCpp(arma::mat X, arma::uword K, arma::uword mixture_t
 //' @param w Component weights (length K).
 //' @param n_iter Number of move attempts.
 //' @param beta Inverse temperature.
-//' @return The labels after every attempt, and the acceptance rate.
+//' @param outlier_type Outlier component code (0 = none, 1 = multivariate t).
+//' @param outlier_weight Fixed weight of the outlier component (ignored if none).
+//' @param outliers_init Initial outlier flags (0/1), length N.
+//' @return The labels and outlier flags after every attempt, the acceptance rate and the
+//' outlier log-density of every item.
 //' @keywords internal
 // [[Rcpp::export]]
 Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_type,
                              arma::vec density_prior, arma::uvec labels, arma::uvec fixed,
-                             arma::vec w, arma::uword n_iter, double beta) {
+                             arma::vec w, arma::uword n_iter, double beta,
+                             arma::uword outlier_type, double outlier_weight,
+                             arma::uvec outliers_init) {
   const uword N = X.n_rows;
   arma::field<arma::mat> Y(1);
   Y(0) = X;
   arma::uvec K_vec(1), types(1), outliers(1);
   K_vec(0) = K;
   types(0) = mixture_type;
-  outliers(0) = 0;
+  outliers(0) = outlier_type;
   arma::umat lab(N, 1), fix(N, 1);
   lab.col(0) = labels;
   fix.col(0) = fixed;
@@ -74,16 +80,34 @@ Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_typ
   model.labels.col(0) = labels;
   model.mixtures[0]->labels = labels;
   model.mixtures[0]->density_ptr->labels = labels;
+  auto& mix = model.mixtures[0];
+  const bool has_out = mix->outlierComponent_ptr->active();
+  arma::uvec flags(N, arma::fill::zeros);
+  if(has_out) {
+    mix->outlierComponent_ptr->outlier_weight = outlier_weight;
+    mix->outlierComponent_ptr->non_outlier_weight = 1.0 - outlier_weight;
+    if(outliers_init.n_elem == N) {
+      flags = outliers_init;
+    }
+    flags.elem(arma::find(fixed == 1)).zeros();
+  }
+  mix->outliers = flags;
+  mix->non_outliers = 1 - flags;
+  model.outliers.col(0) = flags;
+  model.non_outliers.col(0) = 1 - flags;
   model.refreshMembersViewL(0);
   model.setSplitMerge(1);
-  arma::umat trace(n_iter, N);
+  arma::umat trace(n_iter, N), otrace(n_iter, N);
   for(uword it = 0; it < n_iter; it++) {
     Rcpp::checkUserInterrupt();
     model.updateSplitMerge();
     trace.row(it) = model.labels.col(0).t();
+    otrace.row(it) = model.mixtures[0]->outliers.t();
   }
   return Rcpp::List::create(
     Named("labels") = trace,
+    Named("outliers") = otrace,
+    Named("outlier_loglik") = has_out ? arma::vec(mix->outlierComponent_ptr->outlier_likelihood) : arma::vec(),
     Named("acceptance") = (double) model.split_merge_accepts / std::max(1.0, (double) model.split_merge_attempts)
   );
 }

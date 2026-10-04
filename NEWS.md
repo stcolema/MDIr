@@ -10,8 +10,11 @@
   `verification/tempering/theory.md`, section 5b. **Mixing is not guaranteed.** In the four-cluster
   example it removed the basin-weight problem of pooled independent chains (total variation 0.31 to 0.015;
   0.001 at wider separation), which is an observation about that example.
-* Supported: `"G"`, `"MVN"`, `"C"` views without an outlier component, unsupervised or semi-supervised,
-  one or several views, with or without missing values (missing values cannot be combined with tempering, which is refused). Refused: `"TAGM"`, `"GP"`.
+* Supported: `"G"`, `"MVN"`, `"C"` and `"TAGM"` (outlier component) views, unsupervised or semi-supervised,
+  one or several views. Missing values are allowed except together with an outlier component; tempering
+  refuses both missing values and outlier components. Refused: `"GP"` (no collapsed marginal).
+  For TAGM the move acts on (component, outlier flag) pairs; checked by exact enumeration of the joint law
+  and, for the full sampler, only by agreement with the plain chain.
 * `smcMDI()` now refuses `fixed` explicitly (exact prior draws are not available given observed labels).
 * The fit's `split_merge` entry holds `moves`, `attempts` and `accepts`.
 
