@@ -63,6 +63,8 @@ public:
   arma::vec itemLogLikelihood(arma::uword n) override;
   double logLikelihood(arma::uword n, arma::uword k) override;
   
+  void replaceData(const arma::mat& X_new) override;
+  
   void swapComponents(uword k, uword kprime) override;
   
   // Layout: category_probabilities(0), category_probabilities(1), ..., each 

@@ -114,4 +114,73 @@ double mdiSwapLogRatio(
     double& Z_swapped
 );
 
+// === Marginal likelihood of an item and its class probabilities ==============
+//
+// For an item with per-view component likelihoods g(k, l) = p(x_l | component k
+// of view l) (outliers marginalised where a view has them), summing the joint
+// density over all component assignments gives the same multilinear polynomial
+// as Z with the weights w(k, l) replaced by w(k, l) g(k, l):
+//
+//   p(x | w, phi, theta) = Z(w * g) / Z(w).
+//
+// Each column of g is rescaled by its maximum before the sum so that nothing
+// underflows; the rescaling is added back on the log scale. A column may hold
+// -Inf entries (a component an item cannot belong to, e.g. an observed label).
+
+// log Z(w * g), the log of the numerator above. log_g is K_max x L on the log
+// scale. Returns -Inf if some view has no component with positive likelihood.
+double mdiLogNumerator(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g
+);
+
+// As mdiLogNumerator(), and also the K_max x L matrix whose entry (k, l) is the
+// posterior probability that the item belongs to component k of view l given its
+// data, p(c_l = k | x) = w(k, l) g(k, l) dZ(w * g) / dw(k, l) / Z(w * g). Entries
+// beyond K(l) are zero. The columns sum to one.
+arma::mat mdiClassProbabilities(
+    const arma::mat& w,
+    const arma::uvec& K,
+    const std::vector<double>& C,
+    const arma::mat& log_g,
+    double& log_numerator
+);
+
+// === Collapsed conditional of a phi ==========================================
+//
+// With the strategic latent variable integrated out, the conditional of phi(l, m)
+// given the weights and the labels is
+//
+//   p(phi) propto phi^(shape - 1) exp(-rate phi) (1 + phi)^N_lm (A + B phi)^(-N),
+//
+// because Z is linear in phi(l, m): Z = A + B phi with A = Z at phi(l, m) = 0
+// and B = dZ / dphi(l, m). Draw from it with one slice-sampling update (Neal,
+// 2003) on log(phi) from the current value. The update leaves the conditional
+// invariant whatever the initial width, so nothing needs tuning; the width only
+// affects the cost of the draw, and each evaluation is O(1) once A and B are
+// known.
+double mdiSamplePhiSlice(
+    double phi,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+);
+
+// Log of the unnormalised collapsed conditional in u = log(phi), including the
+// Jacobian (used by the sampler above and by tests).
+double mdiLogPhiConditional(
+    double u,
+    double N_lm,
+    double N,
+    double A,
+    double B,
+    double shape,
+    double rate
+);
+
 #endif /* MDIPARTITION_H */

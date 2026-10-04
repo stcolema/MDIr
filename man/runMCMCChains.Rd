@@ -20,7 +20,10 @@ runMCMCChains(
   save_imputed = FALSE,
   prior = mdiPrior(),
   density_prior = densityPrior(),
-  verbose = FALSE
+  verbose = FALSE,
+  save_pointwise = FALSE,
+  phi_update = c("slice", "gibbs"),
+  n_cores = NULL
 )
 }
 \arguments{
@@ -61,6 +64,18 @@ third is for the noise. These are not used in other mixture types.}
 \item{verbose}{Logical. Report the start and end of each chain (with run
 time) as a message. \code{FALSE} by default here; \code{\link{fitMDI}}, which
 also assesses convergence, defaults to \code{TRUE}.}
+
+\item{save_pointwise, phi_update}{See ``callMDI``.}
+
+\item{n_cores}{Number of cores on which to run the chains. The default, one,
+runs them in turn exactly as before; \code{options(mdir.cores = )} changes the
+default. With more than one, each chain has its own L'Ecuyer-CMRG random
+number stream (Unix-alikes fork the workers, Windows starts a socket cluster
+that loads \pkg{mdir}), so the result depends on the seed but not on the
+number of cores; it is not the same as the serial result for the same seed.
+The number is capped at the number of chains and of cores available, and at
+two while a package is being checked (\code{_R_CHECK_LIMIT_CORES_} is set), as
+CRAN requires. Progress messages are given when the chains have finished.}
 }
 \value{
 An object of class \code{mdir_fit_list}: a list with one
