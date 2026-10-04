@@ -1,5 +1,20 @@
 # mdir (development version)
 
+## New: split-merge move (`split_merge`)
+
+* `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `split_merge`: the number of attempts
+  per view and sweep of a sequentially allocated reallocation between two random components
+  (Metropolis-Hastings with an exact acceptance ratio; in the style of Dahl, 2005, without anchor items).
+  Invariance for finite spaces is proved in Lean 4 and checked by exact enumeration for the kernel
+  alone and inside the full sampler (plain, tempered, parallel tempering, observed labels); see
+  `verification/tempering/theory.md`, section 5b. **Mixing is not guaranteed.** In the four-cluster
+  example it removed the basin-weight problem of pooled independent chains (total variation 0.31 to 0.015;
+  0.001 at wider separation), which is an observation about that example.
+* Supported: `"G"`, `"MVN"`, `"C"` views without an outlier component, unsupervised or semi-supervised,
+  one or several views, with or without missing values (missing values cannot be combined with tempering, which is refused). Refused: `"TAGM"`, `"GP"`.
+* `smcMDI()` now refuses `fixed` explicitly (exact prior draws are not available given observed labels).
+* The fit's `split_merge` entry holds `moves`, `attempts` and `accepts`.
+
 ## New: weighted ensembles, and a map of what is guaranteed
 
 * **`smcMDI()`** runs many particles from exact draws of the prior to the posterior along the

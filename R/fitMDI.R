@@ -19,7 +19,7 @@
 #' convergence. Defaults to half of \code{R}. It only affects the diagnostics
 #' attached to the result, not the chains themselves; choose the burn in for
 #' point estimates in \code{\link{processMCMCChains}}.
-#' @param save_pointwise,phi_update,n_cores,betas,swap_scheme,swap_every See
+#' @param save_pointwise,phi_update,n_cores,betas,swap_scheme,swap_every,split_merge See
 #' \code{\link{runMCMCChains}}.
 #' @param verbose Logical. Report progress and the convergence verdict as
 #' messages. Defaults to \code{TRUE} unless \code{options(mdir.quiet = TRUE)}
@@ -76,7 +76,8 @@ fitMDI <- function(X,
                    n_cores = NULL,
                    betas = 1,
                    swap_scheme = c("deo", "seo"),
-                   swap_every = 1L) {
+                   swap_every = 1L,
+                   split_merge = 0L) {
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (verbose && is.list(X) && length(X) > 0 && is.matrix(X[[1]])) {
@@ -105,7 +106,8 @@ fitMDI <- function(X,
     n_cores = n_cores,
     betas = betas,
     swap_scheme = swap_scheme,
-    swap_every = swap_every
+    swap_every = swap_every,
+    split_merge = split_merge
   )
 
   convergence <- tryCatch(

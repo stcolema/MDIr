@@ -24,7 +24,8 @@ runMDISMC(
   final_sweeps,
   final_thin,
   beta_start,
-  start_sweeps
+  start_sweeps,
+  split_merge
 )
 }
 \arguments{
@@ -63,6 +64,8 @@ prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
 \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.}
 
 \item{start_sweeps}{Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).}
+
+\item{split_merge}{Split-merge attempts per view and sweep (see `runMDI`).}
 }
 \value{
 A list with the particles' recorded draws and weights, the evidence

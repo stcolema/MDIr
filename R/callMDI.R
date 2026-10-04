@@ -67,6 +67,17 @@
 #' pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
 #' the parity at random (reversible). Both leave the tempered targets invariant.
 #' @param swap_every Attempt exchanges after every \code{swap_every} sweeps.
+#' @param split_merge Number of attempts per view and sweep of a split-merge style
+#' move: two components are chosen at random, the free items in them are
+#' re-allocated one at a time in random order with probability proportional to the
+#' item's prior factor times the collapsed predictive density, and the
+#' proposal is accepted or rejected exactly (an independence Metropolis-Hastings
+#' step; Dahl, 2005). It targets the same posterior (invariance proved for
+#' finite spaces, \code{verification/tempering/theory.md}); that it improves mixing
+#' is not guaranteed. \code{0} (default) turns it off. Requires \code{"G"},
+#' \code{"MVN"} or \code{"C"} views without an outlier component; observed labels
+#' (semi-supervised views) and missing values are allowed, and \code{betas} may be
+#' combined with it.
 #' @return An object of class \code{mdir_fit}: a named list containing the
 #' sampled partitions, component weights, phi and mass parameters, model fit
 #' measures and some details on the model call. It prints as a short report
@@ -130,9 +141,11 @@ callMDI <- function(X,
                     phi_update = c("slice", "gibbs"),
                     betas = 1,
                     swap_scheme = c("deo", "seo"),
-                    swap_every = 1L) {
+                    swap_every = 1L,
+                    split_merge = 0L) {
 
   phi_update <- match.arg(phi_update)
+  .mdirCheckCount(split_merge, "split_merge", 0)
   swap_scheme <- match.arg(swap_scheme)
   betas <- .mdirCheckLadder(betas)
   if (!is.numeric(swap_every) || length(swap_every) != 1 || is.na(swap_every) || swap_every < 1) {
@@ -226,7 +239,8 @@ callMDI <- function(X,
     phi_slice = (phi_update == "slice"),
     betas = betas,
     swap_scheme = as.integer(swap_scheme == "seo"),
-    swap_every = as.integer(swap_every)
+    swap_every = as.integer(swap_every),
+    split_merge = as.integer(split_merge)
   )
   
   # Traces are returned as one-column matrices; use plain vectors
@@ -268,6 +282,7 @@ callMDI <- function(X,
   mcmc_output$density_prior <- density_prior
   mcmc_output$phi_update <- phi_update
   mcmc_output$betas <- betas
+  mcmc_output$split_merge <- c(list(moves = as.integer(split_merge)), mcmc_output$split_merge)
   mcmc_output$tempering <- .mdirTidyTempering(mcmc_output$tempering, betas, swap_scheme)
 
   # Indicate if the model was semi-supervised or unsupervised

@@ -26,6 +26,8 @@
 #' @param save_pointwise,phi_update See ``callMDI``.
 #' @param betas,swap_scheme,swap_every Parallel tempering within each chain; see
 #' \code{\link{callMDI}}.
+#' @param split_merge Split-merge style moves within each chain; see
+#' \code{\link{callMDI}}.
 #' @param n_cores Number of cores on which to run the chains. The default, one,
 #' runs them in turn exactly as before; \code{options(mdir.cores = )} changes the
 #' default. With more than one, each chain has its own L'Ecuyer-CMRG random
@@ -87,7 +89,8 @@ runMCMCChains <- function(X,
                           n_cores = NULL,
                           betas = 1,
                           swap_scheme = c("deo", "seo"),
-                          swap_every = 1L) {
+                          swap_every = 1L,
+                          split_merge = 0L) {
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (!is.numeric(n_chains) || length(n_chains) != 1 || is.na(n_chains) || n_chains < 1) {
@@ -119,7 +122,8 @@ runMCMCChains <- function(X,
       phi_update = phi_update,
       betas = betas,
       swap_scheme = swap_scheme,
-      swap_every = swap_every
+      swap_every = swap_every,
+      split_merge = split_merge
     )
   }
 

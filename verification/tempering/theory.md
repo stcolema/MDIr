@@ -147,6 +147,70 @@ the resampled weighted draws give a Monte Carlo estimate of the expected loss [G
 minimiser (as in `processMCMCChain`) [D]. `smcDiagnostics`, `compareRuns`: [D]; agreement
 of independent runs is necessary and not sufficient.
 
+## 5b. Split-merge (sequentially allocated reallocation of a component pair)
+
+**The move.** Pick two distinct components `a, b` uniformly. Let `F` be the non-fixed items currently
+in `a` or `b`; the fixed (observed-label) items in `a, b` supply base statistics. Draw a uniform random
+visiting order of `F`, allocate the items one at a time to `a` or `b` with probability proportional to
+`w_c u_{c,n} m(X_c + x_n) / m(X_c)` (`w` weight, `u` the MDI coupling factor of item `n`, `m` the
+collapsed marginal likelihood at `beta`, `X_c` the items already in `c` including fixed ones), run the
+same walk along the current labels to get the reverse density, accept with
+`min(1, prod_t Z_t(proposed path) / prod_t Z_t(current path))` (`Z_t` the step normaliser). On
+acceptance the component parameters of `a, b` are redrawn from their conditionals, so the sweep
+remains a valid Gibbs-type scheme. This is the sequentially allocated *style* of Dahl (2005) without
+anchor items; it is **not** his algorithm verbatim, and it is a restricted reallocation within a pair,
+so splits (one of `a, b` empty), merges and re-shuffles all arise from the one rule.
+
+**Proposition SM1 [G1, finite state space; proved in Lean].**
+(i) For any strictly positive proposal `Q` on a finite space, the Metropolis-Hastings kernel
+`mhK` has `pi` invariant (`mhK_detailedBalance`, `mhK_invariant`). (ii) If the target factorises along
+the visiting order as `prod_t s_t` and the proposal is `prod_t s_t / Z_t`, the MH ratio equals
+`prod_t Z_t(y) / prod_t Z_t(x)` (`seq_ratio`), the quantity coded in `mixtureModel.cpp`.
+**Application.** Condition on `(a, b, order)`, the cell of all labels outside `F`, and the items in
+`F`: the move never changes which items are in `a ∪ b`, so it stays inside a finite cell on which
+`pi` and `Q` are strictly positive; each cell kernel is invariant (i), the choice of `(a, b, order)` is
+independent of the state, so the mixture is invariant (`invariant_mix`). The target is the collapsed
+conditional of the labels of the view given the weights, the coupling factors and the fixed items;
+`u` is held fixed during the move.
+**Conditions not proved here [C]:** that the collapsed marginals equal the integral of the tempered
+likelihood against the prior (checked against quadrature and closed forms to 1e-8 to 1e-14, not
+proved in Lean); that the C++ implements the stated ratio (checked below).
+
+**Checks [evidence, not proof].**
+* `sympy_splitmerge_exact.py`: exact rational enumeration of the kernel with fixed anchor items,
+  averaged over all visiting orders (8, 16, 32 states): rows sum to one, detailed balance and
+  invariance hold exactly; a mutant that drops the proposal terms violates detailed balance.
+* `run_splitmerge.R` (move alone, weights fixed): 16 chains x 120,000 moves against exact
+  enumeration for C, G, MVN, `beta = 0.5`, and observed labels: total variation at the chain-noise
+  level in every case; control (`beta = 0.5` chain against the `beta = 1` target) TV 0.64.
+* `run_L1_sm.R`, `run_L1_semisup.R`: full sampler with `split_merge = 2` (plain, and PT cold chain)
+  against the exact label posterior, unsupervised and with two observed labels: consistent with
+  exact; controls rejected. One cell (plain, `beta = 1`, unsupervised) had mean z^2 1.45 against 1.12
+  expected for 60 states (about 1.8 standard deviations), the others 0.68 to 1.08.
+* `run_L2_sm.R`: two views (MDI coupling), N = 4, K = 2, split-merge on, plain / `beta = 0.5` / PT cold
+  chain against the exact posterior (MC prior reference, TV contribution of its error <= 1e-4): TV at chain-noise
+  level; control rejected (TV 0.22). K = 2 makes the pair choice trivial.
+* Missing data (`run_splitmerge_missing.R`): no closed-form reference, so the check is agreement
+  of co-clustering probabilities between a plain chain and a split-merge chain (28 pairs, 24 chains
+  each): max |z| 2.34, mean z^2 1.17. This is agreement of two samplers sharing the data-
+  augmentation step, with limited power against a subtle bias. The move conditions on the current
+  imputation; the argument is that the imputation is part of the state and the move is a block
+  update given it [C].
+* `tests/testthat/test-splitmerge.R` includes a mutant (always accept) that the exact test rejects
+  in two of its three exact cases (the `beta = 0.5` case did not flag it).
+
+**What it does to the four-cluster example [empirical, no guarantee of mixing].** 160 independent
+plain chains with `split_merge = 2` pooled with equal weights: TV 0.015 to the group-unit
+reference masses (0.31 without), every chain's dominant pattern the modal one. At separation 4
+(where the reference is accurate) 80 chains x 20,000 sweeps gave TV 0.001. At separation 2.5 a gap of
+about 0.015 on the second pattern persists with 5 times longer chains and an across-chain standard error
+of 0.001, so it is not Monte Carlo noise; the reference treats each true group as an indivisible unit
+and ignores item-level misallocation, which matters at that separation, and the discrepancy vanishes
+at separation 4. I attribute it to the reference, but have not proved it, because computing the exact
+mass without the group-unit approximation is not feasible here.
+Mixing of the move is not guaranteed by Prop. SM1: invariance only. That it removed the basin
+weights in this example is an observation about this example.
+
 ## 6. What would give a certificate, and is not built
 
 A finite-sample certificate of mixing would need a bound on the total-variation distance of a
@@ -165,6 +229,9 @@ Doucet and Jasra (2006, JRSSB 68, 411-436) and (2012, Bernoulli 18, 252-278); Ch
 Biometrika 89, 539-551) and (2004, Ann. Statist. 32, 2385-2411); Beskos et al. (2016, Ann. Appl.
 Probab. 26, 1111-1146); Tierney (1994, Ann. Statist. 22, 1701-1728); Woodard, Schmidler and Huber
 (2009, Ann. Appl. Probab. 19, 617-640); Jasra, Holmes and Stephens (2005); Yao, Vehtari and
-Gelman (2022); Coleman, Kirk and Wallace (2022). From memory, not checked: Del Moral (2004,
+Gelman (2022); Coleman, Kirk and Wallace (2022). Split-merge: Jain and Neal (2004, JCGS 13, 158-182), Dahl (2005, sequentially allocated merge-split; existence and
+description via search results only, the paper itself not read), Bouchard-Cote, Doucet and Roth (2017, JMLR 18(28),
+15-397; read in abstract only), Nguyen, Trippe and Broderick (2022, AISTATS, PMLR 151, 3483-3514; abstract only),
+Monteiller et al. (2019, NeurIPS; abstract only). From memory, not checked: Del Moral (2004,
 *Feynman-Kac Formulae*, Springer, Thm 7.4.2 as a numbered statement), Shao and Tu (1995, *The
 Jackknife and Bootstrap*), Geyer (1991), Biswas, Jacob and Vanetti (2019), Meyn and Tweedie.

@@ -1,0 +1,7 @@
+C (3 categories, 2 measurements), beta = 1           TV 0.0144 (noise ~0.0137) | states 91 | max|z| 3.12 | mean z^2 1.34 (expect ~1.15) | acceptance 0.82
+G (P = 2), beta = 1                                  TV 0.0041 (noise ~0.0042) | states 47 | max|z| 3.53 | mean z^2 1.20 (expect ~1.15) | acceptance 0.76
+MVN (P = 2), beta = 1                                TV 0.0039 (noise ~0.0042) | states 45 | max|z| 2.80 | mean z^2 1.39 (expect ~1.15) | acceptance 0.77
+MVN (P = 2), beta = 0.5 (tempered)                   TV 0.0083 (noise ~0.0086) | states 83 | max|z| 3.26 | mean z^2 0.95 (expect ~1.15) | acceptance 0.75
+C, beta = 1, items 1-2 observed in classes 0, 1      TV 0.0056 (noise ~0.0049) | states 111 | max|z| 3.14 | mean z^2 1.35 (expect ~1.15) | acceptance 0.88
+MVN (P = 2), beta = 1, items 1-2 observed            TV 0.0042 (noise ~0.0032) | states 32 | max|z| 2.98 | mean z^2 1.58 (expect ~1.15) | acceptance 0.85
+CONTROL: MVN beta = 0.5 chain vs exact beta = 1      TV 0.6377 (noise ~0.0095) | states 38 | max|z| 554.45 | mean z^2 43270.63 (expect ~1.15) | acceptance 0.72

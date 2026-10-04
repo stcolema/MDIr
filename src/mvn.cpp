@@ -292,3 +292,51 @@ void mvn::setParameters(const arma::vec& theta) {
 arma::vec mvn::simulate(arma::uword k) const {
   return rmvnormChol(mu.col(k), cov.slice(k));
 }
+
+
+// === Collapsed marginal likelihood ============================================
+// With n items, beta-tempered likelihood and the NIW(xi, kappa, scale, nu) prior,
+//   log m = -(beta n P / 2) log(pi) + (P / 2) log(kappa / (kappa + beta n))
+//           + log Gamma_P((nu + beta n) / 2) - log Gamma_P(nu / 2)
+//           + (nu / 2) log|scale| - ((nu + beta n) / 2) log|scale_n|,
+//   scale_n = scale + beta S + kappa beta n / (kappa + beta n) (xbar - xi)(xbar - xi)',
+// S the scatter about the sample mean. Checked against the identity
+// prior x L^beta = posterior x m in verification/tempering/sympy_checks.py.
+collapsedStats mvn::emptyStats() const {
+  collapsedStats st;
+  st.n = 0.0;
+  st.s.zeros(P);
+  st.S2.zeros(P, P);
+  return st;
+}
+
+void mvn::addItemToStats(collapsedStats& st, arma::uword n) const {
+  const arma::vec d = X.row(n).t() - xi;
+  st.n += 1.0;
+  st.s += d;
+  st.S2 += d * d.t();
+}
+
+double mvn::logMarginalLikelihood(const collapsedStats& st, double beta) const {
+  if(st.n <= 0.0) {
+    return 0.0;
+  }
+  const double n_eff = beta * st.n, kappa_n = kappa + n_eff, Pd = (double) P;
+  const arma::vec dbar = st.s / st.n;
+  const arma::mat S = st.S2 - st.s * st.s.t() / st.n;
+  const arma::mat scale_n = scale + beta * S + (kappa * n_eff / kappa_n) * (dbar * dbar.t());
+  auto logMultivariateGamma = [&](double a) {
+    double out = Pd * (Pd - 1.0) / 4.0 * std::log(M_PI);
+    for(uword j = 0; j < P; j++) {
+      out += std::lgamma(a - 0.5 * (double) j);
+    }
+    return out;
+  };
+  double logdet_scale = 0.0, logdet_scale_n = 0.0;
+  arma::log_det_sympd(logdet_scale, scale);
+  arma::log_det_sympd(logdet_scale_n, 0.5 * (scale_n + scale_n.t()));
+  return -0.5 * n_eff * Pd * std::log(M_PI)
+    + 0.5 * Pd * (std::log(kappa) - std::log(kappa_n))
+    + logMultivariateGamma(0.5 * (nu + n_eff)) - logMultivariateGamma(0.5 * nu)
+    + 0.5 * nu * logdet_scale - 0.5 * (nu + n_eff) * logdet_scale_n;
+}

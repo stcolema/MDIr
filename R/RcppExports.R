@@ -529,9 +529,11 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' @param swap_scheme How replicas are paired for exchange: 0, deterministic
 #' even-odd (non-reversible); 1, stochastic even-odd (reversible).
 #' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
+#' @param split_merge Attempts per view and sweep of the sequentially-allocated 
+#' re-partition of two randomly chosen components (0 turns it off).
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -588,9 +590,45 @@ runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, label
 #' prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
 #' \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.
 #' @param start_sweeps Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).
+#' @param split_merge Split-merge attempts per view and sweep (see `runMDI`).
 #' @return A list with the particles' recorded draws and weights, the evidence
 #' estimate and the trace of the run.
-runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps) {
-    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps)
+runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge) {
+    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge)
+}
+
+#' @title Collapsed log marginal likelihood of a set of items (test hook)
+#' @description The log of the integral of the likelihood of the items to the power
+#' `beta` against the density's conjugate prior (hyperparameters at their
+#' data-driven values).
+#' @param X Data matrix.
+#' @param K Number of components (enters the data-driven scale).
+#' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C).
+#' @param density_prior Density-level prior options.
+#' @param rows Zero-based indices of the items.
+#' @param beta Inverse temperature.
+#' @keywords internal
+collapsedLogMarginalCpp <- function(X, K, mixture_type, density_prior, rows, beta) {
+    .Call(`_mdir_collapsedLogMarginalCpp`, X, K, mixture_type, density_prior, rows, beta)
+}
+
+#' @title Run the split-merge move on its own (test hook)
+#' @description One view, weights held fixed at `w`, nothing else updated: the
+#' move followed by the redraw of the parameters of the two components. The labels then
+#' follow the collapsed target proportional to the product over items of `w[c_n]` and
+#' over components of the collapsed marginal likelihood.
+#' @param X Data matrix.
+#' @param K Number of components.
+#' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C).
+#' @param density_prior Density-level prior options.
+#' @param labels Initial labels (zero-based).
+#' @param fixed Indicator (0/1) of items with an observed label.
+#' @param w Component weights (length K).
+#' @param n_iter Number of move attempts.
+#' @param beta Inverse temperature.
+#' @return The labels after every attempt, and the acceptance rate.
+#' @keywords internal
+splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta) {
+    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta)
 }
 

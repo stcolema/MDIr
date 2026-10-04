@@ -64,6 +64,12 @@ public:
   arma::vec itemLogLikelihood(arma::uword n) override;
   double logLikelihood(arma::uword n, arma::uword k) override;
 
+  // Collapsed normal-inverse-Wishart marginal likelihood of a set of items
+  bool hasCollapsedMarginal() const override { return true; }
+  collapsedStats emptyStats() const override;
+  void addItemToStats(collapsedStats& st, arma::uword n) const override;
+  double logMarginalLikelihood(const collapsedStats& st, double beta) const override;
+
   void swapComponents(uword k, uword kprime) override;
 
   // Layout: mu (P x K), then cov (P x P x K), each column-major

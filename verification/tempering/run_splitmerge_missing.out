@@ -1,0 +1,3 @@
+24 chains x 40000 sweeps each; 28 pairwise co-clustering probabilities
+max |difference| 0.0082; max |z| 2.34; mean z^2 1.17 (expect about 1 if the targets agree)
+co-clustering range (plain): 0.015 to 0.943

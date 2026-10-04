@@ -3,6 +3,7 @@ import Tempering.ProductSwap
 import Tempering.Conjugate
 import Tempering.PTKernel
 import Tempering.AIS
+import Tempering.SplitMerge
 
 -- Every theorem should depend only on the standard axioms (no `sorryAx`).
 #print axioms Tempering.swapK_detailedBalance
@@ -24,3 +25,6 @@ import Tempering.AIS
 #print axioms Tempering.annealMeasure_dual
 #print axioms Tempering.annealTest_bound
 #print axioms Tempering.bias_bound
+#print axioms Tempering.mhK_detailedBalance
+#print axioms Tempering.mhK_invariant
+#print axioms Tempering.seq_ratio

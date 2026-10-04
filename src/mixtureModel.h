@@ -106,6 +106,29 @@ public:
   
   // Exchange components k and k'
   void swapComponents(uword k, uword kprime);
+
+  // Sequentially-allocated re-partition of the free items of components a and b
+  // (Dahl, 2003, 2005; here with the component pair chosen at random and no
+  // anchors). The items are allocated one at a time, in a random order, to a or b with
+  // probability proportional to their prior factor times the collapsed predictive
+  // density given the items already allocated (parameters integrated out, hyperparameters
+  // fixed, likelihood to the power beta). The proposal does not depend on the current
+  // allocation of those items, so the move is an independence Metropolis-Hastings step
+  // whose acceptance ratio is the ratio of the products of the allocation
+  // normalisers along the proposed and the current paths (same order). The
+  // parameters of a and b are then redrawn from their (tempered) conditionals given
+  // the resulting labels, so the state stays a draw from the joint target. Items with
+  // observed labels stay put but count in the likelihood. Returns whether the
+  // proposal was accepted.
+  bool splitMergeMove(
+    uword a, uword b,
+    const arma::vec& log_weights,
+    const arma::mat& log_upweights
+  );
+
+  // Recompute the complete-data and observed-data likelihood records from the current
+  // labels and parameters (after a move that changes them)
+  void refreshLikelihoods(const arma::vec& log_weights);
   
   // Set the inverse temperature of the tempered target (see mdi::beta). The
   // allocation uses beta times the component log-likelihood and the density

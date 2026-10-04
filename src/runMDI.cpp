@@ -26,7 +26,8 @@ Rcpp::List runMDI(
     bool phi_slice,
     arma::vec betas,
     arma::uword swap_scheme,
-    arma::uword swap_every
+    arma::uword swap_every,
+    arma::uword split_merge
 ) {
   
   if(thin < 1) {
@@ -87,6 +88,7 @@ Rcpp::List runMDI(
     if(betas(t) != 1.0) {
       replicas[t]->setBeta(betas(t));
     }
+    replicas[t]->setSplitMerge(split_merge);
   }
   arma::uvec at_temp = arma::regspace<arma::uvec>(0, T - 1);
   auto cold = [&]() -> mdi& { return *replicas[at_temp(T - 1)]; };
@@ -334,5 +336,14 @@ Rcpp::List runMDI(
       Named("missing_cells") = missing_cells
   );
   result["tempering"] = pt;
+  uword sm_attempts = 0, sm_accepts = 0;
+  for(uword t = 0; t < T; t++) {
+    sm_attempts += replicas[t]->split_merge_attempts;
+    sm_accepts += replicas[t]->split_merge_accepts;
+  }
+  result["split_merge"] = Rcpp::List::create(
+    Named("attempts") = (double) sm_attempts,
+    Named("accepts") = (double) sm_accepts
+  );
   return result;
 }

@@ -16,6 +16,17 @@ arma::vec resolveDensityPrior(const arma::vec& prior);
 
 using namespace arma ;
 
+// Sufficient statistics of a set of items for the collapsed (parameter-integrated)
+// likelihood. Meaning of the fields depends on the density: for the Gaussian
+// densities s and S2 are the sum and sum of squares (cross-products for the MVN) of
+// the items centred at the prior mean; for the categorical density s holds the
+// category counts of every measurement, concatenated.
+struct collapsedStats {
+  double n = 0.0;
+  arma::vec s;
+  arma::mat S2;
+};
+
 // =============================================================================
 // virtual density class
 //
@@ -120,6 +131,19 @@ public:
   virtual double logLikelihood(arma::uword n, arma::uword k) = 0;
 
   virtual void receiveHyperParametersProposalWindows(vec proposal_windows) {};
+
+  // === Collapsed marginal likelihood (used by the split-merge move) ==========
+  // With the component parameters integrated out against their conjugate prior (and
+  // the pooled hyperparameters held at their current values), the likelihood of a set
+  // of items raised to the power beta is available in closed form from its
+  // sufficient statistics. Densities that do not have it (GP) keep the default.
+  virtual bool hasCollapsedMarginal() const { return false; }
+  virtual collapsedStats emptyStats() const { return collapsedStats(); }
+  virtual void addItemToStats(collapsedStats& st, arma::uword n) const { }
+  virtual double logMarginalLikelihood(const collapsedStats& st, double beta) const {
+    Rcpp::stop("This density has no collapsed marginal likelihood.");
+    return 0.0;
+  }
 
   // === Component relabelling =================================================
   // Exchange every component-specific parameter of components k and k'
