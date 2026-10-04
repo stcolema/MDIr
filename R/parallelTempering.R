@@ -206,6 +206,10 @@ ptDiagnostics <- function(fit) {
   out
 }
 
+#' @rdname ptDiagnostics
+#' @param x An object returned by \code{ptDiagnostics}.
+#' @param digits Number of significant digits shown.
+#' @param ... Unused.
 #' @export
 print.mdir_pt_diagnostics <- function(x, digits = 3, ...) {
   cat(sprintf(
