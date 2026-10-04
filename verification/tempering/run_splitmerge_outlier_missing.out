@@ -1,0 +1,2 @@
+observed-only vs complete outlier log density: -2.731 -1.452 -2.99 -2.275 -2.695 | -2.731 -3.665 -2.99 -4.24 -5.606 
+outlier + missing values: TV 0.0169 (noise ~0.0162) | states 87 | max|z| 2.70 | mean z^2 1.20 (expect ~1.15) | acc 0.79 | outlier share 0.545

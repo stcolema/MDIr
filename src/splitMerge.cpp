@@ -50,15 +50,18 @@ double collapsedLogMarginalCpp(arma::mat X, arma::uword K, arma::uword mixture_t
 //' @param outlier_type Outlier component code (0 = none, 1 = multivariate t).
 //' @param outlier_weight Fixed weight of the outlier component (ignored if none).
 //' @param outliers_init Initial outlier flags (0/1), length N.
-//' @return The labels and outlier flags after every attempt, the acceptance rate and the
-//' outlier log-density of every item.
+//' @param X_fill Optional (N x P) matrix: its entries replace the initial imputations of the missing
+//' cells (so that a reference can be computed for fixed imputed values); empty for none.
+//' @return The labels and outlier flags after every attempt, the acceptance rate, the
+//' outlier log-density of every item (observed entries, and complete vector with the imputed
+//' values) and the imputed data matrix. Imputed values are held fixed during the move.
 //' @keywords internal
 // [[Rcpp::export]]
 Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_type,
                              arma::vec density_prior, arma::uvec labels, arma::uvec fixed,
                              arma::vec w, arma::uword n_iter, double beta,
                              arma::uword outlier_type, double outlier_weight,
-                             arma::uvec outliers_init) {
+                             arma::uvec outliers_init, arma::mat X_fill) {
   const uword N = X.n_rows;
   arma::field<arma::mat> Y(1);
   Y(0) = X;
@@ -81,6 +84,14 @@ Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_typ
   model.mixtures[0]->labels = labels;
   model.mixtures[0]->density_ptr->labels = labels;
   auto& mix = model.mixtures[0];
+  if(X_fill.n_rows == N) {
+    for(uword n = 0; n < N; n++) {
+      const arma::uvec& mi = mix->density_ptr->missing_indices(n);
+      for(uword i = 0; i < mi.n_elem; i++) {
+        mix->density_ptr->X(n, mi(i)) = X_fill(n, mi(i));
+      }
+    }
+  }
   const bool has_out = mix->outlierComponent_ptr->active();
   arma::uvec flags(N, arma::fill::zeros);
   if(has_out) {
@@ -97,6 +108,27 @@ Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_typ
   model.non_outliers.col(0) = 1 - flags;
   model.refreshMembersViewL(0);
   model.setSplitMerge(1);
+  arma::vec out_complete(N, arma::fill::zeros);
+  if(has_out) {
+    for(uword n = 0; n < N; n++) {
+      out_complete(n) = mix->outlierComponent_ptr->completeLogDensity(mix->density_ptr->X.row(n).t());
+    }
+  }
+  // Collapsed log marginal (at beta) of every subset of items, indexed by bitmask, from this
+  // density's own (imputed) data; only for small N, for exact reference calculations
+  arma::vec subset_logmarg;
+  if(N <= 12) {
+    subset_logmarg.set_size((uword) 1 << N);
+    for(uword mask = 0; mask < subset_logmarg.n_elem; mask++) {
+      collapsedStats st = mix->density_ptr->emptyStats();
+      for(uword n = 0; n < N; n++) {
+        if((mask >> n) & 1) {
+          mix->density_ptr->addItemToStats(st, n);
+        }
+      }
+      subset_logmarg(mask) = mix->density_ptr->logMarginalLikelihood(st, beta);
+    }
+  }
   arma::umat trace(n_iter, N), otrace(n_iter, N);
   for(uword it = 0; it < n_iter; it++) {
     Rcpp::checkUserInterrupt();
@@ -108,6 +140,9 @@ Rcpp::List splitMergeOnlyCpp(arma::mat X, arma::uword K, arma::uword mixture_typ
     Named("labels") = trace,
     Named("outliers") = otrace,
     Named("outlier_loglik") = has_out ? arma::vec(mix->outlierComponent_ptr->outlier_likelihood) : arma::vec(),
+    Named("outlier_loglik_complete") = out_complete,
+    Named("X_imputed") = mix->density_ptr->X,
+    Named("subset_logmarg") = subset_logmarg,
     Named("acceptance") = (double) model.split_merge_accepts / std::max(1.0, (double) model.split_merge_attempts)
   );
 }

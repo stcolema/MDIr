@@ -16,7 +16,8 @@ splitMergeOnlyCpp(
   beta,
   outlier_type,
   outlier_weight,
-  outliers_init
+  outliers_init,
+  X_fill
 )
 }
 \arguments{
@@ -43,10 +44,14 @@ splitMergeOnlyCpp(
 \item{outlier_weight}{Fixed weight of the outlier component (ignored if none).}
 
 \item{outliers_init}{Initial outlier flags (0/1), length N.}
+
+\item{X_fill}{Optional (N x P) matrix: its entries replace the initial imputations of the missing
+cells (so that a reference can be computed for fixed imputed values); empty for none.}
 }
 \value{
-The labels and outlier flags after every attempt, the acceptance rate and the
-outlier log-density of every item.
+The labels and outlier flags after every attempt, the acceptance rate, the
+outlier log-density of every item (observed entries, and complete vector with the imputed
+values) and the imputed data matrix. Imputed values are held fixed during the move.
 }
 \description{
 One view, weights held fixed at `w`, nothing else updated: the

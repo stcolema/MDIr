@@ -34,7 +34,7 @@ run_case <- function(name, type, P, beta, n_fixed = 0, ref_beta = beta) {
   chains <- parallel::mclapply(seq_len(n_chains), function(i) {
     set.seed(8000 + i)
     init <- sample(0:(K - 1), N, TRUE); init[fixed == 1] <- lab_fixed[fixed == 1]
-    out <- sm_only(X, K, type, dp, init, fixed, w, n_iter, beta, 0L, 0.1, integer(0))
+    out <- sm_only(X, K, type, dp, init, fixed, w, n_iter, beta, 0L, 0.1, integer(0), matrix(0, 0, 0))
     codes <- config_code(out$labels[-(1:500), ex$free, drop = FALSE], K)
     list(codes = codes, acc = out$acceptance)
   }, mc.cores = n_cores)

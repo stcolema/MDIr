@@ -629,10 +629,13 @@ collapsedLogMarginalCpp <- function(X, K, mixture_type, density_prior, rows, bet
 #' @param outlier_type Outlier component code (0 = none, 1 = multivariate t).
 #' @param outlier_weight Fixed weight of the outlier component (ignored if none).
 #' @param outliers_init Initial outlier flags (0/1), length N.
-#' @return The labels and outlier flags after every attempt, the acceptance rate and the
-#' outlier log-density of every item.
+#' @param X_fill Optional (N x P) matrix: its entries replace the initial imputations of the missing
+#' cells (so that a reference can be computed for fixed imputed values); empty for none.
+#' @return The labels and outlier flags after every attempt, the acceptance rate, the
+#' outlier log-density of every item (observed entries, and complete vector with the imputed
+#' values) and the imputed data matrix. Imputed values are held fixed during the move.
 #' @keywords internal
-splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init) {
-    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init)
+splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init, X_fill) {
+    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init, X_fill)
 }
 
