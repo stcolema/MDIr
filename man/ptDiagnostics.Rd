@@ -2,13 +2,22 @@
 % Please edit documentation in R/parallelTempering.R
 \name{ptDiagnostics}
 \alias{ptDiagnostics}
+\alias{print.mdir_pt_diagnostics}
 \title{Diagnostics of the exchange process in parallel tempering}
 \usage{
 ptDiagnostics(fit)
+
+\method{print}{mdir_pt_diagnostics}(x, digits = 3, ...)
 }
 \arguments{
 \item{fit}{A fit from \code{\link{callMDI}} run with a ladder in \code{betas},
 or a list of such fits (the exchange counts are pooled).}
+
+\item{x}{An object returned by \code{ptDiagnostics}.}
+
+\item{digits}{Number of significant digits shown.}
+
+\item{...}{Unused.}
 }
 \value{
 An object of class \code{mdir_pt_diagnostics}: a list with
