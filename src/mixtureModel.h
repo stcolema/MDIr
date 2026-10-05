@@ -44,7 +44,7 @@ public:
     
     n_param = 0;
   
-  double complete_likelihood = 0.0, observed_likelihood = 0.0, BIC = 0.0;
+  double complete_likelihood = 0.0, observed_likelihood = 0.0;
   
   uvec 
     // The cluster/class labels
@@ -98,7 +98,6 @@ public:
   
   void sampleFromPriors();
   void sampleParameters();
-  void calcBIC();
   
   // Sample every missing value from its full conditional given the current 
   // allocation

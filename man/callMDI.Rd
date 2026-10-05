@@ -91,7 +91,7 @@ the total over items (``joint_likelihood``) is always recorded.}
 default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
 latent variable integrated out, using one slice-sampling update (Neal, 2003)
 that needs no tuning. ``"gibbs"`` is the update conditional on the
-strategic latent variable used in earlier releases. Both have the same target;
+strategic latent variable. Both have the same target;
 the slice update mixes faster (see ``NEWS.md``).}
 
 \item{betas}{Inverse temperatures for parallel tempering: a strictly

@@ -65,6 +65,8 @@ double mdiPartitionSum(
 // dZ / dw(kstar, lstar) for a single weight: the rate of the conditional for w(kstar, lstar) is
 // w_rate_prior + v * this. Z is multilinear in the columns of w, so this is Z
 // evaluated with column lstar replaced by the kstar-th unit vector.
+// Independent of the recursion behind mdiWeightRates(), which the sampler uses; kept as the
+// reference against which the tests check it.
 double mdiWeightRate(
     const arma::mat& w,
     const arma::uvec& K,

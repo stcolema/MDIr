@@ -151,6 +151,7 @@ callMixtureModel <- function(X,
   mcmc_output$N_k <- mcmc_output$N_k[, 1, ]
   mcmc_output$complete_likelihood <- as.numeric(mcmc_output$complete_likelihood)
   mcmc_output$observed_likelihood <- as.numeric(mcmc_output$observed_likelihood)
+  mcmc_output$normalising_constant <- NULL
   mcmc_output$evidence <- NULL
   mcmc_output$parameters <- mcmc_output$parameters[[1]]
   mcmc_output$pooled_hyperparameters <- mcmc_output$pooled_hyperparameters[[1]]

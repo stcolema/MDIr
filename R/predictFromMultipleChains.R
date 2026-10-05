@@ -167,10 +167,11 @@ predictFromMultipleChains <- function(mcmc_outputs,
     lapply(processed_chains, function(x) x$complete_likelihood)
   ))
 
-  merged_outputs$evidence <- as.matrix(do.call(
+  merged_outputs$normalising_constant <- as.matrix(do.call(
     c,
-    lapply(processed_chains, function(x) x$evidence)
+    lapply(processed_chains, function(x) x$normalising_constant)
   ))
+  merged_outputs$evidence <- merged_outputs$normalising_constant
 
   # The total time for running each chain (this assumes chains are run serially)
   for (ii in chain_indices) {
@@ -266,7 +267,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
         merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
         for (ii in seq(1, n_chains)) {
           merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
-            calcFusionProbabiliy(processed_chains[[ii]], v, w)
+            calcFusionProbability(processed_chains[[ii]], v, w)
         }
         merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] / n_chains
       }

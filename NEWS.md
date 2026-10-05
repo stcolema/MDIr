@@ -213,9 +213,17 @@
   two views); the last digits can differ with more views because the sums are
   accumulated in a different order.
 
+## Deprecated and renamed
+
+* `calcFusionProbabiliy()` and `calcFusionProbabiliyAllViews()` are renamed `calcFusionProbability()` and
+  `calcFusionProbabilityAllViews()`. The old names still work and warn.
+* The `evidence` element of `callMDI()` output is renamed `normalising_constant` (it is the MDI normalising constant
+  `Z` at the start of each saved sweep, not a marginal likelihood). `evidence` remains as an alias.
+* Removed unused internal C++ helpers; `stickBreakingPrior()` now calls `sampleStickBreakingPrior()`.
+
 ## Corrections
 
-* **Review corrections (statistical).**
+* **Corrections to the sampler and diagnostics.**
   * The outlier weight of a TAGM view was updated with the labelled items counted as non-outliers, although they can
     never be outliers and carry no outlier factor in the likelihood. The conditional is now
     `Beta(a + n_out, b + n_free - n_out)` over the items without an observed label; before, the weight was biased
@@ -229,7 +237,7 @@
   * Gaussian-process acceptance rates are now accepted over proposed (they could reach 2, and ignored empty components).
   * The effective sample size follows the Stan / Vehtari et al. (2021) estimator exactly (final-term correction,
     only lag 0 rescaled); it agrees with `posterior::ess_bulk()` and `ess_tail()`.
-* **Review corrections (R).** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
+* **Corrections to the R functions.** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
   classes and failed when one class was observed under a code other than 1; `stickBreakingPrior()` drew `Beta(alpha, 1)`
   sticks instead of `Beta(1, alpha)`; `compileConsensusClustering()` kept only the last chain's weights and was off by
   one for `evidence`; `calcAllocProb()` dropped a sample when `burn < thin` (and now drops the initial state like
