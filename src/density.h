@@ -69,7 +69,10 @@ public:
     K_inds,
 
     // Acceptance count of MH sampled parameters
-    acceptance_count = zeros< uvec >(0);
+    acceptance_count = zeros< uvec >(0),
+
+    // Number of proposals behind each entry of acceptance_count
+    acceptance_attempts = zeros< uvec >(0);
 
   vec
     // Used in recording GP hyperparameters

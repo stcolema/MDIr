@@ -280,8 +280,11 @@ Rcpp::List runMDI(
   mdi& my_mdi = cold();
   for(uword l = 0; l < L; l++) {
     if(mixture_types(l) == 3) {
-      acceptance_count(l) = conv_to< vec >::from(my_mdi.mixtures[l]->density_ptr->acceptance_count) 
-        / std::max(1.0, std::ceil((double) R / 5.0));
+      // Accepted proposals over proposals made, per hyperparameter and component
+      // (a component is only updated while it is occupied)
+      const auto& d = my_mdi.mixtures[l]->density_ptr;
+      acceptance_count(l) = conv_to< vec >::from(d->acceptance_count)
+        / arma::max(arma::ones<vec>(d->acceptance_attempts.n_elem), conv_to< vec >::from(d->acceptance_attempts));
     }
   }
   

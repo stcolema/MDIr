@@ -20,13 +20,15 @@ generateInitialSemiSupervisedLabels <- function(labels, fixed) {
 
   unobserved_labels <- rep(0, N_unfixed)
 
-  # Breakdown of class proportions
-  ratio <- table(observed_labels) / N_fixed
+  # Breakdown of class proportions, in the order of `observed_classes` (table()
+  # sorts, unique() does not). Indexing avoids sample() treating a single number
+  # as 1:x when only one class is observed.
+  ratio <- as.numeric(table(factor(observed_labels, levels = observed_classes))) / N_fixed
 
-  unobserved_labels <- sample(observed_classes, N_unfixed,
+  unobserved_labels <- observed_classes[sample.int(length(observed_classes), N_unfixed,
     replace = TRUE,
     prob = ratio
-  )
+  )]
 
   labels[unobserved_indices] <- unobserved_labels
 

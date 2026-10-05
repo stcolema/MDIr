@@ -79,7 +79,10 @@ public:
   
   uvec noise_acceptance_count,
     length_acceptance_count,
-    amplitude_acceptance_count;
+    amplitude_acceptance_count,
+    noise_attempt_count,
+    length_attempt_count,
+    amplitude_attempt_count;
   
   vec amplitude, length, noise, xi;
   mat mu, I_p, time_diff_mat;

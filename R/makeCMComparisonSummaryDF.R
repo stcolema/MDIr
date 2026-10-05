@@ -49,7 +49,7 @@ makeCMComparisonSummaryDF <- function(cms, model_description_df) {
     curr_w <- W_considered[ii]
     chains_used <- seq(1, curr_w)
 
-    for (jj in seq(2, number_depths)) {
+    for (jj in seq_len(number_depths)[-1]) {
       curr_d <- D_considered[jj]
 
       curr_cm_index <- which(
@@ -85,7 +85,7 @@ makeCMComparisonSummaryDF <- function(cms, model_description_df) {
   # Compare across widths
   for (jj in seq(1, number_depths)) {
     curr_d <- D_considered[jj]
-    for (ii in seq(2, number_chains)) {
+    for (ii in seq_len(number_chains)[-1]) {
       curr_w <- W_considered[ii]
       chains_used <- seq(1, curr_w)
       curr_cm_index <- which((model_description_df$Depth == curr_d & model_description_df$Width == curr_w))

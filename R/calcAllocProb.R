@@ -4,7 +4,7 @@
 #' semi-supervised views.
 #' @param mcmc_samples Output from ``callMDI``.
 #' @param view The view for which to calculate the allocation probabilities.
-#' @param burn The number of samples to discard.
+#' @param burn The number of iterations to treat as burn in (0 keeps every saved sample). As in ``processMCMCChain``, the initial state and ``floor(burn / thin)`` further saved samples are dropped.
 #' @param method The point estimate to use. ``method = 'mean'`` or
 #' ``method = 'median'``. ``'median'`` is the default.
 #' @return An N x K matrix of class probabilities.
@@ -55,9 +55,13 @@ calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "mean") {
       stop("Burn in exceeds number of iterations run.")
     }
     
-    eff_burn <- floor(burn / thin)
-    dropped_samples <- seq(1, eff_burn)
-    .alloc <- .alloc[, , -dropped_samples]
+    # As in processMCMCChain(): the initial state and floor(burn / thin) further
+    # saved samples are dropped
+    dropped_samples <- seq_len(floor(burn / thin) + 1)
+    if (length(dropped_samples) >= dim(.alloc)[3]) {
+      stop("The burn in leaves no saved samples.")
+    }
+    .alloc <- .alloc[, , -dropped_samples, drop = FALSE]
   }
   
   if (view > V) {
