@@ -36,28 +36,6 @@ createSimilarityMat <- function(allocations) {
     .Call(`_mdir_createSimilarityMat`, allocations)
 }
 
-#' title Propose new non-negative value
-#' description Propose new non-negative for sampling.
-#' param x Current value to be proposed
-#' param window The proposal window
-#' return new double
-NULL
-
-#' title The Inverse Gamma Distribution
-#' description Random generation from the inverse Gamma distribution.
-#' param shape Shape parameter.
-#' param rate Rate parameter.
-#' return Sample from invGamma(shape, rate).
-NULL
-
-#' title The Inverse Gamma Distribution
-#' description Random generation from the inverse Gamma distribution.
-#' param N Number of samples to draw.
-#' param shape Shape parameter.
-#' param rate Rate parameter.
-#' return Sample from invGamma(shape, rate).
-NULL
-
 #' title The Gamma Distribution
 #' description Random generation from the Gamma distribution.
 #' param shape Shape parameter.
@@ -71,23 +49,6 @@ NULL
 #' param shape Shape parameter.
 #' param rate Rate parameter.
 #' return N samples from Gamma(shape, rate).
-NULL
-
-#' title The Half-Cauchy Distribution
-#' description Random generation from the Half-Cauchy distribution.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' param mu Location parameter.
-#' param scale Scale parameter.
-#' return Sample from HalfCauchy(mu, scale).
-NULL
-
-#' title The Half-Cauchy Distribution
-#' description Random generation from the Half-Cauchy distribution.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' param N The number of samples to draw
-#' param mu Location parameter.
-#' param scale Scale parameter.
-#' return Sample from HalfCauchy(mu, scale).
 NULL
 
 #' title The Beta Distribution
@@ -111,31 +72,6 @@ NULL
 #' return Sample from Beta(a, b).
 NULL
 
-#' title Metropolis acceptance step
-#' description Given a probaility, randomly accepts by sampling from a uniform 
-#' distribution.
-#' param acceptance_prob Double between 0 and 1.
-#' return Boolean indicating acceptance.
-NULL
-
-#' title Squared exponential function
-#' description The squared exponential function as used in a covariance kernel.
-#' param amplitude The amplitude parameter (double)
-#' param length The length parameter (double)
-#' param i Time point (unsigned integer)
-#' param j Time point (unsigned integer)
-#' return Squared exponential metric of (i, j)
-NULL
-
-#' title The Half-Cauchy Distribution
-#' description Calculates the pdf of the Half-Cauchy distribution for value x.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' param x Value to calculate the probability density of.
-#' param mu Location parameter.
-#' param scale Scale parameter.
-#' return Sample from HalfCauchy(mu, scale).
-NULL
-
 #' @title Gamma log-likelihood
 #' @description The log-likelihood of each element of a vector in a Gamma 
 #' distribution parametrised with a shape and rate.
@@ -153,25 +89,6 @@ NULL
 #' @param sigma_2 - double; the variance of the Gaussian distribution.
 #' @return the normalised log-likelihood of x in a Gaussian distribution with 
 #' parameters mu, sigma_2.
-NULL
-
-#' @title Multivariate normal log-likelihood for diagonal covariance matrix
-#' @description The log-likelihood function for a vector in a Gaussian density 
-#' with a diagonal covariance matrix
-#' @param x - vec; the sample to calculate the log likelihood of.
-#' @param mu - vec; the mean parameter of the Gaussian distribution.
-#' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
-#' @return the normalised log-likelihood of x in a Gaussian distribution with 
-#' parameters mu, sigma_2.
-NULL
-
-#' @title The Half-Cauchy Distribution
-#' @description Calculates the pdf of the Half-Cauchy distribution for value x.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param x Value to calculate the probability density of.
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Density of x in HalfCauchy(mu, scale).
 NULL
 
 #' @title Gamma log-likelihood

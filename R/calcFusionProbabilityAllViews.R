@@ -26,10 +26,10 @@
 #' types <- rep("G", V)
 #' 
 #' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
-#' calcFusionProbabiliyAllViews(mcmc_out)
+#' calcFusionProbabilityAllViews(mcmc_out)
 #' 
 #' @export
-calcFusionProbabiliyAllViews <- function(mcmc, processed = FALSE) {
+calcFusionProbabilityAllViews <- function(mcmc, processed = FALSE) {
   V <- mcmc$V
   views <- seq(1, V)
   VC2 <- choose(V, 2)
@@ -42,7 +42,7 @@ calcFusionProbabiliyAllViews <- function(mcmc, processed = FALSE) {
       name <- paste0("fused_probs_", v, w)
       names <- c(names, name)
       entry <- entry + 1
-      fusion_probabilities[[entry]] <- calcFusionProbabiliy(mcmc, v, w, processed)
+      fusion_probabilities[[entry]] <- calcFusionProbability(mcmc, v, w, processed)
     }
   }
   names(fusion_probabilities) <- names

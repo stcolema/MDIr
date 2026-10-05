@@ -101,7 +101,8 @@ processMCMCChain <- function(mcmc_output, burn,
 
   # The model fit
   new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices] # , , drop = F]
-  new_output$evidence <- mcmc_output$evidence[-dropped_indices]
+  new_output$normalising_constant <- mcmc_output$normalising_constant[-dropped_indices]
+  new_output$evidence <- new_output$normalising_constant
   if (!is.null(mcmc_output$observed_likelihood)) {
     new_output$observed_likelihood <- mcmc_output$observed_likelihood[-dropped_indices]
   }
@@ -175,7 +176,7 @@ processMCMCChain <- function(mcmc_output, burn,
   }
 
   if (multiple_views) {
-    new_output$fusion_probabilities <- calcFusionProbabiliyAllViews(new_output)
+    new_output$fusion_probabilities <- calcFusionProbabilityAllViews(new_output)
   }
 
   # Record the applied burn in

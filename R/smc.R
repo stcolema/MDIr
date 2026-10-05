@@ -937,6 +937,7 @@ smcAsChain <- function(fit, n_draws = 1000) {
     mass = mass,
     weights = weights,
     complete_likelihood = vapply(seq_len(nrow(idx)), function(r) fit$data_log_likelihood[idx$draw[r], idx$particle[r]], numeric(1)),
+    normalising_constant = rep(NA_real_, nrow(idx)),
     evidence = rep(NA_real_, nrow(idx)),
     N_k = array(vapply(seq_len(nrow(idx) * V), function(i) {
       r <- (i - 1) %% nrow(idx) + 1; v <- (i - 1) %/% nrow(idx) + 1

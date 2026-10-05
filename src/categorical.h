@@ -23,7 +23,6 @@ using namespace arma ;
 //' }
 //' @field sampleFromPrior Sample from the priors for the multivariate normal
 //' density.
-//' @field calcBIC Calculate the BIC of the model.
 //' @field logLikelihood Calculate the likelihood of a given data point in each
 //' component. \itemize{
 //' \item Parameter: point - a data point.

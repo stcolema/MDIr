@@ -113,7 +113,7 @@ Rcpp::List runMDI(
   vec complete_likelihood_record(n_saved, arma::fill::zeros), 
     observed_likelihood_record(n_saved, arma::fill::zeros),
     joint_likelihood_record(n_saved, arma::fill::zeros),
-    evidence(n_saved, arma::fill::zeros);
+    normalising_constant(n_saved, arma::fill::zeros);
   mat pointwise_record;
   if(save_pointwise) {
     pointwise_record.zeros(n_saved, N);
@@ -194,7 +194,7 @@ Rcpp::List runMDI(
     }
     complete_likelihood_record(s) = my_mdi.complete_likelihood;
     observed_likelihood_record(s) = my_mdi.observed_likelihood;
-    evidence(s) = my_mdi.Z_start;
+    normalising_constant(s) = my_mdi.Z_start;
     mass_record.row(s) = my_mdi.mass.t();
     phis_record.row(s) = my_mdi.phis.t();
     N_k_record.slice(s) = my_mdi.N_k;
@@ -329,7 +329,7 @@ Rcpp::List runMDI(
       Named("observed_likelihood") = observed_likelihood_record,
       Named("joint_likelihood") = joint_likelihood_record,
       Named("pointwise_likelihood") = pointwise_record,
-      Named("evidence") = evidence,
+      Named("normalising_constant") = normalising_constant,
       Named("hypers") = hyper_record,
       Named("acceptance_count") = acceptance_count,
       Named("mass_acceptance_rate") = mass_acceptance_total / ((double) std::max<uword>(R, 1) * (double) T),

@@ -10,7 +10,7 @@ Every claim is tagged with the kind of statement it is:
 "Proved" means a Lean 4 proof (Mathlib v4.33.0, finite state spaces, standard axioms only) in
 `lean/Tempering/`, or a proof below. "Checked" means exact rational arithmetic or simulation
 against an exact reference; a check is evidence, not a proof. "Cited" means taken from a
-source I have not re-derived.
+source that has not been re-derived.
 
 ## 0. Setting
 
@@ -48,7 +48,7 @@ normalised the `t`-th marginal of `Pi` is `pi_{beta_t}` (`marginal_of_product`).
 non-reversibility of the even-odd scheme is not a violation: it is invariant and not reversible
 (exact rational check, `sympy_checks.py`).
 For general state spaces the same algebra holds with densities (Geyer, 1991; Syed et al., 2022);
-I did not formalise that.
+This is not formalised.
 
 **Proposition 2 [G2, argued, assumption A1]**. Assume (A1): every block update of the sweep has a
 strictly positive conditional density with respect to a dominating measure on the support of
@@ -57,7 +57,7 @@ logits, Gamma, inverse-Wishart, Dirichlet, normal; the mass update is a Metropol
 positive log-normal proposal; the phi update is a slice sampler). Then the sweep kernel is
 `pi_beta`-irreducible and aperiodic, with invariant law `pi_beta`; by the general theory of
 Markov chains for posterior exploration (Tierney, 1994, Section 3 on irreducibility,
-recurrence and the Gibbs/Metropolis hybrids; I did not re-check the theorem numbers) it is positive Harris
+recurrence and the Gibbs/Metropolis hybrids; the theorem numbers were not re-checked) it is positive Harris
 recurrent, so ergodic averages converge to `E_{pi_beta} f` from every starting point, and the same
 holds for the product kernel with exchanges (positive density on the product support). This
 proposition is argued here from the form of the conditionals, not proved formally. Hence the cold chain of PT
@@ -66,7 +66,7 @@ targets the posterior asymptotically **for any ladder**.
 Asymptotic correctness does not separate PT from a single chain; only the finite-time
 behaviour does, and **there is no finite-time guarantee here**. Quantitative bounds
 exist under conditions (Woodard, Schmidler and Huber, 2009; Syed et al., 2022, assume local
-equilibrium and exact sampling of the reference); I have not verified any of them for this model,
+equilibrium and exact sampling of the reference); none has been verified for this model,
 and the example shows they fail in practice (round trips 0 to 3 against about 900 predicted).
 `ptDiagnostics()` is therefore [D]. Choosing the ladder (`ptLadder`, `tuneLadder`,
 `adaptLadder`) affects efficiency only: validity does not depend on it (Theorem 1), provided
@@ -213,7 +213,7 @@ proved in Lean); that the C++ implements the stated ratio (checked below).
   max |z| 1.92 and 2.45, mean z^2 0.89 and 1.02 (agreement of two samplers).
 * `run_splitmerge_tagm.R`: full sampler, TAGM view alone and TAGM + MVN (MDI), plain chain vs split-merge chain,
   co-clustering and per-item outlier probabilities (45 quantities): max |z| 2.64 and 2.29, mean z^2 1.97 and 1.15; the 1.97
-  became 0.57 with 48 independent chains, so I read it as noise. Agreement of two samplers, not an exact reference.
+  became 0.57 with 48 independent chains, so it is read as noise. Agreement of two samplers, not an exact reference.
 * `run_L2_sm.R`: two views (MDI coupling), N = 4, K = 2, split-merge on, plain / `beta = 0.5` / PT cold
   chain against the exact posterior (MC prior reference, TV contribution of its error <= 1e-4): TV at chain-noise
   level; control rejected (TV 0.22). K = 2 makes the pair choice trivial.
@@ -233,7 +233,7 @@ reference masses (0.31 without), every chain's dominant pattern the modal one. A
 about 0.015 on the second pattern persists with 5 times longer chains and an across-chain standard error
 of 0.001, so it is not Monte Carlo noise; the reference treats each true group as an indivisible unit
 and ignores item-level misallocation, which matters at that separation, and the discrepancy vanishes
-at separation 4. I attribute it to the reference, but have not proved it, because computing the exact
+at separation 4. This is attributed to the reference but not proved: computing the exact
 mass without the group-unit approximation is not feasible here.
 Mixing of the move is not guaranteed by Prop. SM1: invariance only. That it removed the basin
 weights in this example is an observation about this example.

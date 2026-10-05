@@ -25,12 +25,10 @@ test_that("t-augmented model flags gross outliers and estimates their weight", {
   expect_true(all(w > 0 & w < 1))
 })
 
-test_that("outlier weight follows its Beta posterior (regression: hyperparameter was overwritten)", {
-  # sampleOutlier() used to assign a random number to the Beta hyperparameter
-  # `u`. When every item has an observed label none can be an outlier and none
+test_that("outlier weight follows its Beta posterior", {
+  # When every item has an observed label none can be an outlier and none
   # carries a factor of the outlier weight, so the weight keeps its Beta(2, 10)
-  # prior whatever the data are (labelled items used to be counted as non-outliers,
-  # which gave Beta(2, N + 10)).
+  # prior whatever the data are.
   skip_on_cran()
   set.seed(72)
   N <- 20
@@ -42,4 +40,33 @@ test_that("outlier weight follows its Beta posterior (regression: hyperparameter
   a <- 2; b <- 10
   expect_equal(mean(w), a / (a + b), tolerance = 0.03)
   expect_equal(var(w), a * b / ((a + b)^2 * (a + b + 1)), tolerance = 0.1)
+})
+
+test_that("the outlier weight update counts only items without an observed label", {
+  skip_on_cran()
+  set.seed(4)
+  N <- 60
+  X <- list(matrix(rnorm(N * 2, rep(c(-3, 3), each = N / 2)), N, 2))
+  rownames(X[[1]]) <- seq_len(N)
+  X[[1]][c(52, 56, 60), ] <- c(25, -25, 30, 30, -30, 20)
+  lab <- matrix(rep(c(1, 2), each = N / 2), N, 1)
+  fixed <- matrix(0, N, 1)
+  fixed[c(1:15, 31:45), 1] <- 1
+  fit <- callMDI(X, R = 4000, thin = 1, types = "TAGM", K = 2, initial_labels = lab,
+                 fixed = fixed, check_prior = FALSE)
+  n_free <- sum(fixed == 0)
+  n_out <- rowSums(fit$outliers[, , 1])
+  eps <- fit$outlier_weights[, 1]
+  d <- data.frame(k = n_out[-length(n_out)], e = eps[-1])
+  agg <- aggregate(e ~ k, d, function(x) c(mean = mean(x), n = length(x)))
+  agg <- data.frame(k = agg$k, m = agg$e[, "mean"], n = agg$e[, "n"])
+  agg <- agg[agg$n >= 150, ]
+  expect_gt(nrow(agg), 1)
+  prior <- c(a = 2, b = 10)            # Beta(2, 10) prior on the outlier weight
+  # Beta(a + n_out, b + n_free - n_out): the mean given the previous count of outliers
+  expected <- (prior["a"] + agg$k) / (prior["a"] + prior["b"] + n_free)
+  expect_equal(agg$m, unname(expected), tolerance = 0.12)
+  # and clearly not the mean when the observed items are counted as non-outliers
+  wrong <- (prior["a"] + agg$k) / (prior["a"] + prior["b"] + N)
+  expect_gt(min(agg$m - wrong), 0.01)
 })

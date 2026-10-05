@@ -97,7 +97,7 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
 
   cc_lst$mass <- matrix(0, W, V)
   cc_lst$phis <- matrix(0, W, VC2)
-  cc_lst$Time <- cc_lst$evidence <- cc_lst$complete_likelihood <- matrix(0, W, 1)
+  cc_lst$Time <- cc_lst$normalising_constant <- cc_lst$complete_likelihood <- matrix(0, W, 1)
 
   for (v in view_inds) {
     cc_lst$outliers[[v]] <- cc_lst$allocations[[v]] <- matrix(0, W, N)
@@ -120,7 +120,7 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
     .mcmc <- mcmc_lst[[w]]
 
     cc_lst$Time[w] <- .mcmc$Time
-    cc_lst$evidence[w] <- .mcmc$evidence[sample_used]
+    cc_lst$normalising_constant[w] <- .mcmc$normalising_constant[sample_used]
     cc_lst$complete_likelihood[w] <- .mcmc$complete_likelihood[sample_used]
     cc_lst$mass[w, ] <- .mcmc$mass[sample_used, ]
     cc_lst$phis[w, ] <- .mcmc$phis[sample_used, ]
@@ -143,6 +143,8 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
     }
   }
 
+  cc_lst$evidence <- cc_lst$normalising_constant
+
   cc_lst$cm <- list()
   for (v in view_inds) {
     if (is_semisupervised[v]) {
@@ -164,7 +166,7 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
     }
   }
   if (multiple_views) {
-    cc_lst$fusion_probabilities <- calcFusionProbabiliyAllViews(cc_lst, processed = TRUE)
+    cc_lst$fusion_probabilities <- calcFusionProbabilityAllViews(cc_lst, processed = TRUE)
   }
   cc_lst
 }

@@ -62,3 +62,17 @@ test_that("assessConvergence monitors label-switching-invariant quantities", {
   expect_true(all(is.finite(conv$rhat)))
   expect_output(print(conv), "convergence diagnostics")
 })
+
+test_that("the effective sample size agrees with the posterior package", {
+  skip_if_not_installed("posterior")
+  set.seed(1)
+  for (rho in c(0, 0.6, 0.9, -0.5)) {
+    x <- sapply(1:4, function(i) as.numeric(suppressWarnings(arima.sim(list(ar = rho), 800))))
+    mine <- rankNormalizedRhat(x)
+    suppressWarnings({
+      expect_equal(mine$ess_bulk, posterior::ess_bulk(x), tolerance = 1e-3)
+      expect_equal(mine$ess_tail, posterior::ess_tail(x), tolerance = 1e-3)
+      expect_equal(mine$rhat, posterior::rhat(x), tolerance = 1e-3)
+    })
+  }
+})

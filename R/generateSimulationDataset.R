@@ -1,4 +1,3 @@
-#!/usr/bin/env Rscript
 
 #' @title Generate simulation dataset
 #' @description Generates a dataset based upon a mixture of $K$ Gaussian

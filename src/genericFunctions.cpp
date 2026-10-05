@@ -6,55 +6,6 @@
 using namespace Rcpp ;
 using namespace arma ;
 
-//' title Propose new non-negative value
-//' description Propose new non-negative for sampling.
-//' param x Current value to be proposed
-//' param window The proposal window
-//' return new double
-double proposeNewNonNegativeValue(
-    double x, 
-    double window, 
-    bool use_log_norm,
-    double tolerance
-  ) {
-  bool value_below_tolerance = false;
-  double proposed_value = 0.0;
-  if(use_log_norm) {
-    proposed_value = std::exp(std::log(x) + randn() * window);
-  } else {
-    proposed_value = rGamma(x * window, window);
-  }
-  
-  // If the value is too small (normally close to 0 or negative somehow)
-  value_below_tolerance = (proposed_value < tolerance);
-  if(value_below_tolerance) {
-    proposed_value = proposeNewNonNegativeValue(x, window, use_log_norm, tolerance);
-  }
-  
-  return proposed_value;
-};
-
-//' title The Inverse Gamma Distribution
-//' description Random generation from the inverse Gamma distribution.
-//' param shape Shape parameter.
-//' param rate Rate parameter.
-//' return Sample from invGamma(shape, rate).
-double rInvGamma(double shape, double rate) {
-  double x = arma::randg( distr_param(shape, 1.0 / rate) );
-  return (1 / x);
-};
-
-//' title The Inverse Gamma Distribution
-//' description Random generation from the inverse Gamma distribution.
-//' param N Number of samples to draw.
-//' param shape Shape parameter.
-//' param rate Rate parameter.
-//' return Sample from invGamma(shape, rate).
-arma::vec rInvGamma(uword N, double shape, double rate) {
-  vec x = arma::randg(N, distr_param(shape, 1.0 / rate) );
-  return (1 / x);
-};
-
 //' title The Gamma Distribution
 //' description Random generation from the Gamma distribution.
 //' param shape Shape parameter.
@@ -75,37 +26,6 @@ double rGamma(double shape, double rate) {
 //' return N samples from Gamma(shape, rate).
 arma::vec rGamma(uword N, double shape, double rate) {
   return arma::randg(N, distr_param(shape, 1.0 / rate) );
-};
-
-
-//' title The Half-Cauchy Distribution
-//' description Random generation from the Half-Cauchy distribution.
-//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-//' param mu Location parameter.
-//' param scale Scale parameter.
-//' return Sample from HalfCauchy(mu, scale).
-double rHalfCauchy(double mu, double scale) {
-  double x = 0.0, y = 0.0;
-  x = randn();
-  while(x <= 0.0) {
-    x = randn();
-  }
-  y = rInvGamma(0.5, 0.5 * std::pow(scale, 2.0));
-  return mu + x * std::sqrt(y);
-};
-
-//' title The Half-Cauchy Distribution
-//' description Random generation from the Half-Cauchy distribution.
-//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-//' param N The number of samples to draw
-//' param mu Location parameter.
-//' param scale Scale parameter.
-//' return Sample from HalfCauchy(mu, scale).
-arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
-  vec x(N), y(N);
-  x = arma::abs(arma::randn(N));
-  y = rInvGamma(N, 0.5, 0.5 * std::pow(scale, 2.0));
-  return mu + x * arma::sqrt(y);
 };
 
 //' title The Beta Distribution
@@ -139,7 +59,6 @@ arma::vec rBeta(arma::uword n, double a, double b) {
   return(beta);
 };
 
-
 double logSumExp(const arma::vec& x) {
   const double m = x.max();
   if(!std::isfinite(m)) {
@@ -159,44 +78,6 @@ arma::uword sampleCategorical(const arma::vec& probs) {
   }
   return probs.n_elem - 1;
 }
-
-//' title Metropolis acceptance step
-//' description Given a probaility, randomly accepts by sampling from a uniform 
-//' distribution.
-//' param acceptance_prob Double between 0 and 1.
-//' return Boolean indicating acceptance.
-bool metropolisAcceptanceStep(double acceptance_prob) {
-  double u = arma::randu();
-  return (u < acceptance_prob);
-};
-
-//' title Squared exponential function
-//' description The squared exponential function as used in a covariance kernel.
-//' param amplitude The amplitude parameter (double)
-//' param length The length parameter (double)
-//' param i Time point (unsigned integer)
-//' param j Time point (unsigned integer)
-//' return Squared exponential metric of (i, j)
-double squaredExponentialFunction(double amplitude, double length, int i, int j) {
-  // if(i > j) {
-  //   return amplitude * std::exp(- std::pow(i - j, 2.0) / length);
-  // } 
-  return amplitude * std::exp(- std::pow((double) (j - i), 2.0) / (2.0 * length));
-};
-
-bool doubleApproxEqual(double x, double y, double precision) {
-  return std::abs(x - y) < precision;
-};
-
-
-// title Sample mean
-// description calculate the sample mean of a matrix X.
-// param X Matrix
-// return Vector of the column means of X.
-arma::vec sampleMean(arma::mat X) {
-  arma::mat mu_t = arma::mean(X);
-  return mu_t.row(0).t();
-};
 
 // Compute mean robustly with missing values
 arma::vec sampleMeanRobust(const arma::mat& X) {
@@ -345,11 +226,6 @@ arma::mat calcSampleCov(const arma::mat& data,
   }
   return sample_covariance;
 };
-
-arma::mat roundMatrix(arma::mat X, int n_places) {
-  double multiplier = std::pow(10, n_places);
-  return round(X * multiplier) / multiplier;
-}
 
 double logChoose(double n, double k) {
   if(k < 0.0 || k > n) {

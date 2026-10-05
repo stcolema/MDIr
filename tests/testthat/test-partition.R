@@ -117,7 +117,7 @@ test_that("the MVN complete-data likelihood matches an independent calculation",
 })
 
 test_that("the normalising constant recorded by the sampler tracks the current phis and weights", {
-  # With thin = 1, the evidence of a saved sample is Z at the start of the sweep
+  # With thin = 1, the normalising constant of a saved sample is Z at the start of the sweep
   # that follows the previous saved sample, so it must equal Z for the saved
   # weights and phis of that previous sample. This fails if Z (or the tables it
   # is built from) are not refreshed when the phis change.
@@ -139,9 +139,9 @@ test_that("the normalising constant recorded by the sampler tracks the current p
       for (l in seq_len(L)) w[, l] <- ch$weights[s, , l]
       w
     }
-    expect_equal(ch$evidence[1], mdir:::mdiNormalisingConstantCpp(w_at(1), K, phi_at(1)), tolerance = 1e-10)
+    expect_equal(ch$normalising_constant[1], mdir:::mdiNormalisingConstantCpp(w_at(1), K, phi_at(1)), tolerance = 1e-10)
     for (s in 2:26) {
-      expect_equal(ch$evidence[s], mdir:::mdiNormalisingConstantCpp(w_at(s - 1), K, phi_at(s - 1)),
+      expect_equal(ch$normalising_constant[s], mdir:::mdiNormalisingConstantCpp(w_at(s - 1), K, phi_at(s - 1)),
                    tolerance = 1e-10, info = paste("K =", paste(K, collapse = ","), "sample", s))
     }
   }

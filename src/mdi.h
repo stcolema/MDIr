@@ -49,7 +49,7 @@ public:
     Z = 0.0,
 
     // Z at the start of the latest sweep (before any phi is updated), the value
-    // recorded as the evidence
+    // recorded in the trace of the normalising constant
     Z_start = 0.0,
 
     // Strategic latent variable
@@ -78,9 +78,7 @@ public:
   arma::uvec
     K,                  // Number of clusters in each dataset
     mixture_types,      // mixture types used
-    outlier_types,      // outliers types used
-    K_unfixed,          // Number of components not fixed
-    K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
+    outlier_types;      // outliers types used
 
   // For each view, the components that hold no item with an observed label (any
   // index, not necessarily the last ones). Only these are exchanged by the
@@ -160,8 +158,7 @@ public:
   void updateNormalisingConstant();
   void sampleStrategicLatentVariable();
 
-  // Rate (without the prior rate) of the conditional of w(k, l), and of phi_lm
-  double calcWeightRate(uword lstar, uword kstar) const;
+  // Rate (without the prior rate) of the conditional of phi_lm
   double calcPhiRate(uword l, uword m) const;
 
   void updateWeights();

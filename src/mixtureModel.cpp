@@ -80,11 +80,6 @@ void mixtureModel::sampleParameters() {
   density_ptr->sampleParameters(members, non_outliers);
 };
 
-// BIC currently ignores outlier parameters
-void mixtureModel::calcBIC() {
-  BIC = 2 * complete_likelihood - (n_param + 1) * K_occ * std::log((double) N);
-}
-
 void mixtureModel::updateOutlierWeights() {
   non_outliers = 1 - outliers;
 

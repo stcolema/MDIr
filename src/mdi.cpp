@@ -102,8 +102,6 @@ mdi::mdi(
   // The components holding an observed label are fixed; the others are free. The
   // observed labels never change, so this is computed once. Nothing is assumed about
   // which indices the observed classes occupy.
-  K_fixed.set_size(L);
-  K_unfixed.set_size(L);
   free_components.assign(L, arma::uvec());
   for(uword l = 0; l < L; l++){
     arma::uvec has_observed(K(l), arma::fill::zeros);
@@ -116,8 +114,6 @@ mdi::mdi(
       }
     }
     free_components[l] = arma::find(has_observed == 0);
-    K_unfixed(l) = free_components[l].n_elem;
-    K_fixed(l) = K(l) - K_unfixed(l);
   }
 
   complete_likelihood_vec = zeros< vec >(L);
@@ -171,10 +167,6 @@ void mdi::initialiseMixtures() {
 };
 
 // === Normalising constant, weights and phis ==================================
-
-double mdi::calcWeightRate(uword lstar, uword kstar) const {
-  return v * mdiWeightRate(w, K, phiMatrix(), lstar, kstar);
-}
 
 double mdi::calcPhiRate(uword l, uword m) const {
   return v * mdiPhiRate(w, K, phiMatrix(), l, m);
@@ -486,7 +478,7 @@ void mdi::initialiseDatasetL(uword l) {
   labels.col(l) = mixtures[l]->labels;
   non_outliers.col(l) = mixtures[l]->non_outliers;
   outliers.col(l) = mixtures[l]->outliers;
-  // Record the likelihood of the initial state (it was left at zero)
+  // Likelihoods of the initial state
   complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
   observed_likelihood_vec(l) = mixtures[l]->observed_likelihood;
   complete_likelihood = accu(complete_likelihood_vec);
