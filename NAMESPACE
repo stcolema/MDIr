@@ -77,6 +77,10 @@ importFrom(salso, salso)
 useDynLib(mdir)
 
 ## S3 methods
+S3method(plot, mdir_convergence)
+S3method(plot, mdir_fit)
+S3method(plot, mdir_fit_list)
+S3method(plot, mdir_smc)
 S3method(print, mdir_convergence)
 S3method(format, mdir_convergence)
 S3method(print, mdir_fit)

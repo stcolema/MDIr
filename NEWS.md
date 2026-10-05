@@ -1,5 +1,12 @@
 # mdir (development version)
 
+## New: plot methods
+
+* `plot()` for fits (`mdir_fit`, `mdir_fit_list`): trace plots (default), densities by chain, Rhat and effective sample
+  size, the posterior similarity matrix of a view and the fusion probabilities of view pairs, as ggplot2 objects.
+  `plot()` of `assessConvergence()` output and of `smcMDI()` fits (annealing path) are also available. Before, `plot()`
+  of a fit failed with an unrelated error from the default method.
+
 ## New: split-merge move (`split_merge`)
 
 * `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `split_merge`: the number of attempts
