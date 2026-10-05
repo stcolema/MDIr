@@ -833,7 +833,8 @@ smcSE <- function(runs, fun, view = NULL, discrete = NULL) {
 #' differently. Agreement is necessary and not sufficient: runs can agree and
 #' all miss the same mode.
 #' @param runs A list of fits (\code{mdir_fit}, \code{mdir_smc}), or the result
-#' of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}.
+#' of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}. Lists of chains
+#' (from \code{\link{runMCMCChains}} or \code{\link{fitMDI}}) among the runs contribute each of their chains.
 #' @param view The view.
 #' @param burn Burn in (iterations) removed from \code{mdir_fit} runs; the first
 #' saved draw is always dropped.
@@ -847,6 +848,12 @@ smcSE <- function(runs, fun, view = NULL, discrete = NULL) {
 #' @export
 compareRuns <- function(runs, view = 1, burn = 0, tolerance = 0.1) {
   fits <- if (inherits(runs, "mdir_smc_runs")) runs$runs else unclass(runs)
+  # a list of chains (mdir_fit_list) among the runs contributes each of its chains
+  if (is.list(fits)) {
+    fits <- unlist(lapply(fits, function(f) {
+      if (inherits(f, "mdir_fit_list")) unclass(f)[seq_along(f)] else list(f)
+    }), recursive = FALSE)
+  }
   if (!is.list(fits) || length(fits) < 2) {
     stop("`runs` must hold at least two fits.", call. = FALSE)
   }

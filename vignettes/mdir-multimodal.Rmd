@@ -1,0 +1,634 @@
+---
+title: "Multimodal clustering with MDI: an end-to-end workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multimodal clustering with MDI: an end-to-end workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+options(mdir.quiet = TRUE)
+have_posterior <- requireNamespace("posterior", quietly = TRUE)
+have_loo <- requireNamespace("loo", quietly = TRUE)
+```
+
+This vignette follows one analysis from question to report, using the steps of a
+Bayesian workflow (Gelman et al., 2020): say what the model assumes, check the
+priors against what you know, fit with several chains, diagnose, check the fit,
+test sensitivity, and only then interpret. It is about what is specific to
+multiple dataset integration (MDI; Kirk et al., 2012), and to this implementation.
+The data are simulated so that the answer is known, which lets the last sections
+check whether the method finds what is there. The chains are shorter than you
+would use for a real analysis.
+
+```{r libs}
+library(mdir)
+set.seed(2026)
+```
+
+## What MDI does, and what it does not
+
+MDI clusters several datasets (modalities) of the *same items*. It does **not**
+estimate one global clustering. Each modality has its own mixture model, and
+therefore its own partition of the items. The partitions are coupled: the prior
+probability that item $n$ takes components $(c_{n1}, \dots, c_{nL})$ in the $L$
+views is proportional to
+
+$$\prod_{l} w_{l c_{nl}} \prod_{l < m} \bigl(1 + \phi_{lm}\,\mathbf 1[c_{nl} = c_{nm}]\bigr).$$
+
+Here $w_{lk}$ are the component weights of view $l$, and $\phi_{lm} \ge 0$ measures
+how much views $l$ and $m$ share structure: an item that takes the same component
+index in both views is $1 + \phi_{lm}$ times more probable than one that does not,
+before the data are seen. With $\phi_{lm} = 0$ the views are independent mixtures.
+Three consequences shape every step below.
+
+1. **The questions MDI answers are about views and items, not about one set of
+   clusters.** What is the partition in each view? How strongly are views
+   associated ($\phi$)? Which individual items are placed consistently in two
+   views (their *fusion probability*), and which are not? Borrowing of strength
+   works through $\phi$: an item that is ambiguous in one view is pulled towards
+   the component that its neighbours in the other view take.
+2. **Association is partial and pairwise.** Views 1 and 2 can share structure
+   while view 3 is unrelated, and a single item can follow the shared structure
+   in one view and not in another. A model that forces one partition would
+   mis-describe this; MDI lets the data say how much is shared.
+3. **Component indices carry meaning across views.** The coupling compares the
+   index $c_{nl}$ with $c_{nm}$, so "cluster 2 of view 1" and "cluster 2 of view
+   2" are the same cluster only to the extent that the sampler has aligned them.
+   The sampler has a move that exchanges two components within a view to improve
+   alignment, and the fusion probabilities depend on it. Anything that compares
+   indices across views (fusion probabilities, `agreement[l,m]`) inherits this;
+   quantities such as `phi`, the number of occupied components and the
+   adjusted Rand index between views' partitions (below) do not.
+
+Two further properties of the model matter for how you read the output. The number
+of components $K$ is an *upper bound*: with a sparse prior on the weights the
+posterior empties surplus components (Rousseau and Mengersen, 2011), so choose $K$
+generously and look at the occupied components, not at $K$. And because a mixture
+posterior is invariant to relabelling, parameters of individual components have no
+fixed meaning from one draw to the next. Everything that is monitored here is
+therefore either label-invariant or explicitly aligned.
+
+## Data and the question
+
+We simulate $N = 120$ items measured in three modalities.
+
+* View 1 (continuous, 2 features) has three clusters.
+* View 2 (continuous, 3 features) has the same three clusters for most items. For
+  18 items, chosen at random, the cluster is re-drawn at random: these items do
+  **not** follow the shared structure.
+* View 3 (four binary features) has two clusters that are unrelated to the other
+  views.
+
+The questions are: do views 1 and 2 share structure and view 3 not? Which items in
+views 1 and 2 break the pattern? What are the partitions?
+
+```{r data}
+N <- 120
+z1 <- rep(1:3, each = N / 3)
+z2 <- z1
+broken <- sort(sample(N, 18))
+z2[broken] <- sample(1:3, 18, replace = TRUE)
+z3 <- sample(1:2, N, replace = TRUE)
+
+mu1 <- rbind(c(-3, 0), c(0, 3), c(3, 0))
+mu2 <- rbind(c(-2, -2, 0), c(2, -2, 2), c(0, 3, -2))
+p3 <- rbind(c(0.8, 0.2, 0.2, 0.7), c(0.2, 0.8, 0.7, 0.2))
+
+X <- list(
+  mu1[z1, ] + matrix(rnorm(2 * N), N, 2),
+  mu2[z2, ] + matrix(rnorm(3 * N), N, 3),
+  matrix(rbinom(4 * N, 1, p3[z3, ]), N, 4)
+)
+for (v in 1:3) rownames(X[[v]]) <- sprintf("item%03d", 1:N)
+types <- c("MVN", "G", "C")   # full covariance, diagonal covariance, categorical
+```
+
+Items must be in the same order in every modality (this is checked through the
+row names). Missing entries (`NA`) are allowed and are imputed inside the sampler;
+an item missing from a whole modality contributes only through the others.
+Categorical data are coded `0, 1, 2, ...`.
+
+A fast look at what the views have in common, before any modelling, is the cross
+table of two views' simple clusterings. The sampler will do this properly, but it
+guards against a data-handling mistake (rows in different orders, for instance)
+that no later diagnostic would catch.
+
+```{r look}
+km <- lapply(1:2, function(v) stats::kmeans(X[[v]], 3, nstart = 10)$cluster)
+table(view1 = km[[1]], view2 = km[[2]])
+```
+
+## Priors, and what they imply
+
+The priors specific to MDI are on the concentration of each view's weights
+(`mass`), and on the association parameters `phi`. Printing the defaults shows
+them:
+
+```{r prior}
+mdiPrior()
+```
+
+The component densities have conjugate priors whose location and scale are set
+from the data (see `?mdiPrior`), with the variance scale pooled across
+components (`?densityPrior`). That uses the data twice, weakly; it is a deliberate
+trade-off, standard for mixtures, and worth stating in a report.
+
+**The sparsity check.** Fitting with `K = 6` components per view and the default
+prior on `mass` prints a message for the views where the prior on the weights is
+on the side of the Rousseau-Mengersen threshold at which superfluous components
+*duplicate* occupied ones instead of emptying. The result is asymptotic and does
+not cover a random concentration, so read it as guidance on where the prior sits.
+
+```{r sparsity-default}
+K <- c(6, 6, 6)
+old <- options(mdir.quiet = FALSE)          # the messages are silenced in this vignette
+invisible(callMDI(X, R = 10, thin = 5, types = types, K = K))
+options(old)
+```
+
+Lowering the prior on `mass` makes the weights sparse and removes the message; the
+default on `phi` is kept.
+
+```{r sparsity}
+prior <- mdiPrior(mass_shape = 2, mass_rate = 0.5)
+old <- options(mdir.quiet = FALSE)
+invisible(callMDI(X, R = 10, thin = 5, types = types, K = K, prior = prior))
+options(old)
+prior
+```
+
+**Prior predictive check.** The prior on `phi` is hard to judge directly. What
+matters is what it implies about the *data*, so simulate from the prior and look.
+The implied agreement between two views' partitions is a label-invariant summary
+we can compute for every prior draw with the adjusted Rand index (ARI), defined
+here once and used throughout.
+
+```{r ari}
+ari <- function(a, b) {
+  t <- table(a, b)
+  n <- sum(t)
+  s <- function(x) sum(choose(x, 2))
+  expected <- s(rowSums(t)) * s(colSums(t)) / choose(n, 2)
+  maximum <- 0.5 * (s(rowSums(t)) + s(colSums(t)))
+  if (maximum == expected) return(NA_real_)
+  (s(t) - expected) / (maximum - expected)
+}
+```
+
+```{r prior-predictive}
+prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 200, prior = prior)
+prior_ari <- vapply(prior_sims$parameters, function(p) ari(p$labels[, 1], p$labels[, 2]),
+                    numeric(1))
+summary(prior_ari)
+hist(prior_ari, breaks = 20, main = "Prior: ARI between the partitions of views 1 and 2",
+     xlab = "Adjusted Rand index", col = "grey85", border = "white")
+```
+
+The prior spreads over weak and strong association rather than asserting either,
+which is what we want to say before seeing the data. If you expect little sharing
+(for instance in a screen across unrelated assays), lower the mean of the `phi`
+prior with `phi_shape` and `phi_rate`, and re-run this check. The same simulations
+give datasets to compare with yours:
+
+```{r prior-data-check}
+plotPredictiveCheck(X, prior_sims, view = 1, column = 1)
+```
+
+## Fitting
+
+Run several chains from dispersed starting points. Each chain starts from labels
+drawn from a stick-breaking prior, so the starts differ without any action from you.
+`fitMDI()` runs the chains and checks convergence before it returns. We start with
+plain chains, which are cheap, and four of them.
+
+```{r fit-plain}
+set.seed(105)
+fit_plain <- fitMDI(X, n_chains = 4, R = 6000, thin = 10, types = types, K = K,
+                    prior = prior, burn = 3000, verbose = FALSE)
+```
+
+## Convergence for a mixture model
+
+Mixture posteriors are multimodal in the labelling and often in the partition, so
+the usual rule of "look at Rhat" needs three adjustments.
+
+* **Monitor label-invariant quantities.** `fitMDI()` monitors log-likelihoods, the
+  concentrations, `phi`, the number of occupied components, the pooled
+  hyperparameters, and the agreement between views (which relies on the alignment
+  of components across views). Rhat of a component's mean would be meaningless
+  because components swap.
+* **Expect the concentration to mix slowest.** `mass` is informed only by how many
+  components are occupied, and it is a nuisance parameter. A low effective sample
+  size there does not hurt the questions asked, but say so. What matters is that
+  `phi` and the partitions are stable.
+* **Chains that agree prove little; chains that disagree prove a lot.** Chains that
+  start in different modes of the partition and stay there disagree, which Rhat
+  catches. Chains that all start in the same basin and stay agree, and nothing in the
+  chains can catch that.
+
+```{r convergence}
+plot(fit_plain, type = "trace", burn = 3000)
+```
+
+In the trace plots look at the log-likelihoods and the occupied components, which
+are the quantities that show a chain sitting in a different mode.
+
+```{r convergence-rhat}
+plot(fit_plain, type = "rhat")
+```
+
+The summary by chain shows where a disagreement comes from. If one chain has a
+higher log-likelihood *and* more occupied components than the others, it is sitting in a different
+mode of the partition.
+
+```{r per-chain}
+per_chain <- function(f, burn) {
+  t(vapply(unclass(f)[seq_along(f)], function(ch) {
+    keep <- seq(floor(burn / ch$thin) + 2, nrow(ch$mass))
+    c(joint_loglik = mean(ch$joint_likelihood[keep]),
+      occupied_1 = mean(apply(ch$allocations[keep, , 1], 1, function(z) length(unique(z)))),
+      occupied_2 = mean(apply(ch$allocations[keep, , 2], 1, function(z) length(unique(z)))),
+      phi_12 = mean(ch$phis[keep, 1]))
+  }, numeric(4)))
+}
+round(per_chain(fit_plain, 3000), 2)
+```
+
+This is not a quirk of the example. In MDI, the coupling makes some modes sticky:
+once a cluster is split into two in *both* of two strongly associated views (or an
+item forms its own small cluster in both), a move that merges the clusters in one
+view alone makes the allocations disagree, which the coupling penalises heavily, so
+the chain stays where it is. Such modes have higher likelihood and more
+components, and they are not necessarily where the posterior mass is. When we
+repeated this analysis with other random seeds, plain chains of this length
+disagreed in a sizeable share of the runs. Pooling chains in which one is stuck would
+give the wrong answer, and dropping the stuck chain would be a choice made after seeing
+the results. The options in increasing order of cost are: more iterations;
+`split_merge = 2`, which re-allocates items between two components of a view; and
+parallel tempering, `betas = ptLadder(4)`, which lets a chain at a high temperature
+cross barriers that the posterior chain cannot. For a posterior with several
+well-separated modes, `smcMDI()` and `smcReplicates()` give weighted ensembles that do
+not depend on the chains mixing, at the cost of weights that can degenerate. None
+of these is guaranteed to mix; they reduce the chance that chains stay apart, and the
+diagnostics are how you find out whether they did.
+
+We rerun with tempering and split-merge moves, four chains again. This is about ten
+times as costly per iteration.
+
+```{r fit}
+set.seed(205)
+burn <- 1500
+fit <- fitMDI(X, n_chains = 4, R = 3000, thin = 10, types = types, K = K, prior = prior,
+              betas = ptLadder(4, 0.1), split_merge = 2, burn = burn,
+              save_pointwise = TRUE, verbose = FALSE)
+fit
+round(per_chain(fit, burn), 2)
+```
+
+```{r convergence-final}
+plot(fit, type = "trace", burn = burn)
+```
+
+Now the four chains sit together. The effective sample sizes of the quantities of
+interest are the thing to read in the table. `as_draws()` puts the chains in the format of the `posterior` package,
+so its whole toolkit (and `bayesplot`, which takes the same objects) applies:
+
+```{r draws, eval = have_posterior}
+draws <- posterior::as_draws(fit, burn = burn)
+posterior::summarise_draws(draws)
+```
+
+For the quantities we interpret (the log-likelihoods, `phi` and the occupied
+components) Rhat is close to one and the bulk effective sample sizes are in the
+hundreds. The concentrations `mass`, which we do not interpret, mix slowest and do
+not meet the criteria, as expected. Hundreds of effective draws are enough for medians
+and intervals, and thin for tail probabilities. For a report you would run longer,
+until the criteria are met for everything you interpret, and say which quantities you
+did not require to meet them and why. The tempered run is not guaranteed to succeed:
+in repeats of this analysis with other seeds it met the criteria for these quantities
+in most runs and not all, so the diagnostics must be read every time.
+
+## Posterior summaries
+
+### How much do the views share?
+
+`phi[l,m]` is the log-scale-free multiplier on the odds of agreeing, so it is not
+easy to read on its own. The posterior of `phi` and the ARI between the views'
+partitions in each draw are more directly interpretable. The ARI is computed per
+draw, from the sampled allocations, so it is unaffected by labelling.
+
+```{r phi, eval = have_posterior}
+posterior::summarise_draws(
+  posterior::subset_draws(draws, variable = "phi"),
+  "median", ~posterior::quantile2(.x, c(0.05, 0.95))
+)
+```
+
+```{r ari-draws}
+chains <- unclass(fit)[seq_along(fit)]
+keep <- seq(floor(burn / 10) + 2, 301)        # saved samples after the burn in
+pair_ari <- function(a, b) {
+  unlist(lapply(chains, function(ch) {
+    vapply(keep, function(s) ari(ch$allocations[s, , a], ch$allocations[s, , b]), numeric(1))
+  }))
+}
+ari_post <- sapply(list("1-2" = c(1, 2), "1-3" = c(1, 3), "2-3" = c(2, 3)),
+                   function(p) pair_ari(p[1], p[2]))
+round(apply(ari_post, 2, quantile, c(0.05, 0.5, 0.95)), 2)
+```
+
+For comparison, the ARI between the true partitions:
+
+```{r ari-truth}
+c(true_12 = ari(z1, z2), true_13 = ari(z1, z3), true_23 = ari(z2, z3))
+```
+
+Views 1 and 2 are strongly associated, and the posterior ARI is close to the true
+value; views 1 and 3 and views 2 and 3 are associated little or not at all. Note
+where the prior matters: for the unrelated pairs `phi` is small but imprecise, and
+it is not pushed to zero, because the prior on `phi` has little mass near zero. A
+small `phi` is therefore not by itself evidence of independence, and its value there
+depends on the prior. The ARI between partitions, which describes the allocation,
+is the more informative summary. The sensitivity section returns to this.
+
+### Which items fuse?
+
+The fusion probability of an item for views $l$ and $m$ is the posterior
+probability that it takes the same component in both. It is the item-level
+output that a single global clustering could not give.
+
+```{r fusion}
+plot(fit, type = "fusion", burn = burn)
+```
+
+The sorted curve for views 1 and 2 has a plateau near one (items that follow the
+shared structure) and a tail of items that do not. Here the truth is known, so we
+can check that the tail is the set of items we broke. In real data you would look
+at those items, in the measurements, for a reason.
+
+```{r fusion-items}
+pooled <- predictFromMultipleChains(fit, burn = burn)
+fusion12 <- pooled$fusion_probabilities$fused_items_12
+low <- fusion12 < 0.5
+table(flagged_low_fusion = low, truly_broken = seq_len(N) %in% broken)
+```
+
+Some of the 18 re-drawn items kept their cluster by chance (a re-draw chooses the
+same cluster a third of the time), and no method can flag these:
+
+```{r fusion-chance}
+sum(z2[broken] == z1[broken])     # re-drawn items that happen to agree
+```
+
+The flagged items are the broken ones that really differ, and the list contains no
+other item.
+The fusion probability for view pairs that share little structure is low across the
+board, and that is information too:
+
+```{r fusion-others}
+round(sapply(pooled$fusion_probabilities, mean), 2)
+```
+
+### The partitions
+
+A point estimate of each view's partition is the one that minimises the posterior
+expected loss (variation of information by default, through `salso`). The
+posterior similarity matrix, whose entries are the probability that two items share
+a cluster, shows how sure that partition is. Report both: a partition without its
+uncertainty overstates what the data say.
+
+```{r partitions}
+sapply(pooled$pred, function(p) length(unique(p)))
+c(ARI_view1 = ari(pooled$pred[[1]], z1), ARI_view2 = ari(pooled$pred[[2]], z2),
+  ARI_view3 = ari(pooled$pred[[3]], z3))
+```
+
+The number of *occupied components* in the draws is not the number of clusters.
+A component holding a few items counts as occupied, so the draws can occupy more
+components than the point estimate has clusters, particularly in a weakly
+informative view such as view 3. Report the point estimate's clusters and the
+posterior of the occupied count together.
+
+```{r psm}
+plot(fit, type = "psm", view = 1, burn = burn)
+plot(fit, type = "psm", view = 3, burn = burn)
+```
+
+View 1 shows three blocks with little uncertainty. View 3 (four binary features) is
+much less certain, and a weak view is exactly where the coupling helps most when it
+is associated with a strong one, and where it cannot help when it is not. Here
+it is not associated, so view 3 has to stand on its own data.
+
+## Does the fitted model reproduce the data?
+
+Posterior predictive checks compare the data with replicates drawn from the fitted
+model. They find gross misfit, not small misfit: the data are used twice, so a
+value near 0 or 1 is evidence of a problem and a value in the middle is not
+evidence of a good model. Pick statistics that target what the model might get
+wrong. Here, the spread of each continuous view and the proportion of ones in
+each binary feature.
+
+```{r ppc}
+post_sims <- simulatePosteriorPredictive(fit, X, n_draws = 100, burn = burn)
+sd_stat <- function(m) stats::sd(m[, 1], na.rm = TRUE)
+c(view1_sd_p = predictiveCheck(X, post_sims, sd_stat, view = 1)$p_value,
+  view2_sd_p = predictiveCheck(X, post_sims, sd_stat, view = 2)$p_value,
+  view3_mean_p = predictiveCheck(X, post_sims, function(m) mean(m[, 1]), view = 3)$p_value)
+plotPredictiveCheck(X, post_sims, view = 1, column = 1)
+```
+
+Each replicate uses the sampled allocations of the draw it came from, so these
+checks test the within-cluster densities given the partition. They do not test
+whether the partition itself, or the association between views, is right; the
+agreement between independent chains and the sensitivity analysis below are the
+checks for those.
+
+**Prior-data conflict and the model-based comparison.** `pointwiseLogLik()` gives
+the log-likelihood of each item with its assignments in every view summed out, as
+the matrix that `loo` expects. That is the quantity to use to compare models that
+differ in `K`, in the prior or in the component density, by approximate
+leave-one-out cross-validation. For mixtures, check the Pareto $\hat k$ values: a
+high value for an item means that the draws are very sensitive to it, and the
+comparison for that item is not trustworthy.
+
+```{r loo, eval = have_loo}
+ll <- pointwiseLogLik(fit, burn = burn)
+r_eff <- loo::relative_eff(exp(ll), chain_id = attr(ll, "chain_id"))
+loo_default <- loo::loo(ll, r_eff = r_eff)
+loo_default
+```
+
+## Sensitivity analysis
+
+A result you would report should survive reasonable changes in the things you
+chose. Two are worth testing here, because both matter more for MDI than for a
+single mixture.
+
+1. **The prior on `phi`.** The default has mean 10 and little mass near zero: it
+   *expects* association. A weaker prior asks whether the data, not the prior,
+   produce the association between views 1 and 2, and whether the apparent
+   association of the unrelated pairs is the prior's doing.
+2. **The upper bound `K`.** If the posterior is sensitive to `K`, the data are
+   not determining the number of clusters and the prior is.
+
+```{r sensitivity}
+sens <- function(prior, K, seed) {
+  set.seed(seed)
+  fitMDI(X, n_chains = 2, R = 2000, thin = 10, types = types, K = K, prior = prior,
+         betas = ptLadder(3, 0.25), split_merge = 2, burn = 1000, save_pointwise = TRUE,
+         verbose = FALSE)
+}
+fit_weak <- sens(mdiPrior(mass_shape = 2, mass_rate = 0.5, phi_shape = 1, phi_rate = 0.5),
+                 K, seed = 11)
+fit_bigK <- sens(prior, c(10, 10, 10), seed = 12)
+```
+
+```{r sensitivity-compare, eval = have_posterior}
+phi_summary <- function(f, burn) {
+  d <- posterior::as_draws(f, burn = burn)
+  s <- posterior::summarise_draws(posterior::subset_draws(d, variable = "phi"),
+                                  "median", ~posterior::quantile2(.x, c(0.05, 0.95)))
+  s$variable <- paste(s$variable)
+  s
+}
+rbind(cbind(model = "default phi prior", phi_summary(fit, burn)),
+      cbind(model = "weak phi prior", phi_summary(fit_weak, 1000)),
+      cbind(model = "K = 10", phi_summary(fit_bigK, 1000)))
+```
+
+(The two sensitivity fits use two shorter chains each.) The association between views 1 and 2 stays large under all three, so that
+conclusion is driven by the data. The `phi` of the unrelated pairs moves with the
+prior, which is the sign that it is prior-dominated, as expected when two views
+carry no shared signal: look at the partition-level summaries (the ARI between
+views, the fusion probabilities), which stay the same.
+
+```{r sensitivity-partitions}
+pp_weak <- predictFromMultipleChains(fit_weak, burn = 1000)
+pp_bigK <- predictFromMultipleChains(fit_bigK, burn = 1000)
+data.frame(
+  model = c("default phi prior, K = 6", "weak phi prior", "K = 10"),
+  ARI_view1 = c(ari(pooled$pred[[1]], z1), ari(pp_weak$pred[[1]], z1), ari(pp_bigK$pred[[1]], z1)),
+  ARI_view2 = c(ari(pooled$pred[[2]], z2), ari(pp_weak$pred[[2]], z2), ari(pp_bigK$pred[[2]], z2)),
+  ARI_view3 = c(ari(pooled$pred[[3]], z3), ari(pp_weak$pred[[3]], z3), ari(pp_bigK$pred[[3]], z3)),
+  mean_fusion_12 = c(mean(pooled$fusion_probabilities[[1]]), mean(pp_weak$fusion_probabilities[[1]]),
+                     mean(pp_bigK$fusion_probabilities[[1]]))
+)
+```
+
+```{r sensitivity-loo, eval = have_loo}
+ll_weak <- pointwiseLogLik(fit_weak, burn = 1000)
+ll_bigK <- pointwiseLogLik(fit_bigK, burn = 1000)
+loo_of <- function(ll) loo::loo(ll, r_eff = loo::relative_eff(exp(ll), chain_id = attr(ll, "chain_id")))
+loo::loo_compare(list(default = loo_default, weak_phi = loo_of(ll_weak), K10 = loo_of(ll_bigK)))
+```
+
+Differences in expected log predictive density of less than about two standard
+errors mean the data do not clearly separate the models, and any of them can be
+reported. A real
+analysis would also vary the density of each view (`"G"` against `"MVN"`) and,
+where outliers are expected, add the outlier component (`"TAGM"`).
+
+## Agreement across independent runs
+
+Convergence diagnostics test one kind of failure. The remaining one is that every
+chain sits in the same wrong basin. Two checks are cheap. First, compare the
+co-clustering probabilities of runs that differ in their sampler settings, here the
+plain chains against the tempered chains with split-merge moves. All eight chains are
+compared, with the same burn in.
+
+```{r compare-runs}
+compareRuns(list(fit_plain, fit), view = 1, burn = 1500)
+```
+
+Read the mean between-run standard deviation, and check that the pairs whose
+probabilities differ by more than the tolerance are the ambiguous ones (items
+between clusters), where a few hundred draws per chain leave visible Monte Carlo
+variation. The plain chains include the one that sat in a different mode, which is
+the kind of difference this comparison is meant to show. A systematic difference, or
+one among confidently clustered items, is a warning. Second, for a result that matters,
+repeat with `smcMDI()` or `smcReplicates()`, which start from the prior, not from
+the chains' initial labels, and see whether they agree.
+
+## Prediction and semi-supervised use
+
+A fitted model gives the predictive density of new items, and their probability of
+co-clustering with each fitted item, summing over the sampled weights, `phi` and
+component parameters. A new item may be missing entries, or a whole view.
+
+```{r predict}
+# One new item, given as one row per view: it matches cluster 1 in view 1, is
+# missing from view 2, and is partly informative in view 3
+new_items <- list(
+  matrix(c(-3, 0), 1),
+  matrix(c(NA, NA, NA), 1),
+  matrix(c(1, 1, 0, 0), 1)
+)
+pred <- predictMDI(fit, X, new_items, burn = burn, coclustering = TRUE)
+round(pred$log_predictive, 1)
+round(sort(pred$coclustering[[1]][1, ], decreasing = TRUE)[1:5], 2)
+```
+
+The second line shows the five fitted items most likely to share a cluster with the
+new item in view 1 and the probabilities. They should be items of the cluster whose
+mean the new item matches. If some of the items have known classes, they can be
+held fixed and the model then gives class probabilities for the others. The
+classes of the fixed items define the first components of that view, in sorted
+order, and the labels of the other views are not constrained.
+
+```{r semisupervised}
+known <- sort(sample(N, 30))
+fixed <- matrix(0, N, 3)
+fixed[known, 1] <- 1
+start <- matrix(1, N, 3)
+start[, 1] <- z1                      # only the rows with fixed = 1 are used
+ss <- fitMDI(X, n_chains = 2, R = 3000, thin = 10, types = types, K = K, prior = prior,
+             initial_labels = start, fixed = fixed, burn = 1500, verbose = FALSE)
+ss_pred <- predictFromMultipleChains(ss, burn = 1500)
+held_out <- setdiff(seq_len(N), known)
+mean(ss_pred$pred[[1]][held_out] == z1[held_out])    # accuracy on the held-out items
+```
+
+The class probabilities are in `ss_pred$allocation_probability[[1]]` (items by
+components). Check them in the same way as the clusters: how well calibrated are
+the high-probability predictions on items whose class you hold out?
+
+## What to report
+
+* The data, the density of each view and the coding of missing values.
+* The priors, with the prior predictive check, and the settings: chains,
+  iterations, thinning, burn in, `K` and any extra moves.
+* The convergence summary of the label-invariant quantities, and which ones mix
+  slowly (the concentrations) and why that does not matter for the questions.
+* The partitions of each view with their uncertainty (posterior similarity), the
+  posterior of the association between views (`phi` and the ARI between
+  partitions), and the item-level fusion probabilities. State that fusion
+  probabilities compare component indices across views.
+* The posterior predictive checks and what they cannot show, and the sensitivity of
+  the conclusions to the prior on `phi` and to `K`.
+* What you did not check: the possibility that all chains share a wrong mode, and
+  the adequacy of the component densities beyond the statistics tested.
+
+## References
+
+Gelman, A., Vehtari, A., Simpson, D., Margossian, C. C., Carpenter, B., Yao, Y.,
+Kennedy, L., Gabry, J., Burkner, P.-C. and Modrak, M. (2020). Bayesian workflow.
+arXiv:2011.01808.
+
+Kirk, P., Griffin, J. E., Savage, R. S., Ghahramani, Z. and Wild, D. L. (2012).
+Bayesian correlated clustering to integrate multiple datasets. *Bioinformatics*,
+28(24), 3290-3297.
+
+Rousseau, J. and Mengersen, K. (2011). Asymptotic behaviour of the posterior
+distribution in overfitted mixture models. *Journal of the Royal Statistical
+Society B*, 73(5), 689-710.
+
+Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and Burkner, P.-C. (2021).
+Rank-normalization, folding, and localization: an improved Rhat for assessing
+convergence of MCMC. *Bayesian Analysis*, 16(2), 667-718.
+
+Vehtari, A., Gelman, A. and Gabry, J. (2017). Practical Bayesian model evaluation
+using leave-one-out cross-validation and WAIC. *Statistics and Computing*, 27,
+1413-1432.

@@ -1,5 +1,12 @@
 # mdir (development version)
 
+## New: vignette
+
+* `vignette("mdir-multimodal")`: an end-to-end workflow for multimodal clustering with MDI on simulated data with partial
+  agreement between views: prior and prior predictive checks, several chains, convergence for a mixture, fusion
+  probabilities, posterior predictive checks, sensitivity to the `phi` prior and `K`, prediction and
+  semi-supervised use.
+
 ## New: draws formats
 
 * `posterior::as_draws()` (and `as_draws_array()`, `_df()`, `_matrix()`, `_list()`, `_rvars()`) methods for `callMDI()`,

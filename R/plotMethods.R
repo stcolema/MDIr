@@ -8,7 +8,7 @@
   }
   for (v in seq_len(x$V)) {
     cols[[sprintf("mass[%d]", v)]] <- x$mass[, v]
-    cols[[sprintf("occupied components[%d]", v)]] <- .mdirOccupied(x, v, seq_len(n))
+    cols[[sprintf("occupied[%d]", v)]] <- .mdirOccupied(x, v, seq_len(n))
   }
   if (x$V > 1 && !is.null(x$phis)) {
     pairs <- utils::combn(x$V, 2)
