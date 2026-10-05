@@ -94,6 +94,25 @@ plot(chains, burn = 750)
 plot(chains, type = "rhat", burn = 750)
 ```
 
+## Posterior summaries and the draws format
+
+`as_draws()` converts the chains to the format of the \pkg{posterior} package,
+so the Stan workflow applies: `summarise_draws()` for means, quantiles, Rhat and
+effective sample sizes, `subset_draws()`, and \pkg{bayesplot} functions such as
+`mcmc_trace()` and `mcmc_pairs()`. A mixture has no parameters that mean the same
+thing in every draw, so the variables are the quantities that do not depend on the
+labelling: log-likelihoods, the concentrations, `phi`, the number of occupied
+components and the pooled hyperparameters. `weights = TRUE` adds the sorted
+component weights and `allocations = TRUE` the item allocations.
+
+```{r draws, eval = requireNamespace("posterior", quietly = TRUE)}
+draws <- posterior::as_draws(chains, burn = 750)
+posterior::summarise_draws(draws)
+```
+
+For leave-one-out cross-validation or WAIC, `pointwiseLogLik()` gives the
+per-item log-likelihoods that \pkg{loo} takes.
+
 ## Posterior predictive check
 
 ```{r posterior-predictive}

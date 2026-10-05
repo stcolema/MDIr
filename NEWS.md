@@ -1,5 +1,13 @@
 # mdir (development version)
 
+## New: draws formats
+
+* `posterior::as_draws()` (and `as_draws_array()`, `_df()`, `_matrix()`, `_list()`, `_rvars()`) methods for `callMDI()`,
+  `runMCMCChains()`/`fitMDI()` output and, with the particle weights attached, for `smcMDI()` ensembles. The variables
+  are quantities that do not depend on the cluster labelling (log-likelihoods, `mass`, `phi`, occupied components,
+  pooled hyperparameters); sorted weights and allocations are optional. This makes `posterior::summarise_draws()`,
+  `subset_draws()`, `resample_draws()` and `bayesplot` available.
+
 ## New: plot methods
 
 * `plot()` for fits (`mdir_fit`, `mdir_fit_list`): trace plots (default), densities by chain, Rhat and effective sample
