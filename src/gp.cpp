@@ -86,11 +86,15 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prio
   noise_acceptance_count.zeros(K);
   length_acceptance_count.zeros(K);
   amplitude_acceptance_count.zeros(K);
+  noise_attempt_count.zeros(K);
+  length_attempt_count.zeros(K);
+  amplitude_attempt_count.zeros(K);
   
   n_param = P + 3;
   
   hypers.zeros(3 * K);
   acceptance_count.zeros(3 * K);
+  acceptance_attempts.zeros(3 * K);
   
   identifyMissingValues();
   initializeMissingValues();
@@ -118,6 +122,9 @@ void gp::recordHypers() {
   acceptance_count.subvec(0, K - 1) = amplitude_acceptance_count;
   acceptance_count.subvec(K, 2 * K - 1) = length_acceptance_count;
   acceptance_count.subvec(2 * K, 3 * K - 1) = noise_acceptance_count;
+  acceptance_attempts.subvec(0, K - 1) = amplitude_attempt_count;
+  acceptance_attempts.subvec(K, 2 * K - 1) = length_attempt_count;
+  acceptance_attempts.subvec(2 * K, 3 * K - 1) = noise_attempt_count;
 }
 
 // === Priors ==================================================================
@@ -228,6 +235,7 @@ void gp::sampleAmplitudeAndLength(uword k) {
   
   // Amplitude
   double proposal = amplitude(k) * std::exp(mixedWindow(amplitude_proposal_window) * randn());
+  amplitude_attempt_count(k)++;
   if(proposal >= hyper_lower && proposal <= hyper_upper) {
     const mat kernel = calculateKthComponentKernelSubBlock(proposal, length(k));
     const double proposed = log_target(proposal, length(k), kernel);
@@ -241,6 +249,7 @@ void gp::sampleAmplitudeAndLength(uword k) {
   
   // Length; proposals below the floor (or above the ceiling) have prior zero
   proposal = length(k) * std::exp(length_proposal_window * randn());
+  length_attempt_count(k)++;
   if(proposal >= min_length && proposal <= max_length) {
     const mat kernel = calculateKthComponentKernelSubBlock(amplitude(k), proposal);
     const double proposed = log_target(amplitude(k), proposal, kernel);
@@ -263,6 +272,7 @@ void gp::sampleAmplitudeNonCentred(uword k, const mat& component_data) {
   const double n_k = (double) component_data.n_rows;
   const vec x_bar = mean(component_data, 0).t();
   const double proposal = amplitude(k) * std::exp(mixedWindow(amplitude_proposal_window) * randn());
+  amplitude_attempt_count(k)++;
   if(proposal < hyper_lower || proposal > hyper_upper) {
     return;
   }
@@ -292,6 +302,7 @@ void gp::sampleNoise(uword k, const mat& component_data) {
   };
   
   const double proposal = noise(k) * std::exp(noise_proposal_window * randn());
+  noise_attempt_count(k)++;
   if(proposal < hyper_lower || proposal > hyper_upper) {
     return;
   }
@@ -443,6 +454,9 @@ void gp::swapComponents(uword k, uword kprime) {
   std::swap(amplitude_acceptance_count(k), amplitude_acceptance_count(kprime));
   std::swap(length_acceptance_count(k), length_acceptance_count(kprime));
   std::swap(noise_acceptance_count(k), noise_acceptance_count(kprime));
+  std::swap(amplitude_attempt_count(k), amplitude_attempt_count(kprime));
+  std::swap(length_attempt_count(k), length_attempt_count(kprime));
+  std::swap(noise_attempt_count(k), noise_attempt_count(kprime));
   recordHypers();
 }
 

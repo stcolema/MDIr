@@ -99,16 +99,25 @@ mdi::mdi(
   // The observed labels
   fixed = _fixed;
 
-  // The number of fixed components (i.e. non-symbolic labels) and unfixed
-  // components. Used when aligning components across views.
+  // The components holding an observed label are fixed; the others are free. The
+  // observed labels never change, so this is computed once. Nothing is assumed about
+  // which indices the observed classes occupy.
   K_fixed.set_size(L);
   K_unfixed.set_size(L);
+  free_components.assign(L, arma::uvec());
   for(uword l = 0; l < L; l++){
-    uvec fixed_l = find(fixed.col(l) == 1);
-    uvec labels_l = labels.col(l);
-    uvec fixed_labels = labels_l(fixed_l);
-    { uvec fixed_components = unique(fixed_labels); K_fixed(l) = fixed_components.n_elem; }
-    K_unfixed(l) = K(l) - K_fixed(l);
+    arma::uvec has_observed(K(l), arma::fill::zeros);
+    for(uword n = 0; n < N; n++) {
+      if(fixed(n, l) == 1) {
+        if(labels(n, l) >= K(l)) {
+          Rcpp::stop("An observed label lies outside 0, ..., K - 1 in view %d.", (int) l + 1);
+        }
+        has_observed(labels(n, l)) = 1;
+      }
+    }
+    free_components[l] = arma::find(has_observed == 0);
+    K_unfixed(l) = free_components[l].n_elem;
+    K_fixed(l) = K(l) - K_unfixed(l);
   }
 
   complete_likelihood_vec = zeros< vec >(L);
@@ -477,6 +486,11 @@ void mdi::initialiseDatasetL(uword l) {
   labels.col(l) = mixtures[l]->labels;
   non_outliers.col(l) = mixtures[l]->non_outliers;
   outliers.col(l) = mixtures[l]->outliers;
+  // Record the likelihood of the initial state (it was left at zero)
+  complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+  observed_likelihood_vec(l) = mixtures[l]->observed_likelihood;
+  complete_likelihood = accu(complete_likelihood_vec);
+  observed_likelihood = accu(observed_likelihood_vec);
   refreshMembersViewL(l);
 }
 
@@ -604,7 +618,9 @@ void mdi::updateLabels() {
 
 void mdi::updateLabelsViewL(uword lstar) {
 
-  if(K_unfixed(lstar) < 2) {
+  const arma::uvec& free_k = free_components[lstar];
+  const uword n_free = free_k.n_elem;
+  if(n_free < 2) {
     return;
   }
 
@@ -612,14 +628,15 @@ void mdi::updateLabelsViewL(uword lstar) {
   const arma::mat phi_mat = phiMatrix();
   double Z_current = mdiPartitionSumFromC(w, K, partition_tables);
 
-  for(uword k = K_fixed(lstar); k < K(lstar); k++) {
+  for(uword i = 0; i < n_free; i++) {
 
-    // Choose another unfixed component uniformly. The proposal is symmetric.
-    uword k_prime = K_fixed(lstar) + (uword) std::floor(randu() * (double) (K_unfixed(lstar) - 1));
-    k_prime = std::min(k_prime, K(lstar) - 2);
-    if(k_prime >= k) {
-      k_prime++;
+    // Choose another free component uniformly. The proposal is symmetric.
+    const uword k = free_k(i);
+    uword j = std::min<uword>((uword) std::floor(randu() * (double) (n_free - 1)), n_free - 2);
+    if(j >= i) {
+      j++;
     }
+    const uword k_prime = free_k(j);
 
     if(N_k(k, lstar) == 0 && N_k(k_prime, lstar) == 0) {
       continue;

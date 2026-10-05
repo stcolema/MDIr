@@ -83,7 +83,7 @@ the priors of Gaussian process views, including a floor on the GP length scale.}
 default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
 latent variable integrated out, using one slice-sampling update (Neal, 2003)
 that needs no tuning. ``"gibbs"`` is the update conditional on the
-strategic latent variable used before version 0.11. Both have the same target;
+strategic latent variable used in earlier releases. Both have the same target;
 the slice update mixes faster (see ``NEWS.md``).}
 
 \item{max_steps}{Upper bound on the number of temperatures. If it is reached

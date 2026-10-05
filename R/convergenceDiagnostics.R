@@ -108,43 +108,51 @@ rankNormalizedRhat <- function(chains) {
   list(rhat = rhat, ess = .effectiveSampleSize(x, W, var_plus))
 }
 
-# Multi-chain ESS: rho_t = 1 - (W - mean_j acov_j(t)) / var_plus with Geyer's
-# initial monotone positive sequence (Vehtari et al. 2021, Section 3.2; Stan
-# reference manual, "Effective sample size").
+# Multi-chain ESS: rho_t = 1 - (W - mean_j acov_j(t)) / var_plus, with the pairs of
+# adjacent autocorrelations summed while positive, made monotone non-increasing, and
+# the final term added as in Vehtari et al. (2021, Section 3.2, eq. 10) and the Stan
+# reference manual ("Effective sample size"). The autocovariances use the 1 / n
+# divisor; only the lag-0 term is rescaled to the unbiased variance (inside W).
 .effectiveSampleSize <- function(x, W, var_plus) {
   n <- nrow(x)
   m <- ncol(x)
   total <- m * n
-  if (!is.finite(var_plus) || var_plus <= 0) {
-    return(NA_real_)
+  if (!is.finite(var_plus) || var_plus <= 0 || n < 6) {
+    return(if (n < 6) total else NA_real_)
   }
 
-  # Autocovariance with the 1 / n normalisation, via the FFT-free acf()
   acov <- vapply(seq_len(m), function(j) {
     stats::acf(x[, j], lag.max = n - 1, plot = FALSE, type = "covariance", demean = TRUE)$acf[, 1, 1]
   }, numeric(n))
-  # acf() uses the 1/n divisor; Stan rescales so the lag-0 term is the unbiased variance
-  mean_acov <- rowMeans(acov) * n / (n - 1)
+  mean_acov <- rowMeans(acov)
 
-  rho <- 1 - (W - mean_acov) / var_plus
+  rho_at <- function(lag) 1 - (W - mean_acov[lag + 1]) / var_plus
+  rho <- numeric(n)
   rho[1] <- 1
+  rho[2] <- rho_at(1)
+  even <- 1
+  odd <- rho[2]
+  t <- 0
+  while (t < n - 5 && is.finite(even + odd) && (even + odd) > 0) {
+    t <- t + 2
+    even <- rho_at(t)
+    odd <- rho_at(t + 1)
+    if (is.finite(even + odd) && (even + odd) >= 0) {
+      rho[t + 1] <- even
+      rho[t + 2] <- odd
+    }
+    # Geyer's initial monotone sequence: pair sums must not increase
+    if (rho[t + 1] + rho[t + 2] > rho[t - 1] + rho[t]) {
+      rho[t + 1] <- (rho[t - 1] + rho[t]) / 2
+      rho[t + 2] <- rho[t + 1]
+    }
+  }
+  max_t <- t
+  if (is.finite(even) && even > 0) {
+    rho[max_t + 1] <- even
+  }
+  tau <- -1 + 2 * sum(rho[seq_len(max_t)]) + rho[max_t + 1]
 
-  # Geyer: sums of adjacent pairs P_t = rho_{2t} + rho_{2t+1} (t = 0, 1, ...)
-  # while positive, made monotone non-increasing
-  n_pairs <- (n - 1) %/% 2
-  if (n_pairs < 1) {
-    return(total)
-  }
-  pairs <- rho[2 * (seq_len(n_pairs) - 1) + 1] + rho[2 * (seq_len(n_pairs) - 1) + 2]
-  positive <- which(pairs <= 0)
-  last <- if (length(positive) == 0) n_pairs else positive[1] - 1
-  if (last < 1) {
-    # P_0 <= 0: the chain is anti-correlated at lag one; tau = 1 by the estimator
-    tau <- 1
-  } else {
-    pairs <- cummin(pairs[seq_len(last)])
-    tau <- -1 + 2 * sum(pairs)
-  }
   # Stan also caps tau below by 1 / log10(S) to avoid absurdly large ESS
   tau <- max(tau, 1 / log10(total))
   total / tau

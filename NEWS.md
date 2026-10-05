@@ -215,6 +215,31 @@
 
 ## Corrections
 
+* **Review corrections (statistical).**
+  * The outlier weight of a TAGM view was updated with the labelled items counted as non-outliers, although they can
+    never be outliers and carry no outlier factor in the likelihood. The conditional is now
+    `Beta(a + n_out, b + n_free - n_out)` over the items without an observed label; before, the weight was biased
+    towards zero in proportion to the number of labelled items.
+  * The label-swap move assumed that the observed classes were the first components of a view. With observed classes
+    such as `{0, 2}` (0-based labels with a gap) it moved components that held observed items and silently changed
+    the observed labels. The move now exchanges only components that hold no observed item, whatever their index,
+    and `callMDI()` recodes the observed classes to `0, 1, ...` in sorted order (other starting labels follow).
+    Split-merge never moved observed items; both moves are now tested with gaps, several views, `"TAGM"` and `"C"`.
+  * The likelihood of the initial state was recorded as zero in `complete_likelihood` and `observed_likelihood`.
+  * Gaussian-process acceptance rates are now accepted over proposed (they could reach 2, and ignored empty components).
+  * The effective sample size follows the Stan / Vehtari et al. (2021) estimator exactly (final-term correction,
+    only lag 0 rescaled); it agrees with `posterior::ess_bulk()` and `ess_tail()`.
+* **Review corrections (R).** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
+  classes and failed when one class was observed under a code other than 1; `stickBreakingPrior()` drew `Beta(alpha, 1)`
+  sticks instead of `Beta(1, alpha)`; `compileConsensusClustering()` kept only the last chain's weights and was off by
+  one for `evidence`; `calcAllocProb()` dropped a sample when `burn < thin` (and now drops the initial state like
+  `processMCMCChain()`); `callMDIWritingToFile()`/`readInSavedSamples()` failed for a single view;
+  `getLikelihood()` mislabelled the iterations when `R` was not a multiple of `thin`;
+  `predictFromMultipleChains()` replaced the class predictions of overfitted semi-supervised views by an unrelated
+  clustering; `makeCMComparisonSummaryDF()` failed with one depth or width; `processProposalWindows()` failed for a
+  vector window in a non-GP view; the unused vector `rHalfCauchy()` set negative draws to zero. `evidence` is documented as the
+  normalising constant `Z`, not a marginal likelihood.
+
 * **Label swaps now exchange the weights of one view only.** The move that
   exchanges two components of a view (labels, weights and component parameters)
   also exchanged the weights of every other view, without their labels. The

@@ -27,8 +27,10 @@ test_that("t-augmented model flags gross outliers and estimates their weight", {
 
 test_that("outlier weight follows its Beta posterior (regression: hyperparameter was overwritten)", {
   # sampleOutlier() used to assign a random number to the Beta hyperparameter
-  # `u`. When every item has an observed label none can be an outlier, so the
-  # weight must be exactly Beta(2, N + 10) whatever the data are.
+  # `u`. When every item has an observed label none can be an outlier and none
+  # carries a factor of the outlier weight, so the weight keeps its Beta(2, 10)
+  # prior whatever the data are (labelled items used to be counted as non-outliers,
+  # which gave Beta(2, N + 10)).
   skip_on_cran()
   set.seed(72)
   N <- 20
@@ -37,7 +39,7 @@ test_that("outlier weight follows its Beta posterior (regression: hyperparameter
   fit <- callMDI(list(X), R = 12000, thin = 3, types = "TAGM", K = 2,
                  initial_labels = labels, fixed = matrix(1, N, 1))
   w <- fit$outlier_weights[-(1:50), 1]
-  a <- 2; b <- N + 10
+  a <- 2; b <- 10
   expect_equal(mean(w), a / (a + b), tolerance = 0.03)
   expect_equal(var(w), a * b / ((a + b)^2 * (a + b + 1)), tolerance = 0.1)
 })

@@ -68,6 +68,14 @@ generateInitialLabels <- function(labels, fixed, K, alpha,
       }
     }
 
+    # In a semi-supervised view the C++ sampler keeps every component that holds an
+    # observed label in place, whatever its index; contiguous 0-based codes with the
+    # observed classes first (in sorted order) are used so that class k of the
+    # sorted observed classes is component k - 1 of the output.
+    if (is_semisupervised[v]) {
+      labels_v <- .recodeSemiSupervised(labels_v, fixed_v)
+    }
+
     # Check that the initial labels starts at 0, if not remedy this.
     no_zero_label <- !any(labels_v == 0)
 
@@ -79,4 +87,13 @@ generateInitialLabels <- function(labels, fixed, K, alpha,
     labels[, v] <- labels_v
   }
   labels
+}
+
+# Internal: contiguous 0-based labels for a semi-supervised view. The classes of the
+# observed items come first, in sorted order; any other value present (unobserved
+# items given arbitrary starting labels) follows, in sorted order.
+.recodeSemiSupervised <- function(labels, fixed) {
+  observed_classes <- sort(unique(labels[fixed == 1]))
+  other <- sort(setdiff(unique(labels), observed_classes))
+  match(labels, c(observed_classes, other)) - 1
 }

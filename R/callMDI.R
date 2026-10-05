@@ -47,7 +47,7 @@
 #' default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
 #' latent variable integrated out, using one slice-sampling update (Neal, 2003)
 #' that needs no tuning. ``"gibbs"`` is the update conditional on the
-#' strategic latent variable used before version 0.11. Both have the same target;
+#' strategic latent variable used in earlier releases. Both have the same target;
 #' the slice update mixes faster (see ``NEWS.md``).
 #' @param betas Inverse temperatures for parallel tempering: a strictly
 #' increasing vector in (0, 1] whose last element is 1 (the posterior), for
@@ -100,6 +100,12 @@
 #' the coupling between views (the two coincide when every \eqn{\phi} is zero).
 #' In a semi-supervised view the observed labels are treated as data: an item
 #' with an observed label contributes the joint density of its data and label.
+#' 
+#' ``evidence`` is the MDI normalising constant \eqn{Z} at the start of each saved sweep (a trace of the
+#' weights and \eqn{\phi}), not a marginal likelihood of the data; use ``joint_likelihood`` or
+#' \code{\link{smcMDI}} for that. In a semi-supervised view observed labels are held fixed and the
+#' classes are numbered in sorted order, so that class \eqn{j} of the sorted observed classes is
+#' component \eqn{j} (``allocations`` are 0-based, ``pred`` and ``allocation_probability`` 1-based).
 #' @references Neal, R. M. (2003). Slice sampling. \emph{Annals of Statistics},
 #' 31(3), 705-767.
 #' @examples

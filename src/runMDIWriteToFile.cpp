@@ -28,7 +28,8 @@ void runMDIWriteToFile(
   }
   
   mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior);
-  const uword L = my_mdi.L, N = my_mdi.N, LC2 = my_mdi.LC2, K_sum = accu(K);
+  // A single view has no phi: its slot is left out so the layout matches the R reader
+  const uword L = my_mdi.L, N = my_mdi.N, LC2 = (my_mdi.L > 1) ? my_mdi.LC2 : 0, K_sum = accu(K);
   const std::string gen_filename = save_dir + "/MDIMcmcSample";
   
   for(uword l = 0; l < L; l++) {
@@ -49,7 +50,7 @@ void runMDIWriteToFile(
       weight_start += K(l);
     }
     save_vec.subvec(mass_offset, mass_offset + L - 1) = my_mdi.mass;
-    if(LC2 > 0 && L > 1) {
+    if(LC2 > 0) {
       save_vec.subvec(phi_offset, phi_offset + LC2 - 1) = my_mdi.phis;
     }
     save_vec(likelihood_offset) = my_mdi.complete_likelihood;
