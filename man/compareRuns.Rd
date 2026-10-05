@@ -11,7 +11,8 @@ compareRuns(runs, view = 1, burn = 0, tolerance = 0.1)
 }
 \arguments{
 \item{runs}{A list of fits (\code{mdir_fit}, \code{mdir_smc}), or the result
-of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}.}
+of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}. Lists of chains
+(from \code{\link{runMCMCChains}} or \code{\link{fitMDI}}) among the runs contribute each of their chains.}
 
 \item{view}{The view.}
 

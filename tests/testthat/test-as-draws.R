@@ -17,14 +17,13 @@ test_that("as_draws() gives a draws_array of the label-invariant quantities", {
   expect_equal(posterior::niterations(dr), 20)
   expect_equal(posterior::nchains(dr), 3)
   expect_equal(posterior::variables(dr),
-    c("log_lik_complete", "log_lik_observed", "log_lik_joint", "log_normalising_constant",
+    c("log_lik_complete", "log_lik_observed", "log_lik_joint",
       "mass[1]", "mass[2]", "phi[1,2]", "occupied[1]", "pooled[1,1]", "pooled[1,2]",
       "occupied[2]", "pooled[2,1]", "pooled[2,2]"))
   ch2 <- unclass(d$fit)[[2]]
   expect_equal(as.numeric(dr[, 2, "mass[1]"]), ch2$mass[22:41, 1])
   expect_equal(as.numeric(dr[, 2, "phi[1,2]"]), ch2$phis[22:41, 1])
   expect_equal(as.numeric(dr[, 2, "log_lik_joint"]), ch2$joint_likelihood[22:41])
-  expect_equal(as.numeric(dr[, 2, "log_normalising_constant"]), log(ch2$normalising_constant[22:41]))
   expect_equal(as.numeric(dr[, 2, "occupied[1]"]),
                apply(ch2$allocations[22:41, , 1], 1, function(z) length(unique(z))))
 })

@@ -15,10 +15,6 @@
   if (!is.null(x$joint_likelihood)) {
     cols[["log_lik_joint"]] <- as.numeric(x$joint_likelihood)[index]
   }
-  nc <- x$normalising_constant %||% x$evidence
-  if (!is.null(nc)) {
-    cols[["log_normalising_constant"]] <- log(as.numeric(nc))[index]
-  }
   for (v in seq_len(V)) {
     cols[[sprintf("mass[%d]", v)]] <- x$mass[index, v]
   }
@@ -106,7 +102,6 @@
 #'   \item{\code{log_lik_complete}, \code{log_lik_observed}, \code{log_lik_joint}}{
 #'   The log-likelihoods described in \code{\link{callMDI}}. These are not
 #'   \code{lp__}: they omit the priors.}
-#'   \item{\code{log_normalising_constant}}{Log of the MDI normalising constant \eqn{Z}.}
 #'   \item{\code{mass[v]}}{Concentration of view \code{v}.}
 #'   \item{\code{phi[l,m]}}{Association of views \code{l} and \code{m}.}
 #'   \item{\code{occupied[v]}}{Number of occupied components in view \code{v}.}
@@ -120,6 +115,10 @@
 #'   their Rhat and ESS are meaningful only for semi-supervised views, whose
 #'   observed classes fix the labels.}
 #' }
+#' The normalising constant \eqn{Z} is left out: the overall scale of each view's
+#' unnormalised weights does not affect the model, so \eqn{Z} wanders with the scale and
+#' its Rhat and ESS say nothing about the posterior.
+#'
 #' The initial state of an unprocessed chain is not a draw and is dropped, as
 #' is the burn in.
 #'

@@ -292,6 +292,11 @@ assessConvergence <- function(mcmc_chains,
 #' @export
 print.mdir_convergence <- function(x, digits = 3, max_rows = 20, ...) {
   n_chains <- attr(x, "n_chains")
+  if (is.null(n_chains)) {
+    # a subset or transformed copy has lost the attributes of the report
+    print(as.data.frame(unclass(x)), digits = digits, ...)
+    return(invisible(x))
+  }
   cat(sprintf(
     "MDI convergence diagnostics: %s, burn = %d, %d quantities monitored\n",
     .mdirPlural(n_chains, "chain"), attr(x, "burn"), nrow(x)

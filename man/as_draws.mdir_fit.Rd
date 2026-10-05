@@ -81,7 +81,6 @@ that do not depend on the labelling:
   \item{\code{log_lik_complete}, \code{log_lik_observed}, \code{log_lik_joint}}{
   The log-likelihoods described in \code{\link{callMDI}}. These are not
   \code{lp__}: they omit the priors.}
-  \item{\code{log_normalising_constant}}{Log of the MDI normalising constant \eqn{Z}.}
   \item{\code{mass[v]}}{Concentration of view \code{v}.}
   \item{\code{phi[l,m]}}{Association of views \code{l} and \code{m}.}
   \item{\code{occupied[v]}}{Number of occupied components in view \code{v}.}
@@ -95,6 +94,10 @@ that do not depend on the labelling:
   their Rhat and ESS are meaningful only for semi-supervised views, whose
   observed classes fix the labels.}
 }
+The normalising constant \eqn{Z} is left out: the overall scale of each view's
+unnormalised weights does not affect the model, so \eqn{Z} wanders with the scale and
+its Rhat and ESS say nothing about the posterior.
+
 The initial state of an unprocessed chain is not a draw and is dropped, as
 is the burn in.
 

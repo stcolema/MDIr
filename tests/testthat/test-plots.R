@@ -34,8 +34,8 @@ test_that("trace plots omit the initial state and mark the burn in", {
   vl <- Filter(function(l) inherits(l$geom, "GeomVline"), p$layers)
   expect_equal(vl[[1]]$data$xintercept, 100)
   expect_equal(levels(p$data$quantity),
-               c("complete_likelihood", "joint_likelihood", "mass[1]", "occupied components[1]",
-                 "mass[2]", "occupied components[2]", "phi[1,2]"))
+               c("complete_likelihood", "joint_likelihood", "mass[1]", "occupied[1]",
+                 "mass[2]", "occupied[2]", "phi[1,2]"))
 })
 
 test_that("density plots use only the retained draws", {
