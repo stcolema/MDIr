@@ -81,6 +81,19 @@ sample sizes of Vehtari et al. (2021), computed for quantities that do not depen
 on how the clusters are labelled. Short chains such as these usually fail the
 criteria; use more iterations for real analyses.
 
+`plot()` draws the same quantities. Trace plots come first: chains that overlap
+and show no trend after the burn in (dashed line) are consistent with
+convergence. `type = "density"` overlays the posterior of each quantity by chain,
+and `type = "rhat"` plots the diagnostics against their thresholds.
+
+```{r plot-trace, fig.width = 7, fig.height = 4}
+plot(chains, burn = 750)
+```
+
+```{r plot-rhat, fig.width = 7, fig.height = 3.5}
+plot(chains, type = "rhat", burn = 750)
+```
+
 ## Posterior predictive check
 
 ```{r posterior-predictive}
@@ -98,6 +111,19 @@ in the middle do not prove that the model fits.
 ```{r predict}
 pooled <- predictFromMultipleChains(chains, burn = 750)
 table(pooled$pred[[1]], truth)
+```
+
+The posterior similarity matrix shows how sure the partition of a view is, and
+the fusion probabilities show, for each item, how often it takes the same
+component in two views. Fusion probabilities compare component indices, so they
+describe fusion of clusters only if the indices are aligned between views.
+
+```{r plot-psm, fig.width = 5, fig.height = 4}
+plot(chains, type = "psm", view = 1, burn = 750)
+```
+
+```{r plot-fusion, fig.width = 5, fig.height = 3.5}
+plot(chains, type = "fusion", burn = 750)
 ```
 
 ## New items
