@@ -120,7 +120,7 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
     .mcmc <- mcmc_lst[[w]]
 
     cc_lst$Time[w] <- .mcmc$Time
-    cc_lst$evidence[w] <- .mcmc$evidence[sample_used - 1]
+    cc_lst$evidence[w] <- .mcmc$evidence[sample_used]
     cc_lst$complete_likelihood[w] <- .mcmc$complete_likelihood[sample_used]
     cc_lst$mass[w, ] <- .mcmc$mass[sample_used, ]
     cc_lst$phis[w, ] <- .mcmc$phis[sample_used, ]
@@ -129,7 +129,7 @@ compileConsensusClustering <- function(mcmc_lst, D = NULL, W = NULL,
       cc_lst$allocations[[v]][w, ] <- .mcmc$allocations[sample_used, , v]
       cc_lst$outliers[[v]][w, ] <- .mcmc$outliers[sample_used, , v]
       cc_lst$N_k[[v]][w, ] <- .mcmc$N_k[seq(1, K[v]), v, sample_used]
-      cc_lst$weights[[v]] <- .mcmc$weights[sample_used, , v]
+      cc_lst$weights[[v]][w, ] <- .mcmc$weights[sample_used, seq_len(K[v]), v]
       if (is_semisupervised[v]) {
         cc_lst$allocation_probabilities[[v]][, , w] <- .mcmc$allocation_probabilities[[v]][, , sample_used]
       }

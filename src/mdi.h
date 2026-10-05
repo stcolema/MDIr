@@ -82,6 +82,11 @@ public:
     K_unfixed,          // Number of components not fixed
     K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
 
+  // For each view, the components that hold no item with an observed label (any
+  // index, not necessarily the last ones). Only these are exchanged by the
+  // label-swap move; a component with an observed member never moves.
+  std::vector<arma::uvec> free_components;
+
   // Options of the density-level priors (see resolveDensityPrior())
   arma::vec density_prior;
   

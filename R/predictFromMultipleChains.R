@@ -189,7 +189,6 @@ predictFromMultipleChains <- function(mcmc_outputs,
   first_chain <- TRUE
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
-    current_view_is_overfitted <- is_overfitted[v]
 
     merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
       0,
@@ -238,10 +237,6 @@ predictFromMultipleChains <- function(mcmc_outputs,
       merged_outputs$allocation_probability[[v]] <- .alloc_prob
       merged_outputs$prob[[v]] <- .prob <- apply(.alloc_prob, 1, max)
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
-
-      if (current_view_is_overfitted) {
-        merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
-      }
     } else {
       merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
     }
