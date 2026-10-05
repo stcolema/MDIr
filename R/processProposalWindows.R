@@ -58,7 +58,7 @@ processProposalWindows <- function(proposal_windows, types) {
     } else {
       window_passed_for_non_gp <- !(
         is.null(proposal_windows[[v]]) ||
-          proposal_windows[[v]] == 0
+          all(proposal_windows[[v]] == 0)
       )
 
       if (window_passed_for_non_gp) {

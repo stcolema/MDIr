@@ -21,12 +21,13 @@ getLikelihood <- function(mcmc_output) {
   do.call(rbind, lapply(names(traces), function(type) {
     trace <- as.numeric(traces[[type]])
     n <- length(trace)
-    # Saved samples are at iterations 0, thin, 2 thin, ..., R; a burn in removes
-    # the earliest ones
+    # Saved samples are at iterations 0, thin, 2 thin, ..., floor(R / thin) thin
+    # (R itself only if it is a multiple of thin); a burn in removes the earliest
+    last_saved <- floor(R / thin) * thin
     data.frame(
       log_likelihood = trace,
       type = type,
-      iteration = seq(R - (n - 1) * thin, R, by = thin)
+      iteration = seq(last_saved - (n - 1) * thin, last_saved, by = thin)
     )
   }))
 }

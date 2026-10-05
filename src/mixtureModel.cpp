@@ -87,7 +87,13 @@ void mixtureModel::calcBIC() {
 
 void mixtureModel::updateOutlierWeights() {
   non_outliers = 1 - outliers;
-  outlierComponent_ptr->updateWeights(non_outliers, outliers);
+
+  // Only items without an observed label can be outliers, and only they carry a
+  // factor of the outlier weight in the likelihood, so only they enter the Beta
+  // update. (Observed items are never outliers; counting them as non-outliers would
+  // bias the weight towards zero.)
+  const arma::uvec is_free = 1 - fixed;
+  outlierComponent_ptr->updateWeights(non_outliers % is_free, outliers % is_free);
 }
 
 void mixtureModel::updateAllocation(const arma::vec& log_weights, const arma::mat& log_upweights) {
