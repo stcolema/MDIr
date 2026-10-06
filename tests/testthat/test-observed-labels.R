@@ -7,7 +7,7 @@ raw_run <- function(X, types, K, labels, fixed, R = 300, split_merge = 0L, betas
   mdir:::runMDI(
     R, 1L, X, as.integer(K), mdir:::translateTypes(types), mdir:::setupOutlierComponents(types),
     labels, fixed, rep(list(0), V), FALSE, FALSE, as.numeric(mdiPrior()), as.numeric(densityPrior()),
-    rep(0L, V), FALSE, TRUE, betas, 0L, 1L, as.integer(split_merge)
+    rep(0L, V), FALSE, TRUE, betas, 0L, 1L, as.integer(split_merge), 0L
   )
 }
 

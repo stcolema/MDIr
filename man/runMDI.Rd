@@ -24,7 +24,8 @@ runMDI(
   betas,
   swap_scheme,
   swap_every,
-  split_merge
+  split_merge,
+  joint_allocation
 )
 }
 \arguments{
@@ -86,6 +87,9 @@ even-odd (non-reversible); 1, stochastic even-odd (reversible).}
 
 \item{split_merge}{Attempts per view and sweep of the sequentially-allocated 
 re-partition of two randomly chosen components (0 turns it off).}
+
+\item{joint_allocation}{Size of the blocks of views whose labels are redrawn jointly for each
+item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

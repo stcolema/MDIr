@@ -1,0 +1,11 @@
+view 1: 0 1 1 0  view 2: 1 2 0 0 
+alpha: 0.5 0.5 | 0.5 0.25 0.25 
+prior MC done in 180s; max relative MC se of cell prior: 0.0021
+joint allocation on, two views: single chain beta = 1   TV 0.0037 (chain noise ~0.0037) | states 76 | max|z| 3.03 | mean z^2 1.12 (expect ~1.15)
+    exact-reference MC error: TV contribution <= 0.0001
+joint allocation on, two views: beta = 0.5              TV 0.0031 (chain noise ~0.0033) | states 80 | max|z| 3.23 | mean z^2 0.91 (expect ~1.15)
+    exact-reference MC error: TV contribution <= 0.0001
+joint allocation on, two views: PT (0.2, 0.5, 1)        TV 0.0034 (chain noise ~0.0032) | states 76 | max|z| 4.52 | mean z^2 1.30 (expect ~1.15)
+    exact-reference MC error: TV contribution <= 0.0001
+CONTROL: joint allocation on, beta = 1 vs exact beta = 0.5 TV 0.2201 (chain noise ~0.0037) | states 80 | max|z| 238.30 | mean z^2 4443.22 (expect ~1.15)
+    exact-reference MC error: TV contribution <= 0.0001

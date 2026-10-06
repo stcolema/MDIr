@@ -504,6 +504,9 @@ void mdi::sweep(uword iteration) {
     mixtures[l]->sampleParameters();
   }
   updateAllocation();
+  if(joint_block > 0) {
+    updateJointAllocation();
+  }
   if(split_merge_moves > 0) {
     updateSplitMerge();
   }
@@ -517,38 +520,50 @@ arma::umat mdi::samplePriorLabels(uword n_items) const {
   for(uword l = 0; l < L; l++) {
     n_combinations *= (double) K(l);
   }
-  if(n_combinations > 5e6) {
-    Rcpp::stop("Too many joint component combinations (%g) to enumerate.", n_combinations);
-  }
-  const uword n_comb = (uword) n_combinations;
-  
-  arma::umat combinations(n_comb, L);
-  arma::vec log_prob(n_comb);
   const arma::mat phi_mat = phiMatrix();
-  for(uword i = 0; i < n_comb; i++) {
-    uword remainder = i;
-    for(uword l = 0; l < L; l++) {
-      combinations(i, l) = remainder % K(l);
-      remainder /= K(l);
-    }
-    double lp = 0.0;
-    for(uword l = 0; l < L; l++) {
-      lp += std::log(w(combinations(i, l), l));
-    }
-    for(uword l = 0; l + 1 < L; l++) {
-      for(uword m = l + 1; m < L; m++) {
-        if(combinations(i, l) == combinations(i, m)) {
-          lp += std::log1p(phi_mat(l, m));
+  arma::umat out(n_items, L);
+
+  // Few combinations: enumerate them once and draw every item from the same table
+  if(n_combinations <= 5e6) {
+    const uword n_comb = (uword) n_combinations;
+    arma::umat combinations(n_comb, L);
+    arma::vec log_prob(n_comb);
+    for(uword i = 0; i < n_comb; i++) {
+      uword remainder = i;
+      for(uword l = 0; l < L; l++) {
+        combinations(i, l) = remainder % K(l);
+        remainder /= K(l);
+      }
+      double lp = 0.0;
+      for(uword l = 0; l < L; l++) {
+        lp += std::log(w(combinations(i, l), l));
+      }
+      for(uword l = 0; l + 1 < L; l++) {
+        for(uword m = l + 1; m < L; m++) {
+          if(combinations(i, l) == combinations(i, m)) {
+            lp += std::log1p(phi_mat(l, m));
+          }
         }
       }
+      log_prob(i) = lp;
     }
-    log_prob(i) = lp;
+    const arma::vec prob = arma::exp(log_prob - logSumExp(log_prob));
+    for(uword n = 0; n < n_items; n++) {
+      out.row(n) = combinations.row(sampleCategorical(prob));
+    }
+    return out;
   }
-  const arma::vec prob = arma::exp(log_prob - logSumExp(log_prob));
-  
-  arma::umat out(n_items, L);
+
+  // Otherwise draw each item view by view from its exact joint law (mdiSampleJointLabels)
+  const std::vector< std::vector<double> > suffix_C = mdiSuffixConnectedSums(phi_mat);
+  arma::mat G(K_max, L, arma::fill::zeros);
+  for(uword l = 0; l < L; l++) {
+    for(uword k = 0; k < K(l); k++) {
+      G(k, l) = w(k, l);
+    }
+  }
   for(uword n = 0; n < n_items; n++) {
-    out.row(n) = combinations.row(sampleCategorical(prob));
+    out.row(n) = mdiSampleJointLabels(G, K, phi_mat, suffix_C).t();
   }
   return out;
 }
@@ -712,6 +727,108 @@ void mdi::updateSplitMergeViewL(uword l) {
 void mdi::updateSplitMerge() {
   for(uword l = 0; l < L; l++) {
     updateSplitMergeViewL(l);
+  }
+  complete_likelihood = accu(complete_likelihood_vec);
+  observed_likelihood = accu(observed_likelihood_vec);
+}
+
+
+// === Joint allocation ========================================================
+
+void mdi::setJointAllocation(uword block_size) {
+  if(block_size == 1) {
+    Rcpp::stop("The joint allocation block must hold at least two views (or be 0 to turn it off).");
+  }
+  if(block_size > 0 && L < 2) {
+    Rcpp::stop("The joint allocation needs at least two views.");
+  }
+  if(block_size > 12) {
+    Rcpp::stop("The joint allocation block can hold at most 12 views.");
+  }
+  joint_block = block_size;
+}
+
+void mdi::updateJointAllocation() {
+  const uword b = std::min<uword>(joint_block, L);
+  const bool all_views = (b == L);
+  const arma::mat phi_mat = phiMatrix();
+  std::vector< std::vector<double> > cache;
+  if(all_views) {
+    cache = mdiSuffixConnectedSums(phi_mat);
+  }
+  arma::uvec views = arma::regspace<arma::uvec>(0, L - 1);
+
+  // Each item's labels are conditionally independent of the other items' given the weights,
+  // phis and parameters, so the new labels can be written after all items are drawn
+  arma::umat new_labels = labels, new_outliers = outliers;
+  arma::mat log_g(K_max, L);
+  std::vector<arma::vec> ll(L);
+
+  for(uword n = 0; n < N; n++) {
+    log_g.fill(-arma::datum::inf);
+    for(uword l = 0; l < L; l++) {
+      auto& mixture = mixtures[l];
+      ll[l] = mixture->density_ptr->itemLogLikelihood(n);
+      if(fixed(n, l) == 1) {
+        log_g(labels(n, l), l) = beta * ll[l](labels(n, l));
+      } else if(mixture->outlierComponent_ptr->active()) {
+        const double log_w_non = std::log(mixture->outlierComponent_ptr->non_outlier_weight);
+        const double ll_out = std::log(mixture->outlierComponent_ptr->outlier_weight)
+          + mixture->outlierComponent_ptr->outlier_likelihood(n);
+        for(uword k = 0; k < K(l); k++) {
+          log_g(k, l) = logSumExp(arma::vec({log_w_non + ll[l](k), ll_out}));
+        }
+      } else {
+        for(uword k = 0; k < K(l); k++) {
+          log_g(k, l) = beta * ll[l](k);
+        }
+      }
+    }
+
+    arma::uvec block = views;
+    if(!all_views) {
+      // a uniformly random subset of b views (partial Fisher-Yates)
+      for(uword i = 0; i < b; i++) {
+        const uword j = i + std::min<uword>((uword) std::floor(randu() * (double) (L - i)), L - i - 1);
+        std::swap(block(i), block(j));
+      }
+      block = arma::sort(block.head(b));
+    }
+    const arma::uvec current = arma::conv_to<arma::uvec>::from(labels.row(n));
+    const arma::uvec drawn = mdiSampleJointBlock(log_g, w, K, phi_mat, block, current,
+                                                 all_views ? &cache : nullptr);
+
+    for(uword j = 0; j < b; j++) {
+      const uword l = block(j);
+      new_labels(n, l) = drawn(j);
+      auto& mixture = mixtures[l];
+      if(fixed(n, l) == 0 && mixture->outlierComponent_ptr->active()) {
+        // the outlier flag given the component
+        const double log_w_non = std::log(mixture->outlierComponent_ptr->non_outlier_weight)
+          + ll[l](drawn(j));
+        const double log_w_out = std::log(mixture->outlierComponent_ptr->outlier_weight)
+          + mixture->outlierComponent_ptr->outlier_likelihood(n);
+        const double p_out = 1.0 / (1.0 + std::exp(log_w_non - log_w_out));
+        new_outliers(n, l) = (randu() < p_out) ? 1 : 0;
+      }
+    }
+  }
+
+  labels = new_labels;
+  outliers = new_outliers;
+  for(uword l = 0; l < L; l++) {
+    auto& mixture = mixtures[l];
+    mixture->labels = labels.col(l);
+    mixture->outliers = outliers.col(l);
+    mixture->non_outliers = 1 - mixture->outliers;
+    non_outliers.col(l) = mixture->non_outliers;
+    // the missing values given the new allocation, as after the ordinary allocation step
+    mixture->sampleAllMissingValues();
+    refreshMembersViewL(l);
+    const vec log_weights = log(w(span(0, K(l) - 1), l));
+    mixture->refreshLikelihoods(log_weights);
+    complete_likelihood_vec(l) = mixture->complete_likelihood;
+    observed_likelihood_vec(l) = mixture->observed_likelihood;
   }
   complete_likelihood = accu(complete_likelihood_vec);
   observed_likelihood = accu(observed_likelihood_vec);

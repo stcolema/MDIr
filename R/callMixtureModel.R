@@ -130,7 +130,8 @@ callMixtureModel <- function(X,
     betas = numeric(0),
     swap_scheme = 0L,
     swap_every = 1L,
-    split_merge = 0L
+    split_merge = 0L,
+    joint_allocation = 0L
   )
 
   t_1 <- Sys.time()

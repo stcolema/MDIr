@@ -1,5 +1,19 @@
 # mdir (development version)
 
+## New: joint allocation (`joint_allocation`)
+
+* `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `joint_allocation` (default 0, off): the number of views
+  whose allocations of one item are drawn together, exactly from their joint conditional given the other items. The draw
+  runs view by view with the set-partition sums used for the weights, so its cost is linear in the number of components
+  and exponential only in the block size (at most 12), and it does not enumerate joint allocations. Values 2 to 12 draw
+  random blocks of that many views. Invariance is checked by enumeration of the joint conditional, by an exact
+  two-view posterior and by recovery of the prior.
+* In the settings tried (see `verification/joint_allocation`), joint allocation reduces stuck chains only modestly.
+  Aligned splits of a cluster in several views persist because the barrier is the rich-get-richer prior, which a joint
+  item move does not remove; `split_merge` is the more effective remedy.
+* Prior draws of labels (`check_prior`, prior-predictive) no longer fail beyond 5e6 joint allocations: they are drawn
+  sequentially.
+
 ## New: vignette
 
 * `vignette("mdir-multimodal")`: an end-to-end workflow for multimodal clustering with MDI on simulated data with partial

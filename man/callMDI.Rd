@@ -25,7 +25,8 @@ callMDI(
   betas = 1,
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
-  split_merge = 0L
+  split_merge = 0L,
+  joint_allocation = 0L
 )
 }
 \arguments{
@@ -129,6 +130,8 @@ outlier density and leaving the component statistics unchanged. Observed labels
 (semi-supervised views) and missing values are allowed (the move scores a flagged item with the
 outlier density of its complete, imputed vector); \code{betas} may be combined with it for views without an outlier
 component (tempering itself refuses outlier components).}
+
+\item{joint_allocation}{Size of the blocks of views whose labels are redrawn together for each item (a block of views per item and sweep, after the ordinary allocation step). The labels of an item in the views of a block are drawn from their exact joint conditional given everything else, so the move leaves the posterior invariant (it is a block of a Gibbs sweep). It matters when views are strongly associated: a move of an item in one view alone breaks its agreement with the others and pays a factor (1 + phi) for each view it agrees with, so clusters that are aligned across views are hard to merge or split by single-view moves; a joint move keeps the alignment. Use the number of views to redraw the item in all of them at once; with more views than the block size a random subset of views is used for each item. The cost grows as 3 to the power of the block size, with the number of components entering linearly, so a block of the 2 to 4 views is cheap even with 100 components. \code{0} (default) turns it off. Allowed for every density, outlier components, missing values and observed labels, and with \code{betas}.}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the

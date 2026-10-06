@@ -22,6 +22,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// jointAllocationDrawCpp
+arma::umat jointAllocationDrawCpp(arma::mat log_g, arma::mat w, arma::uvec K, arma::mat phi, arma::uvec block, arma::uvec current, arma::uword n_draws);
+RcppExport SEXP _mdir_jointAllocationDrawCpp(SEXP log_gSEXP, SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP blockSEXP, SEXP currentSEXP, SEXP n_drawsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type log_g(log_gSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type current(currentSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_draws(n_drawsSEXP);
+    rcpp_result_gen = Rcpp::wrap(jointAllocationDrawCpp(log_g, w, K, phi, block, current, n_draws));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gammaLogLikelihood
 double gammaLogLikelihood(double x, double shape, double rate);
 RcppExport SEXP _mdir_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
@@ -375,8 +392,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice, arma::vec betas, arma::uword swap_scheme, arma::uword swap_every, arma::uword split_merge);
-RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP swap_schemeSEXP, SEXP swap_everySEXP, SEXP split_mergeSEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice, arma::vec betas, arma::uword swap_scheme, arma::uword swap_every, arma::uword split_merge, arma::uword joint_allocation);
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP swap_schemeSEXP, SEXP swap_everySEXP, SEXP split_mergeSEXP, SEXP joint_allocationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -400,7 +417,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::uword >::type swap_scheme(swap_schemeSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type swap_every(swap_everySEXP);
     Rcpp::traits::input_parameter< arma::uword >::type split_merge(split_mergeSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge));
+    Rcpp::traits::input_parameter< arma::uword >::type joint_allocation(joint_allocationSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -426,8 +444,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDISMC
-Rcpp::List runMDISMC(arma::uword n_particles, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat fixed, arma::vec prior, arma::vec density_prior, bool phi_slice, arma::vec betas, bool adaptive, double cess_target, double resample_threshold, arma::uword resample_scheme, arma::uword sweeps_per_step, arma::uword max_steps, arma::uword final_sweeps, arma::uword final_thin, double beta_start, arma::uword start_sweeps, arma::uword split_merge);
-RcppExport SEXP _mdir_runMDISMC(SEXP n_particlesSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP fixedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP adaptiveSEXP, SEXP cess_targetSEXP, SEXP resample_thresholdSEXP, SEXP resample_schemeSEXP, SEXP sweeps_per_stepSEXP, SEXP max_stepsSEXP, SEXP final_sweepsSEXP, SEXP final_thinSEXP, SEXP beta_startSEXP, SEXP start_sweepsSEXP, SEXP split_mergeSEXP) {
+Rcpp::List runMDISMC(arma::uword n_particles, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat fixed, arma::vec prior, arma::vec density_prior, bool phi_slice, arma::vec betas, bool adaptive, double cess_target, double resample_threshold, arma::uword resample_scheme, arma::uword sweeps_per_step, arma::uword max_steps, arma::uword final_sweeps, arma::uword final_thin, double beta_start, arma::uword start_sweeps, arma::uword split_merge, arma::uword joint_allocation);
+RcppExport SEXP _mdir_runMDISMC(SEXP n_particlesSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP fixedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP phi_sliceSEXP, SEXP betasSEXP, SEXP adaptiveSEXP, SEXP cess_targetSEXP, SEXP resample_thresholdSEXP, SEXP resample_schemeSEXP, SEXP sweeps_per_stepSEXP, SEXP max_stepsSEXP, SEXP final_sweepsSEXP, SEXP final_thinSEXP, SEXP beta_startSEXP, SEXP start_sweepsSEXP, SEXP split_mergeSEXP, SEXP joint_allocationSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -452,7 +470,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type beta_start(beta_startSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type start_sweeps(start_sweepsSEXP);
     Rcpp::traits::input_parameter< arma::uword >::type split_merge(split_mergeSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDISMC(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge));
+    Rcpp::traits::input_parameter< arma::uword >::type joint_allocation(joint_allocationSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDISMC(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -498,6 +517,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mdir_createSimilarityMat", (DL_FUNC) &_mdir_createSimilarityMat, 1},
+    {"_mdir_jointAllocationDrawCpp", (DL_FUNC) &_mdir_jointAllocationDrawCpp, 7},
     {"_mdir_gammaLogLikelihood", (DL_FUNC) &_mdir_gammaLogLikelihood, 3},
     {"_mdir_invGammaLogLikelihood", (DL_FUNC) &_mdir_invGammaLogLikelihood, 3},
     {"_mdir_wishartLogLikelihood", (DL_FUNC) &_mdir_wishartLogLikelihood, 4},
@@ -521,9 +541,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_phiSliceChainCpp", (DL_FUNC) &_mdir_phiSliceChainCpp, 10},
     {"_mdir_phiConditionalLogDensityCpp", (DL_FUNC) &_mdir_phiConditionalLogDensityCpp, 10},
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
-    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 20},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 21},
     {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
-    {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 21},
+    {"_mdir_runMDISMC", (DL_FUNC) &_mdir_runMDISMC, 22},
     {"_mdir_collapsedLogMarginalCpp", (DL_FUNC) &_mdir_collapsedLogMarginalCpp, 6},
     {"_mdir_splitMergeOnlyCpp", (DL_FUNC) &_mdir_splitMergeOnlyCpp, 13},
     {NULL, NULL, 0}

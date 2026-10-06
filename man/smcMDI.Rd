@@ -26,7 +26,8 @@ smcMDI(
   beta_start = 0,
   start_sweeps = 0L,
   split_merge = 0L,
-  fixed = NULL
+  fixed = NULL,
+  joint_allocation = 0L
 )
 }
 \arguments{
@@ -101,6 +102,10 @@ procedure: read the corresponding item under \emph{What is guaranteed}.}
 \item{split_merge}{Split-merge style moves in every sweep of every particle; see
 \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
 guarantees below are unchanged; they can only change the variance.}
+
+\item{joint_allocation}{Joint redraw of each item's labels across a block of views in every
+sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
+below are unchanged.}
 
 \item{fixed}{Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).}
 }

@@ -58,6 +58,8 @@ using namespace arma ;
 //' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
 //' @param split_merge Attempts per view and sweep of the sequentially-allocated 
 //' re-partition of two randomly chosen components (0 turns it off).
+//' @param joint_allocation Size of the blocks of views whose labels are redrawn jointly for each
+//' item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -80,7 +82,8 @@ Rcpp::List runMDI(
   arma::vec betas,
   arma::uword swap_scheme,
   arma::uword swap_every,
-  arma::uword split_merge
+  arma::uword split_merge,
+  arma::uword joint_allocation
 );
 
 #endif /* RUNMDI_H */

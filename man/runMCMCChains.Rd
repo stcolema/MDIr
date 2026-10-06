@@ -27,7 +27,8 @@ runMCMCChains(
   betas = 1,
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
-  split_merge = 0L
+  split_merge = 0L,
+  joint_allocation = 0L
 )
 }
 \arguments{
@@ -84,8 +85,8 @@ CRAN requires. Progress messages are given when the chains have finished.}
 \item{betas, swap_scheme, swap_every}{Parallel tempering within each chain; see
 \code{\link{callMDI}}.}
 
-\item{split_merge}{Split-merge style moves within each chain; see
-\code{\link{callMDI}}.}
+\item{split_merge, joint_allocation}{Split-merge style moves and joint allocation within each
+chain; see \code{\link{callMDI}}.}
 }
 \value{
 An object of class \code{mdir_fit_list}: a list with one

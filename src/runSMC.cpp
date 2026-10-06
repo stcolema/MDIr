@@ -70,7 +70,8 @@ Rcpp::List runMDISMC(
     arma::uword final_thin,
     double beta_start,
     arma::uword start_sweeps,
-    arma::uword split_merge
+    arma::uword split_merge,
+    arma::uword joint_allocation
 ) {
   if(n_particles < 2) {
     Rcpp::stop("At least two particles are needed.");
@@ -119,6 +120,7 @@ Rcpp::List runMDISMC(
     ));
     particles[i]->phi_slice = phi_slice;
     particles[i]->setSplitMerge(split_merge);
+    particles[i]->setJointAllocation(joint_allocation);
     particles[i]->initialiseFromPrior();
     // beta = 0 (this also refuses the models the tempering is not defined for)
     particles[i]->setBeta(0.0);
