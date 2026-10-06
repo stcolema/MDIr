@@ -72,6 +72,24 @@ NULL
 #' return Sample from Beta(a, b).
 NULL
 
+#' @title Draw the labels of one item jointly across views
+#' @description Repeated draws from the exact joint conditional of the labels of one item
+#' in a block of views (see `mdiSampleJointBlock`), for checking the draw against
+#' enumeration.
+#' @param log_g Log of the likelihood of the item in each component of each view (K_max x
+#' L); -Inf marks a component the item cannot take.
+#' @param w The weights (K_max x L).
+#' @param K Number of components of each view.
+#' @param phi Symmetric matrix of the phis.
+#' @param block The views drawn together, from 0.
+#' @param current The labels of the item in every view, from 0 (those outside the block
+#' are held fixed).
+#' @param n_draws Number of draws.
+#' @return A matrix with a row for each draw and a column for each view of the block.
+jointAllocationDrawCpp <- function(log_g, w, K, phi, block, current, n_draws) {
+    .Call(`_mdir_jointAllocationDrawCpp`, log_g, w, K, phi, block, current, n_draws)
+}
+
 #' @title Gamma log-likelihood
 #' @description The log-likelihood of each element of a vector in a Gamma 
 #' distribution parametrised with a shape and rate.
@@ -448,9 +466,11 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
 #' @param split_merge Attempts per view and sweep of the sequentially-allocated 
 #' re-partition of two randomly chosen components (0 turns it off).
+#' @param joint_allocation Size of the blocks of views whose labels are redrawn jointly for each
+#' item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -508,10 +528,11 @@ runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, label
 #' \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.
 #' @param start_sweeps Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).
 #' @param split_merge Split-merge attempts per view and sweep (see `runMDI`).
+#' @param joint_allocation Size of the blocks of views redrawn jointly for each item (see `runMDI`).
 #' @return A list with the particles' recorded draws and weights, the evidence
 #' estimate and the trace of the run.
-runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge) {
-    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge)
+runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation) {
+    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation)
 }
 
 #' @title Collapsed log marginal likelihood of a set of items (test hook)

@@ -1,6 +1,7 @@
 // mdiPartition.cpp
 // =============================================================================
 # include "mdiPartition.h"
+# include "genericFunctions.h"
 
 using namespace arma ;
 
@@ -452,4 +453,121 @@ double mdiSamplePhiSlice(
     }
   }
   return phi;
+}
+
+
+// === Exact joint draw of the labels of one item across views ================
+
+std::vector< std::vector<double> > mdiSuffixConnectedSums(const arma::mat& phi) {
+  const uword L = phi.n_cols;
+  std::vector< std::vector<double> > out(L);
+  for(uword t = 0; t < L; t++) {
+    if(L - t == 1) {
+      out[t] = std::vector<double>{0.0, 1.0};
+    } else {
+      out[t] = mdiConnectedSums(phi.submat(t, t, L - 1, L - 1));
+    }
+  }
+  return out;
+}
+
+arma::uvec mdiSampleJointLabels(
+    arma::mat G,
+    const arma::uvec& K,
+    const arma::mat& phi,
+    const std::vector< std::vector<double> >& suffix_C
+) {
+  const uword L = G.n_cols;
+  arma::uvec out(L);
+
+  // The scale of a column does not change the conditional
+  for(uword l = 0; l < L; l++) {
+    const double m = G.col(l).max();
+    if(!(m > 0.0) || !std::isfinite(m)) {
+      Rcpp::stop("No component has positive probability for an item in view %d.", (int) l + 1);
+    }
+    G.col(l) /= m;
+  }
+
+  for(uword t = 0; t < L; t++) {
+    arma::vec probs(K(t));
+    if(L - t == 1) {
+      for(uword k = 0; k < K(t); k++) {
+        probs(k) = G(k, t);
+      }
+    } else {
+      const arma::mat G_sub = G.cols(t, L - 1);
+      const arma::uvec K_sub = K.subvec(t, L - 1);
+      const arma::vec rates = mdiWeightRates(G_sub, K_sub, suffix_C[t], 0);
+      for(uword k = 0; k < K(t); k++) {
+        probs(k) = G(k, t) * rates(k);
+      }
+    }
+    const double total = arma::accu(probs);
+    if(!(total > 0.0) || !std::isfinite(total)) {
+      Rcpp::stop("Non-finite joint allocation probabilities.");
+    }
+    const uword c = sampleCategorical(probs / total);
+    out(t) = c;
+    for(uword j = t + 1; j < L; j++) {
+      if(c < K(j)) {
+        G(c, j) *= 1.0 + phi(t, j);
+      }
+    }
+  }
+  return out;
+}
+
+arma::uvec mdiSampleJointBlock(
+    const arma::mat& log_g,
+    const arma::mat& w,
+    const arma::uvec& K,
+    const arma::mat& phi,
+    const arma::uvec& block,
+    const arma::uvec& current,
+    const std::vector< std::vector<double> >* suffix_C
+) {
+  const uword L = w.n_cols, b = block.n_elem;
+  std::vector<bool> in_block(L, false);
+  for(uword j = 0; j < b; j++) {
+    in_block[block(j)] = true;
+  }
+
+  arma::mat G(w.n_rows, b, arma::fill::zeros);
+  arma::uvec K_block(b);
+  arma::mat phi_block(b, b, arma::fill::zeros);
+  for(uword j = 0; j < b; j++) {
+    const uword l = block(j);
+    K_block(j) = K(l);
+    double top = -arma::datum::inf;
+    for(uword k = 0; k < K(l); k++) {
+      if(w(k, l) > 0.0 && log_g(k, l) > top) {
+        top = log_g(k, l);
+      }
+    }
+    if(!std::isfinite(top)) {
+      Rcpp::stop("No component has positive probability for an item in view %d.", (int) l + 1);
+    }
+    for(uword k = 0; k < K(l); k++) {
+      if(std::isfinite(log_g(k, l))) {
+        G(k, j) = w(k, l) * std::exp(log_g(k, l) - top);
+      }
+    }
+    // Views outside the block, held at their current labels
+    for(uword m = 0; m < L; m++) {
+      if(!in_block[m] && current(m) < K(l)) {
+        G(current(m), j) *= 1.0 + phi(l, m);
+      }
+    }
+    for(uword i = 0; i < b; i++) {
+      if(i != j) {
+        phi_block(j, i) = phi(l, block(i));
+      }
+    }
+  }
+
+  if(suffix_C != nullptr) {
+    return mdiSampleJointLabels(G, K_block, phi_block, *suffix_C);
+  }
+  return mdiSampleJointLabels(G, K_block, phi_block, mdiSuffixConnectedSums(phi_block));
 }

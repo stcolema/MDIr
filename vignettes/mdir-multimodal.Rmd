@@ -261,13 +261,18 @@ This is not a quirk of the example. In MDI, the coupling makes some modes sticky
 once a cluster is split into two in *both* of two strongly associated views (or an
 item forms its own small cluster in both), a move that merges the clusters in one
 view alone makes the allocations disagree, which the coupling penalises heavily, so
-the chain stays where it is. Such modes have higher likelihood and more
+the chain stays where it is. A joint redraw of each item's labels across views
+(`joint_allocation`) removes the penalty for moving an item in one view, and it helps
+with the sticky modes in which a small cluster is aligned across views, but we found
+it reduces rather than removes the chains that stay in an aligned split. Such modes have higher likelihood and more
 components, and they are not necessarily where the posterior mass is. When we
 repeated this analysis with other random seeds, plain chains of this length
 disagreed in a sizeable share of the runs. Pooling chains in which one is stuck would
 give the wrong answer, and dropping the stuck chain would be a choice made after seeing
 the results. The options in increasing order of cost are: more iterations;
-`split_merge = 2`, which re-allocates items between two components of a view; and
+`joint_allocation = 3`, which redraws each item's labels in all three views together
+(roughly twice the cost per sweep); `split_merge = 2`, which re-allocates items between two
+components of a view; and
 parallel tempering, `betas = ptLadder(4)`, which lets a chain at a high temperature
 cross barriers that the posterior chain cannot. For a posterior with several
 well-separated modes, `smcMDI()` and `smcReplicates()` give weighted ensembles that do

@@ -238,6 +238,60 @@ mass without the group-unit approximation is not feasible here.
 Mixing of the move is not guaranteed by Prop. SM1: invariance only. That it removed the basin
 weights in this example is an observation about this example.
 
+## 5c. Joint allocation of an item across views
+
+**The move.** For each item, redraw its labels in a block of views from their exact joint conditional given the
+weights, phis, component parameters and the item's labels in the other views, then (with outlier components) its
+outlier flags given the components, then redraw any missing values given the new allocation. It follows the ordinary
+per-view allocation step in the sweep (`joint_allocation`).
+
+**Proposition JA1 [G1; the conditional is derived below, the invariance is Lean `gibbsK_invariant`].** Given
+`(w, phi, theta, v)` and the labels of the other items, the items are independent (Z does not involve the labels),
+and the conditional of the labels `c_l, l in B` of one item in a block `B` of views is proportional to
+`prod_{l in B} a_l(c_l) prod_{l<m; l or m in B} (1 + phi_lm 1[c_l = c_m])`, with `a_l(k) = w_lk g_l(k)`, `g_l(k)`
+the likelihood of the item in component `k` raised to `beta`, marginalised over its outlier flag where the view has an outlier
+component, and a single point mass at the observed component for an observed label. Drawing a block from its full
+conditional leaves the target invariant. Outlier components: the (component, flag) pair has weight
+`w_k [(1 - eps) f_k + eps f_out]` summed over the flag, so drawing the component from the marginal and then the flag
+given the component is an exact draw of the pair. Missing values: the allocation uses the likelihood of the observed
+entries (the imputed entries marginalised) and the imputation is then redrawn, the same partially collapsed
+ordering as the ordinary allocation step.
+
+**The sequential draw.** The first view of the block is drawn from its marginal `a_1(k) dZ(a)/da_1(k) / Z(a)`, where `Z`
+is the polynomial of `mdiPartition.h` in the block's scores (it is multilinear in each view's column, so the sum over the
+other views' labels is `dZ/da_1(k)`, which the recursion of `mdiWeightRates()` computes). Given `c_1 = k`, the terms
+that involve view 1 are `(1 + phi_1m 1[c_m = k])`, which multiply `a_m(k)` by `1 + phi_1m` and leave the other
+terms of the form of the same polynomial over the remaining views with the sub-matrix of `phi`. Repeating this draws
+the block's labels exactly, at a cost `O(b 3^b + b K)` per item for a block of `b` views, so that the number of
+components enters linearly (a 125-component view costs no more than a 5-component one). Views outside the block
+enter through `(1 + phi)` factors at the component their label indicates. The same draw gives exact prior labels beyond the
+5e6 combinations that enumeration is limited to (`samplePriorLabels`, used by `smcMDI()` and
+`simulatePriorPredictive()`).
+
+**Checks [evidence, not proof].**
+* `tests/testthat/test-joint-allocation.R`: the draw against enumeration of the exact conditional for ragged numbers
+  of components, excluded components, blocks of two or three of four views, large `phi` (40), a flat likelihood (the prior draw), and
+  scores spanning hundreds of log units (max |z| < 4.5 over all cells, chi-square p > 1e-4); the marginals of the draw against
+  `mdiClassProbabilities()`; a mutant that drops the `(1 + phi)` conditioning fails 14 of the 21 enumeration and marginal expectations and three of the five of the prior-recovery test.
+* `run_L2_joint.R` (two views, N = 4, K = 2, exact posterior with the Monte Carlo prior of the cell counts): the full
+  sampler with the joint allocation, single chain `beta = 1`, `beta = 0.5` and the cold chain of parallel tempering, total variation
+  0.0037, 0.0031 and 0.0034 against chain noise 0.0037, 0.0033 and 0.0032; the control (chain at `beta = 1`
+  against the exact `beta = 0.5`) is rejected (0.22). Largest |z| over about 80 states 3.0, 3.2 and 4.5 (the last with mean z^2 1.30 against 1.15 expected).
+* `test-joint-allocation.R`: the sampler recovers the prior under a constant likelihood; observed labels (with a gap in
+  the classes) are never changed, for `"G"`, `"MVN"` and `"TAGM"` views.
+* Not checked exactly: outlier components with missing values inside the joint step (only the observed-label invariance
+  and the prior-recovery tests apply); the move with a block smaller than the number of views inside a full sampler.
+
+**What it does for mixing [empirical, `verification/joint_allocation`].** On the larger scenario (three views, 30 true
+clusters, `K = 45`, N = 300, four chains per configuration, three seeds, R = 4000) the mean Rhat of the key
+log-likelihoods is 2.83 for the plain sampler, 2.42 with joint allocation, 2.75 with split-merge and 2.28 with both; the
+number of occupied components in view 1 is 19 to 21 against 30 true clusters in all four, and the across-chain sd of the
+joint log-likelihood is 114, 64, 87 and 71. Every configuration is far from converged, so the differences are not
+established (three seeds, no interval). Cost per sweep rises by about 1.8 times with joint allocation. The mechanism
+that the experiments point to is that aligned splits are held by the rich-get-richer prior across views, which no
+single-item move removes. A collapsed joint split-merge across aligned components (Proposition SM1 extends to it) is the
+move that would address this and is not implemented.
+
 ## 6. What would give a certificate, and is not built
 
 A finite-sample certificate of mixing would need a bound on the total-variation distance of a

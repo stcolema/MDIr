@@ -66,6 +66,8 @@ The `beta = 1` replica's draws are returned.
 | Outlier component with missing values: exact given the imputed complete data; observed-only density mutant rejected | exact enumeration | `run_splitmerge_outlier_missing.R`, `test-splitmerge.R` |
 | TAGM full sampler (with and without missing cells) with split-merge agrees with plain chain (alone, and coupled to an MVN view) | agreement of two samplers | `run_splitmerge_tagm.R` |
 | Four-cluster example, plain chains with split-merge, pooled | exact group-unit masses; TV 0.015 (sep 2.5), 0.001 (sep 4) | `pooled_plain_sm.R` |
+| Joint allocation of an item across views: the sequential draw equals the exact conditional (enumeration, ragged `K`, excluded components, blocks of views, large `phi`); the marginals equal `mdiClassProbabilities()`; mutant caught | enumeration; testthat | `tests/testthat/test-joint-allocation.R` |
+| Full sampler with the joint allocation reproduces the exact two-view label posterior (single chain, `beta = 0.5`, PT cold chain); control rejected | exact enumeration with Monte Carlo prior of the cell counts | `run_L2_joint.R` |
 
 Tests were also run against two deliberately broken versions (wrong sign in the exchange,
 counts not tempered in the MVN update); each was caught.

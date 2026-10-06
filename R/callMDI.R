@@ -81,6 +81,18 @@
 #' (semi-supervised views) and missing values are allowed (the move scores a flagged item with the
 #' outlier density of its complete, imputed vector); \code{betas} may be combined with it for views without an outlier
 #' component (tempering itself refuses outlier components).
+#' @param joint_allocation Size of the blocks of views whose labels are redrawn together for each item (a block of
+#' views per item and sweep, after the ordinary allocation step). The labels of an item in the views of
+#' a block are drawn from their exact joint conditional given everything else, so the move leaves
+#' the posterior invariant (it is a block of a Gibbs sweep). It matters when views are
+#' strongly associated: a move of an item in one view alone breaks its agreement with the others and
+#' pays a factor (1 + phi) for each view it agrees with, so clusters that are aligned across
+#' views are hard to merge or split by single-view moves; a joint move keeps the alignment.
+#' Use the number of views to redraw the item in all of them at once; with more views than the block
+#' size a random subset of views is used for each item. The cost grows as 3 to the power of
+#' the block size, with the number of components entering linearly, so a block of the 2 to 4
+#' views is cheap even with 100 components. \code{0} (default) turns it off. Allowed for every
+#' density, outlier components, missing values and observed labels, and with \code{betas}.
 #' @return An object of class \code{mdir_fit}: a named list containing the
 #' sampled partitions, component weights, phi and mass parameters, model fit
 #' measures and some details on the model call. It prints as a short report
@@ -151,10 +163,12 @@ callMDI <- function(X,
                     betas = 1,
                     swap_scheme = c("deo", "seo"),
                     swap_every = 1L,
-                    split_merge = 0L) {
+                    split_merge = 0L,
+                    joint_allocation = 0L) {
 
   phi_update <- match.arg(phi_update)
   .mdirCheckCount(split_merge, "split_merge", 0)
+  .mdirCheckJointAllocation(joint_allocation)
   swap_scheme <- match.arg(swap_scheme)
   betas <- .mdirCheckLadder(betas)
   if (!is.numeric(swap_every) || length(swap_every) != 1 || is.na(swap_every) || swap_every < 1) {
@@ -249,7 +263,8 @@ callMDI <- function(X,
     betas = betas,
     swap_scheme = as.integer(swap_scheme == "seo"),
     swap_every = as.integer(swap_every),
-    split_merge = as.integer(split_merge)
+    split_merge = as.integer(split_merge),
+    joint_allocation = as.integer(joint_allocation)
   )
   
   # Traces are returned as one-column matrices; use plain vectors
@@ -294,6 +309,7 @@ callMDI <- function(X,
   mcmc_output$phi_update <- phi_update
   mcmc_output$betas <- betas
   mcmc_output$split_merge <- c(list(moves = as.integer(split_merge)), mcmc_output$split_merge)
+  mcmc_output$joint_allocation <- as.integer(joint_allocation)
   mcmc_output$tempering <- .mdirTidyTempering(mcmc_output$tempering, betas, swap_scheme)
 
   # Indicate if the model was semi-supervised or unsupervised

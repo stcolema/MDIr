@@ -98,6 +98,9 @@
 #' @param split_merge Split-merge style moves in every sweep of every particle; see
 #' \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
 #' guarantees below are unchanged; they can only change the variance.
+#' @param joint_allocation Joint redraw of each item's labels across a block of views in every
+#' sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
+#' below are unchanged.
 #' @param fixed Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).
 #' @param beta_start,start_sweeps Start the particles at inverse temperature
 #' \code{beta_start} after \code{start_sweeps} sweeps there, instead of at the prior. Conditional
@@ -162,7 +165,8 @@ smcMDI <- function(X,
                    beta_start = 0,
                    start_sweeps = 0L,
                    split_merge = 0L,
-                   fixed = NULL) {
+                   fixed = NULL,
+                   joint_allocation = 0L) {
   if (!is.null(fixed)) {
     stop("smcMDI is unsupervised only: the particles start from exact draws of the prior, which are not available ",
       "given observed labels. Use callMDI(..., betas = ) (parallel tempering) for semi-supervised models.")
@@ -176,6 +180,7 @@ smcMDI <- function(X,
   .mdirCheckCount(thin, "thin", 1)
   .mdirCheckCount(max_steps, "max_steps", 1)
   .mdirCheckCount(split_merge, "split_merge", 0)
+  .mdirCheckJointAllocation(joint_allocation)
   if (!is.numeric(final_sweeps) || length(final_sweeps) != 1 || is.na(final_sweeps) || final_sweeps < 0) {
     stop("`final_sweeps` must be a non-negative integer.", call. = FALSE)
   }
@@ -244,7 +249,8 @@ smcMDI <- function(X,
     final_thin = as.integer(thin),
     beta_start = beta_start,
     start_sweeps = as.integer(start_sweeps),
-    split_merge = as.integer(split_merge)
+    split_merge = as.integer(split_merge),
+    joint_allocation = as.integer(joint_allocation)
   )
   time_taken <- Sys.time() - t_0
 
@@ -289,6 +295,17 @@ smcMDI <- function(X,
       "the weights are probably degenerate.", call. = FALSE)
   }
   out
+}
+
+.mdirCheckJointAllocation <- function(x) {
+  .mdirCheckCount(x, "joint_allocation", 0)
+  if (x == 1) {
+    stop("`joint_allocation` must be 0 (off) or at least 2: the number of views redrawn together.", call. = FALSE)
+  }
+  if (x > 12) {
+    stop("`joint_allocation` can be at most 12 views.", call. = FALSE)
+  }
+  invisible(x)
 }
 
 .mdirCheckCount <- function(x, name, minimum) {

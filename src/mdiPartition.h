@@ -185,4 +185,46 @@ double mdiLogPhiConditional(
     double rate
 );
 
+// === Exact joint draw of the labels of one item across views ================
+//
+// Given per-view scores a_l(k) (the component weight times the likelihood of the item),
+// the joint conditional of the labels (c_1, ..., c_L) of one item is
+//
+//   p(c) proportional to prod_l a_l(c_l) prod_{l<m} (1 + phi_lm 1[c_l = c_m]).
+//
+// It is drawn view by view without enumerating the K_1 x ... x K_L combinations. The
+// marginal of the first view is a_1(k) dZ(a) / da_1(k) (the rates of mdiWeightRates());
+// fixing c_1 = k multiplies a_m(k) by (1 + phi_1m) in every later view m, and the later views
+// again have this form with the sub-matrix of phi. The cost is O(L 3^L + L K) per item.
+
+// C tables for every suffix of the views: element t holds mdiConnectedSums() of the
+// views t, ..., L - 1. Depends on phi only, so it can be reused for every item.
+std::vector< std::vector<double> > mdiSuffixConnectedSums(const arma::mat& phi);
+
+// Draw the labels of the views of one block. G is K_max x b (a_l(k), zero beyond K(l) or
+// where the component is excluded), K and phi are restricted to the block, and suffix_C is
+// mdiSuffixConnectedSums(phi). Each column of G is rescaled internally.
+arma::uvec mdiSampleJointLabels(
+    arma::mat G,
+    const arma::uvec& K,
+    const arma::mat& phi,
+    const std::vector< std::vector<double> >& suffix_C
+);
+
+// The labels of a block of views for one item, given log_g (K_max x L, log of the likelihood
+// of the item in each component, -Inf where excluded), the weights w and the labels
+// `current` of the item in every view. Views outside the block keep their labels and
+// enter through the factors (1 + phi) they give to the matching component of the block's
+// views. Returns the new labels of the block's views, in the order of `block`.
+// `suffix_C` may be null, in which case the tables are built here.
+arma::uvec mdiSampleJointBlock(
+    const arma::mat& log_g,
+    const arma::mat& w,
+    const arma::uvec& K,
+    const arma::mat& phi,
+    const arma::uvec& block,
+    const arma::uvec& current,
+    const std::vector< std::vector<double> >* suffix_C
+);
+
 #endif /* MDIPARTITION_H */

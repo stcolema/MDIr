@@ -27,7 +27,8 @@ Rcpp::List runMDI(
     arma::vec betas,
     arma::uword swap_scheme,
     arma::uword swap_every,
-    arma::uword split_merge
+    arma::uword split_merge,
+    arma::uword joint_allocation
 ) {
   
   if(thin < 1) {
@@ -89,6 +90,7 @@ Rcpp::List runMDI(
       replicas[t]->setBeta(betas(t));
     }
     replicas[t]->setSplitMerge(split_merge);
+    replicas[t]->setJointAllocation(joint_allocation);
   }
   arma::uvec at_temp = arma::regspace<arma::uvec>(0, T - 1);
   auto cold = [&]() -> mdi& { return *replicas[at_temp(T - 1)]; };
