@@ -101,6 +101,7 @@
 #' @param joint_allocation Joint redraw of each item's labels across a block of views in every
 #' sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
 #' below are unchanged.
+#' @param time_points Positions of the columns of Gaussian process views; see \code{\link{callMDI}}.
 #' @param fixed Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).
 #' @param beta_start,start_sweeps Start the particles at inverse temperature
 #' \code{beta_start} after \code{start_sweeps} sweeps there, instead of at the prior. Conditional
@@ -159,6 +160,7 @@ smcMDI <- function(X,
                    thin = 1L,
                    prior = mdiPrior(),
                    density_prior = densityPrior(),
+                   time_points = NULL,
                    phi_update = c("slice", "gibbs"),
                    max_steps = 2000L,
                    check_prior = TRUE,
@@ -228,6 +230,7 @@ smcMDI <- function(X,
   }
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
+  time_points <- .mdirTimePoints(time_points, X, types)
   fixed <- matrix(0, N, V)
 
   t_0 <- Sys.time()
@@ -240,6 +243,7 @@ smcMDI <- function(X,
     fixed = fixed,
     prior = as.numeric(prior),
     density_prior = as.numeric(density_prior),
+    time_points = time_points,
     phi_slice = (phi_update == "slice"),
     betas = betas,
     adaptive = (schedule == "adaptive"),
@@ -284,7 +288,7 @@ smcMDI <- function(X,
     data_log_likelihood = unname(raw$data_log_likelihood),
     root = as.integer(raw$root),
     forced_final_step = isTRUE(raw$forced_final_step),
-    N = N, V = V, P = P, K = K, types = types, n_particles = P_n,
+    N = N, V = V, P = P, K = K, types = types, time_points = time_points, n_particles = P_n,
     n_draws = n_draws, schedule_type = schedule, cess = cess,
     beta_start = beta_start, start_sweeps = as.integer(start_sweeps),
     resample_threshold = resample_threshold, resample = resample,

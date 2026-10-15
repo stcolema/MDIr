@@ -34,6 +34,16 @@
 #' @param density_prior Density-level (hierarchical) prior options, created by
 #' \code{\link{densityPrior}}: pooling of the variance scale across components and
 #' the priors of Gaussian process views, including a floor on the GP length scale.
+#' @param time_points For Gaussian process views (\code{"GP"}, \code{"TAGPM"}): the
+#' position of each column, for example the times of a time course. \code{NULL} (the
+#' default) places the columns at 0, 1, ..., P - 1. Otherwise a list with an entry
+#' for each view, \code{NULL} or a numeric vector with one finite, distinct value per
+#' column (a plain vector is accepted when there is one view). The values need not
+#' be equally spaced or sorted, and they are the same for every item: items
+#' measured at different positions need those positions as columns, with
+#' \code{NA} where an item was not measured. Length scales are in the units of the
+#' positions, and \code{gp_min_length} of \code{\link{densityPrior}} is in multiples
+#' of the smallest spacing between them.
 #' @param check_prior Logical. Report a message if the prior on the weights is on
 #' the side of the Rousseau and Mengersen (2011) threshold that duplicates rather
 #' than empties superfluous components (see \code{\link{mdiPrior}}). Set
@@ -157,6 +167,7 @@ callMDI <- function(X,
                     save_imputed = FALSE,
                     prior = mdiPrior(),
                     density_prior = densityPrior(),
+                    time_points = NULL,
                     check_prior = TRUE,
                     save_pointwise = FALSE,
                     phi_update = c("slice", "gibbs"),
@@ -249,6 +260,7 @@ callMDI <- function(X,
   #   checkLabels(initial_labels[, v], K[v])
 
   proposal_windows <- processProposalWindows(proposal_windows, types)
+  time_points <- .mdirTimePoints(time_points, X, types)
 
   # The allocation probabilities (N x K x draws) are large and only used for
   # semi-supervised views
@@ -271,6 +283,7 @@ callMDI <- function(X,
     save_imputed,
     as.numeric(prior),
     as.numeric(density_prior),
+    time_points,
     save_allocation_probabilities = as.integer(is_semisupervised),
     save_pointwise = save_pointwise,
     phi_slice = (phi_update == "slice"),
@@ -326,6 +339,7 @@ callMDI <- function(X,
   mcmc_output$alpha <- alpha
   mcmc_output$prior <- prior
   mcmc_output$density_prior <- density_prior
+  mcmc_output$time_points <- time_points
   mcmc_output$phi_update <- phi_update
   mcmc_output$betas <- betas
   mcmc_output$split_merge <- c(list(moves = as.integer(split_merge)), mcmc_output$split_merge)

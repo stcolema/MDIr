@@ -19,6 +19,7 @@ callMixtureModel(
   save_imputed = FALSE,
   prior = mdiPrior(),
   density_prior = densityPrior(),
+  time_points = NULL,
   control = mdirControl(),
   R = NULL,
   K = NULL
@@ -54,6 +55,9 @@ labels are as intended or should ``generateInitialLabels`` be called.}
 \item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
+
+\item{time_points}{For a Gaussian process (\code{type = "GP"} or \code{"TAGPM"}), a numeric vector
+with the position of each column; see \code{\link{callMDI}}.}
 
 \item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
 Gaussian process hyperparameters and whether and for how long they are adapted

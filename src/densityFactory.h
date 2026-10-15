@@ -44,7 +44,8 @@ public:
     arma::uword K,
     arma::uvec labels,
     arma::mat X,
-    arma::vec density_prior
+    arma::vec density_prior,
+    arma::vec time_points = arma::vec()
   );
 };
 

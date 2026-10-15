@@ -11,6 +11,7 @@ simulatePriorPredictive(
   n_datasets = 20,
   prior = mdiPrior(),
   density_prior = densityPrior(),
+  time_points = NULL,
   mimic_missingness = TRUE,
   K = NULL
 )
@@ -30,6 +31,9 @@ in every view.}
 \item{prior}{MDI-level priors, see \code{\link{mdiPrior}}.}
 
 \item{density_prior}{Density-level priors, see \code{\link{densityPrior}}.}
+
+\item{time_points}{Positions of the columns of Gaussian process views, see
+\code{\link{callMDI}}.}
 
 \item{mimic_missingness}{If \code{TRUE} the entries that are \code{NA} in
 \code{X} are set to \code{NA} in every simulated dataset so that summaries

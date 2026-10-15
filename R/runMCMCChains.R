@@ -23,7 +23,7 @@
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
-#' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
+#' @param save_parameters,save_imputed,prior,density_prior,time_points See ``callMDI``.
 #' @param save_pointwise,phi_update See ``callMDI``.
 #' @param betas,swap_scheme,swap_every Parallel tempering within each chain; see
 #' \code{\link{callMDI}}.
@@ -83,6 +83,7 @@ runMCMCChains <- function(X,
                           save_imputed = FALSE,
                           prior = mdiPrior(),
                           density_prior = densityPrior(),
+                          time_points = NULL,
                           verbose = FALSE,
                           save_pointwise = FALSE,
                           phi_update = c("slice", "gibbs"),
@@ -131,6 +132,7 @@ runMCMCChains <- function(X,
       save_imputed = save_imputed,
       prior = prior,
       density_prior = density_prior,
+      time_points = time_points,
       check_prior = FALSE,
       save_pointwise = save_pointwise,
       phi_update = phi_update,

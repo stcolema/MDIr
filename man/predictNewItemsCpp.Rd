@@ -17,7 +17,8 @@ predictNewItemsCpp(
   allocations,
   coclustering,
   prior,
-  density_prior
+  density_prior,
+  time_points
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ item shares a component with each fitted item.}
 \item{prior}{Optional MDI-level prior vector (see `runMDI`).}
 
 \item{density_prior}{Density-level prior options (see `runMDI`).}
+
+\item{time_points}{For each view, the positions of the columns of a Gaussian process view.}
 }
 \value{
 A list with `log_likelihood` (draws x new items), `class_probability`

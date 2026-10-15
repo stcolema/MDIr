@@ -13,6 +13,7 @@ runMDISMC(
   fixed,
   prior,
   density_prior,
+  time_points,
   phi_slice,
   betas,
   adaptive,
@@ -32,7 +33,7 @@ runMDISMC(
 \arguments{
 \item{n_particles}{Number of particles.}
 
-\item{Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice}{As in `runMDI`.
+\item{Y, K, mixture_types, outlier_types, fixed, prior, density_prior, time_points, phi_slice}{As in `runMDI`.
 `fixed` must be all zero (unsupervised views only).}
 
 \item{betas}{Fixed schedule: strictly increasing values in (0, 1] ending at 1.

@@ -17,6 +17,7 @@ runMDIWriteToFile(
   save_dir,
   prior,
   density_prior,
+  time_points,
   auto_tune = FALSE,
   n_burn = 0L
 )
@@ -50,6 +51,8 @@ label.}
 \item{prior}{Optional vector of MDI-level prior hyperparameters (see `runMDI`).}
 
 \item{density_prior}{Options of the density-level priors (see `runMDI`).}
+
+\item{time_points}{For each view, the positions of the columns of a Gaussian process view (see `runMDI`).}
 
 \item{auto_tune, n_burn}{Adapt the Gaussian process proposal windows during the first
 `n_burn` sweeps (see `runMDI`).}

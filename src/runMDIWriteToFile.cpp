@@ -21,6 +21,7 @@ void runMDIWriteToFile(
     std::string save_dir,
     arma::vec prior,
     arma::vec density_prior,
+    arma::field< arma::vec > time_points,
     bool auto_tune,
     arma::uword n_burn
 ) {
@@ -29,7 +30,7 @@ void runMDIWriteToFile(
     Rcpp::stop("thin must be a positive integer.");
   }
   
-  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior);
+  mdi my_mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior, time_points);
   // A single view has no phi: its slot is left out so the layout matches the R reader
   const uword L = my_mdi.L, N = my_mdi.N, LC2 = (my_mdi.L > 1) ? my_mdi.LC2 : 0, K_sum = accu(K);
   const std::string gen_filename = save_dir + "/MDIMcmcSample";

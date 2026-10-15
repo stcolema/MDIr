@@ -19,17 +19,22 @@
 #' \strong{Gaussian process views (\code{"GP"}, \code{"TAGPM"}).} Component \eqn{k}
 #' has mean function \eqn{\mu_k = \xi + f_k} with \eqn{\xi} the column means and
 #' \eqn{f_k} a Gaussian process with squared exponential kernel
-#' \eqn{a_k \exp(-\Delta^2 / (2 \lambda_k^2))} over measurements one unit
-#' apart, plus measurement noise variance \eqn{\sigma_k^2}.
+#' \eqn{a_k \exp(-\Delta^2 / (2 \lambda_k^2))} over the positions of the
+#' measurements (one unit apart unless \code{time_points} is given to the fitting
+#' function), plus measurement noise variance \eqn{\sigma_k^2}.
 #' \emph{Length scale.} Fitting the length scale freely tends to drive it below
 #' what the data can resolve; a length scale shorter than the spacing makes the
 #' kernel diagonal, so the mean function is white noise, cannot be told apart
 #' from the measurement noise, and fits noise (overfitting). Two safeguards are
-#' used. \eqn{\lambda_k} cannot fall below \code{gp_min_length} (default one grid
-#' spacing), and it has an inverse-gamma prior calibrated so that 1\% of its mass
-#' lies below \code{gp_min_length} and 1\% above the extent of the grid,
-#' \eqn{P - 1} (the recipe of Betancourt, 2017, "Robust Gaussian Process
-#' Modeling"). \emph{Amplitude and noise.} \eqn{\log a_k} and
+#' used. \eqn{\lambda_k} cannot fall below \code{gp_min_length} times the smallest
+#' spacing between measurements (by default one spacing), and it has an
+#' inverse-gamma prior calibrated so that 1\% of its mass lies below that floor and
+#' 1\% above the extent of the measurements, the distance from the first to the last
+#' (\eqn{P - 1} for the default positions; the recipe of Betancourt, 2017, "Robust
+#' Gaussian Process Modeling"). With unequally spaced measurements the smallest
+#' spacing is a choice, not a result: it is the largest floor that never excludes a
+#' length scale that the closest pair of measurements can resolve, but a very close
+#' pair makes the floor low for the rest, in which case raise \code{gp_min_length}. \emph{Amplitude and noise.} \eqn{\log a_k} and
 #' \eqn{\log \sigma_k^2} each have a normal population shared by the components,
 #' \eqn{N(m, s^2)}, with \eqn{m \sim N(\log v, } \code{gp_center_sd}\eqn{^2)}
 #' centred on the average data variance \eqn{v} (so the data need not be
@@ -39,8 +44,9 @@
 #' @param scale_pool_shape Shape \eqn{a} of the hyperprior on the variance
 #' scale; 0 disables pooling.
 #' @param pool_gp Logical. Pool the GP amplitude and noise across components.
-#' @param gp_min_length Smallest permitted GP length scale, in units of the
-#' spacing between adjacent measurements.
+#' @param gp_min_length Smallest permitted GP length scale, in multiples of the
+#' smallest spacing between measurements (the spacing itself for equally spaced
+#' columns).
 #' @param gp_center_sd Prior sd of the centre of the log amplitude and log noise
 #' populations around the log average data variance.
 #' @param gp_pool_sd_scale Scale of the half-normal prior on the sd of those

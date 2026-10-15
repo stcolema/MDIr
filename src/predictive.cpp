@@ -19,11 +19,12 @@ std::unique_ptr<mdi> buildModel(
     const arma::uvec& mixture_types,
     const arma::uvec& outlier_types,
     const arma::vec& prior,
-    const arma::vec& density_prior
+    const arma::vec& density_prior,
+    const arma::field<arma::vec>& time_points
 ) {
   const uword L = X.n_elem, N = X(0).n_rows;
   arma::umat labels(N, L, arma::fill::zeros), fixed(N, L, arma::fill::zeros);
-  return std::unique_ptr<mdi>(new mdi(X, mixture_types, outlier_types, K, labels, fixed, prior, density_prior));
+  return std::unique_ptr<mdi>(new mdi(X, mixture_types, outlier_types, K, labels, fixed, prior, density_prior, time_points));
 }
 
 }
@@ -35,13 +36,16 @@ std::unique_ptr<mdi> buildModel(
 //' @param K Number of components.
 //' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).
 //' @param density_prior Density-level prior options (see `runMDI`).
+//' @param time_points For each view, the positions of the columns of a Gaussian process view.
 //' @return A named list of hyperparameters.
 //' @keywords internal
 // [[Rcpp::export]]
-Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior) {
+Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior,
+                                  Rcpp::Nullable<arma::vec> time_points = R_NilValue) {
   arma::uvec labels(X.n_rows, arma::fill::zeros);
   densityFactory::densityType val = static_cast<densityFactory::densityType>(mixture_type);
-  std::unique_ptr<density> d = densityFactory::createDensity(val, K, labels, X, density_prior);
+  std::unique_ptr<density> d = densityFactory::createDensity(val, K, labels, X, density_prior,
+                                                                time_points.isNotNull() ? Rcpp::as<arma::vec>(time_points) : arma::vec());
   return d->hyperparameterList();
 }
 
@@ -56,6 +60,7 @@ Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixtur
 //' @param n_datasets Number of datasets to simulate.
 //' @param prior Optional MDI-level prior vector (see `runMDI`).
 //' @param density_prior Density-level prior options (see `runMDI`).
+//' @param time_points For each view, the positions of the columns of a Gaussian process view.
 //' @return A list with one entry per dataset holding `data` (list of matrices), 
 //' `labels`, `outliers`, `mass`, `phis` and `weights`.
 //' @keywords internal
@@ -67,9 +72,10 @@ Rcpp::List simulatePriorPredictiveCpp(
     arma::uvec outlier_types,
     arma::uword n_datasets,
     arma::vec prior,
-    arma::vec density_prior
+    arma::vec density_prior,
+    arma::field<arma::vec> time_points
 ) {
-  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior, time_points);
   const uword L = model->L, N = model->N;
   
   Rcpp::List out(n_datasets);
@@ -123,6 +129,7 @@ Rcpp::List simulatePriorPredictiveCpp(
 //' @param outliers Cube (draws x N x L) of sampled outlier indicators.
 //' @param prior Optional MDI-level prior vector (see `runMDI`).
 //' @param density_prior Density-level prior options (see `runMDI`).
+//' @param time_points For each view, the positions of the columns of a Gaussian process view.
 //' @return A list with one entry per view: a cube (draws x N x P) of replicates.
 //' @keywords internal
 // [[Rcpp::export]]
@@ -135,9 +142,10 @@ Rcpp::List simulatePosteriorPredictiveCpp(
     arma::cube allocations,
     arma::cube outliers,
     arma::vec prior,
-    arma::vec density_prior
+    arma::vec density_prior,
+    arma::field<arma::vec> time_points
 ) {
-  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior, time_points);
   const uword L = model->L, N = model->N, n_draws = allocations.n_rows;
   
   Rcpp::List out(L);
@@ -184,6 +192,7 @@ Rcpp::List simulatePosteriorPredictiveCpp(
 //' item shares a component with each fitted item.
 //' @param prior Optional MDI-level prior vector (see `runMDI`).
 //' @param density_prior Density-level prior options (see `runMDI`).
+//' @param time_points For each view, the positions of the columns of a Gaussian process view.
 //' @return A list with `log_likelihood` (draws x new items), `class_probability`
 //' (a K_max x new items matrix for each view, averaged over draws) and, if
 //' requested, `coclustering` (a new items x N matrix for each view).
@@ -202,9 +211,10 @@ Rcpp::List predictNewItemsCpp(
     arma::cube allocations,
     bool coclustering,
     arma::vec prior,
-    arma::vec density_prior
+    arma::vec density_prior,
+    arma::field<arma::vec> time_points
 ) {
-  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior);
+  std::unique_ptr<mdi> model = buildModel(X, K, mixture_types, outlier_types, prior, density_prior, time_points);
   const uword L = model->L, n_draws = weights.n_rows, n_new = X_new(0).n_rows;
   const uword N = allocations.n_cols;
   
