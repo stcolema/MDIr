@@ -60,10 +60,12 @@ rankNormalizedRhat <- function(chains) {
   bulk <- .rhatAndEss(.rankNormalize(split))
   folded <- .rhatAndEss(.rankNormalize(abs(split - stats::median(split))))
 
-  # Tail ESS: minimum over the 5% and 95% quantile indicator functions
-  q <- stats::quantile(split, c(0.05, 0.95), names = FALSE, type = 7)
+  # Tail ESS: minimum over the 5% and 95% quantile indicator functions. The
+  # cut-offs come from the chains before splitting, as in posterior, which matters
+  # for an odd number of draws (the split drops the middle one).
+  q <- stats::quantile(chains, c(0.05, 0.95), names = FALSE, type = 7)
   ess_q <- vapply(q, function(cut) {
-    ind <- (split <= cut) * 1
+    ind <- .splitChains((chains <= cut) * 1)
     if (all(ind == ind[1])) {
       return(NA_real_)
     }
