@@ -26,7 +26,8 @@ smcMDI(
   beta_start = 0,
   start_sweeps = 0L,
   split_merge = 0L,
-  fixed = NULL
+  fixed = NULL,
+  joint_allocation = 0L
 )
 }
 \arguments{
@@ -83,7 +84,7 @@ the priors of Gaussian process views, including a floor on the GP length scale.}
 default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
 latent variable integrated out, using one slice-sampling update (Neal, 2003)
 that needs no tuning. ``"gibbs"`` is the update conditional on the
-strategic latent variable used in earlier releases. Both have the same target;
+strategic latent variable. Both have the same target;
 the slice update mixes faster (see ``NEWS.md``).}
 
 \item{max_steps}{Upper bound on the number of temperatures. If it is reached
@@ -101,6 +102,10 @@ procedure: read the corresponding item under \emph{What is guaranteed}.}
 \item{split_merge}{Split-merge style moves in every sweep of every particle; see
 \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
 guarantees below are unchanged; they can only change the variance.}
+
+\item{joint_allocation}{Joint redraw of each item's labels across a block of views in every
+sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
+below are unchanged.}
 
 \item{fixed}{Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).}
 }

@@ -1,0 +1,32 @@
+
+EQUAL-WEIGHT ENSEMBLES: proportion of chains whose final state is in a split mode
+  joint    D sweeps p_split.mean p_split.sd
+1     0 2000  48000       0.0903     0.0809
+2     3 2000  48000       0.0903     0.0314
+3     0 6000 144000       0.0417     0.0373
+4     3 6000 144000       0.0764     0.0410
+
+TEMPERED CHAINS (reference): proportion of post-burn draws in a split mode, per chain
+                   method seed p_split_draws final
+ PT + joint + split-merge 9501       0.03333     0
+ PT + joint + split-merge 9502       0.52000     1
+ PT + joint + split-merge 9503       0.00000     0
+ PT + joint + split-merge 9504       0.01333     0
+ PT + joint + split-merge 9505       0.00667     0
+ PT + joint + split-merge 9506       0.02667     0
+ PT + joint + split-merge 9507       0.02667     0
+ PT + joint + split-merge 9508       0.00667     0
+
+pilot schedule: 89 temperatures
+
+SMC (fixed pilot schedule), proportion of weighted particles in a split mode
+ method joint split_merge sweeps_per_step   P runs p_split_run_mean
+    SMC     0           0               2 300    6                0
+    SMC     3           0               2 300    6                0
+    SMC     3           2               2 300    6                0
+    SMC     3           2               8 100    6                0
+ p_split_run_sd p_split_pooled median_final_ess sd_log_evidence seconds
+              0              0            249.9            8.94    94.4
+              0              0            251.6           13.04   157.3
+              0              0            245.8           12.97   299.8
+              0              0             85.5           10.45   384.2

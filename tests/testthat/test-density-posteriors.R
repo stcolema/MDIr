@@ -24,7 +24,7 @@ test_that("diagonal Gaussian parameters follow the normal-inverse-gamma posterio
     ev <- scale_n[p] / (nu_n - 2)                                # mean of InvGamma(nu_n/2, scale_n/2)
     expect_equal(mean(theta[, P + p]), ev, tolerance = 0.05)
     expect_lt(abs(mean(theta[, p]) - mu_n[p]), 0.05 * sqrt(ev))
-    # Var(mu) = E[sigma^2] / kappa_n; the old code used variance / kappa as an sd
+    # Var(mu) = E[sigma^2] / kappa_n (mu has variance sigma^2 / kappa_n given sigma^2)
     expect_equal(var(theta[, p]), ev / kappa_n, tolerance = 0.1)
   }
 })

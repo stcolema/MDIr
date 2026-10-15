@@ -10,7 +10,7 @@ Every claim is tagged with the kind of statement it is:
 "Proved" means a Lean 4 proof (Mathlib v4.33.0, finite state spaces, standard axioms only) in
 `lean/Tempering/`, or a proof below. "Checked" means exact rational arithmetic or simulation
 against an exact reference; a check is evidence, not a proof. "Cited" means taken from a
-source I have not re-derived.
+source that has not been re-derived.
 
 ## 0. Setting
 
@@ -48,7 +48,7 @@ normalised the `t`-th marginal of `Pi` is `pi_{beta_t}` (`marginal_of_product`).
 non-reversibility of the even-odd scheme is not a violation: it is invariant and not reversible
 (exact rational check, `sympy_checks.py`).
 For general state spaces the same algebra holds with densities (Geyer, 1991; Syed et al., 2022);
-I did not formalise that.
+This is not formalised.
 
 **Proposition 2 [G2, argued, assumption A1]**. Assume (A1): every block update of the sweep has a
 strictly positive conditional density with respect to a dominating measure on the support of
@@ -57,7 +57,7 @@ logits, Gamma, inverse-Wishart, Dirichlet, normal; the mass update is a Metropol
 positive log-normal proposal; the phi update is a slice sampler). Then the sweep kernel is
 `pi_beta`-irreducible and aperiodic, with invariant law `pi_beta`; by the general theory of
 Markov chains for posterior exploration (Tierney, 1994, Section 3 on irreducibility,
-recurrence and the Gibbs/Metropolis hybrids; I did not re-check the theorem numbers) it is positive Harris
+recurrence and the Gibbs/Metropolis hybrids; the theorem numbers were not re-checked) it is positive Harris
 recurrent, so ergodic averages converge to `E_{pi_beta} f` from every starting point, and the same
 holds for the product kernel with exchanges (positive density on the product support). This
 proposition is argued here from the form of the conditionals, not proved formally. Hence the cold chain of PT
@@ -66,7 +66,7 @@ targets the posterior asymptotically **for any ladder**.
 Asymptotic correctness does not separate PT from a single chain; only the finite-time
 behaviour does, and **there is no finite-time guarantee here**. Quantitative bounds
 exist under conditions (Woodard, Schmidler and Huber, 2009; Syed et al., 2022, assume local
-equilibrium and exact sampling of the reference); I have not verified any of them for this model,
+equilibrium and exact sampling of the reference); none has been verified for this model,
 and the example shows they fail in practice (round trips 0 to 3 against about 900 predicted).
 `ptDiagnostics()` is therefore [D]. Choosing the ladder (`ptLadder`, `tuneLadder`,
 `adaptLadder`) affects efficiency only: validity does not depend on it (Theorem 1), provided
@@ -213,7 +213,7 @@ proved in Lean); that the C++ implements the stated ratio (checked below).
   max |z| 1.92 and 2.45, mean z^2 0.89 and 1.02 (agreement of two samplers).
 * `run_splitmerge_tagm.R`: full sampler, TAGM view alone and TAGM + MVN (MDI), plain chain vs split-merge chain,
   co-clustering and per-item outlier probabilities (45 quantities): max |z| 2.64 and 2.29, mean z^2 1.97 and 1.15; the 1.97
-  became 0.57 with 48 independent chains, so I read it as noise. Agreement of two samplers, not an exact reference.
+  became 0.57 with 48 independent chains, so it is read as noise. Agreement of two samplers, not an exact reference.
 * `run_L2_sm.R`: two views (MDI coupling), N = 4, K = 2, split-merge on, plain / `beta = 0.5` / PT cold
   chain against the exact posterior (MC prior reference, TV contribution of its error <= 1e-4): TV at chain-noise
   level; control rejected (TV 0.22). K = 2 makes the pair choice trivial.
@@ -233,10 +233,64 @@ reference masses (0.31 without), every chain's dominant pattern the modal one. A
 about 0.015 on the second pattern persists with 5 times longer chains and an across-chain standard error
 of 0.001, so it is not Monte Carlo noise; the reference treats each true group as an indivisible unit
 and ignores item-level misallocation, which matters at that separation, and the discrepancy vanishes
-at separation 4. I attribute it to the reference, but have not proved it, because computing the exact
+at separation 4. This is attributed to the reference but not proved: computing the exact
 mass without the group-unit approximation is not feasible here.
 Mixing of the move is not guaranteed by Prop. SM1: invariance only. That it removed the basin
 weights in this example is an observation about this example.
+
+## 5c. Joint allocation of an item across views
+
+**The move.** For each item, redraw its labels in a block of views from their exact joint conditional given the
+weights, phis, component parameters and the item's labels in the other views, then (with outlier components) its
+outlier flags given the components, then redraw any missing values given the new allocation. It follows the ordinary
+per-view allocation step in the sweep (`joint_allocation`).
+
+**Proposition JA1 [G1; the conditional is derived below, the invariance is Lean `gibbsK_invariant`].** Given
+`(w, phi, theta, v)` and the labels of the other items, the items are independent (Z does not involve the labels),
+and the conditional of the labels `c_l, l in B` of one item in a block `B` of views is proportional to
+`prod_{l in B} a_l(c_l) prod_{l<m; l or m in B} (1 + phi_lm 1[c_l = c_m])`, with `a_l(k) = w_lk g_l(k)`, `g_l(k)`
+the likelihood of the item in component `k` raised to `beta`, marginalised over its outlier flag where the view has an outlier
+component, and a single point mass at the observed component for an observed label. Drawing a block from its full
+conditional leaves the target invariant. Outlier components: the (component, flag) pair has weight
+`w_k [(1 - eps) f_k + eps f_out]` summed over the flag, so drawing the component from the marginal and then the flag
+given the component is an exact draw of the pair. Missing values: the allocation uses the likelihood of the observed
+entries (the imputed entries marginalised) and the imputation is then redrawn, the same partially collapsed
+ordering as the ordinary allocation step.
+
+**The sequential draw.** The first view of the block is drawn from its marginal `a_1(k) dZ(a)/da_1(k) / Z(a)`, where `Z`
+is the polynomial of `mdiPartition.h` in the block's scores (it is multilinear in each view's column, so the sum over the
+other views' labels is `dZ/da_1(k)`, which the recursion of `mdiWeightRates()` computes). Given `c_1 = k`, the terms
+that involve view 1 are `(1 + phi_1m 1[c_m = k])`, which multiply `a_m(k)` by `1 + phi_1m` and leave the other
+terms of the form of the same polynomial over the remaining views with the sub-matrix of `phi`. Repeating this draws
+the block's labels exactly, at a cost `O(b 3^b + b K)` per item for a block of `b` views, so that the number of
+components enters linearly (a 125-component view costs no more than a 5-component one). Views outside the block
+enter through `(1 + phi)` factors at the component their label indicates. The same draw gives exact prior labels beyond the
+5e6 combinations that enumeration is limited to (`samplePriorLabels`, used by `smcMDI()` and
+`simulatePriorPredictive()`).
+
+**Checks [evidence, not proof].**
+* `tests/testthat/test-joint-allocation.R`: the draw against enumeration of the exact conditional for ragged numbers
+  of components, excluded components, blocks of two or three of four views, large `phi` (40), a flat likelihood (the prior draw), and
+  scores spanning hundreds of log units (max |z| < 4.5 over all cells, chi-square p > 1e-4); the marginals of the draw against
+  `mdiClassProbabilities()`; a mutant that drops the `(1 + phi)` conditioning fails 14 of the 21 enumeration and marginal expectations and three of the five of the prior-recovery test.
+* `run_L2_joint.R` (two views, N = 4, K = 2, exact posterior with the Monte Carlo prior of the cell counts): the full
+  sampler with the joint allocation, single chain `beta = 1`, `beta = 0.5` and the cold chain of parallel tempering, total variation
+  0.0037, 0.0031 and 0.0034 against chain noise 0.0037, 0.0033 and 0.0032; the control (chain at `beta = 1`
+  against the exact `beta = 0.5`) is rejected (0.22). Largest |z| over about 80 states 3.0, 3.2 and 4.5 (the last with mean z^2 1.30 against 1.15 expected).
+* `test-joint-allocation.R`: the sampler recovers the prior under a constant likelihood; observed labels (with a gap in
+  the classes) are never changed, for `"G"`, `"MVN"` and `"TAGM"` views.
+* Not checked exactly: outlier components with missing values inside the joint step (only the observed-label invariance
+  and the prior-recovery tests apply); the move with a block smaller than the number of views inside a full sampler.
+
+**What it does for mixing [empirical, `verification/joint_allocation`].** On the larger scenario (three views, 30 true
+clusters, `K = 45`, N = 300, four chains per configuration, three seeds, R = 4000) the mean Rhat of the key
+log-likelihoods is 2.83 for the plain sampler, 2.42 with joint allocation, 2.75 with split-merge and 2.28 with both; the
+number of occupied components in view 1 is 19 to 21 against 30 true clusters in all four, and the across-chain sd of the
+joint log-likelihood is 114, 64, 87 and 71. Every configuration is far from converged, so the differences are not
+established (three seeds, no interval). Cost per sweep rises by about 1.8 times with joint allocation. The mechanism
+that the experiments point to is that aligned splits are held by the rich-get-richer prior across views, which no
+single-item move removes. A collapsed joint split-merge across aligned components (Proposition SM1 extends to it) is the
+move that would address this and is not implemented.
 
 ## 6. What would give a certificate, and is not built
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env Rscript
 #' @title Generate Gaussian dataset
 #' @description Generate a dataset based upon a mixture of Gaussian distributions
 #' (with independent features).

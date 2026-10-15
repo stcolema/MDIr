@@ -44,10 +44,8 @@ component densities, for use with \code{\link{callMDI}},
 
 \strong{Pooling of the variance scale (\code{"MVN"}, \code{"TAGM"},
 \code{"G"}).} The component covariances (variances for \code{"G"}) have an
-inverse-Wishart (inverse-gamma) prior whose scale was fixed from the data. The
-scale is now diagonal, \eqn{\mathrm{diag}(s)}, with a per-measurement
-hyperprior \eqn{s_p \sim \mathrm{Gamma}(a, a / c_p)}. Its mean \eqn{c_p} is the
-former data-driven value, the average marginal variance divided by
+inverse-Wishart (inverse-gamma) prior whose scale is diagonal, \eqn{\mathrm{diag}(s)}, with a per-measurement
+hyperprior \eqn{s_p \sim \mathrm{Gamma}(a, a / c_p)}. Its mean \eqn{c_p} is set from the data: the average marginal variance divided by
 \eqn{K^{2/P}}, and \eqn{a =} \code{scale_pool_shape} controls how tightly
 \eqn{s_p} is held to it (the coefficient of variation is \eqn{1/\sqrt{a}}; the
 prior on the scale of each component's spread is informed by the other
@@ -55,7 +53,7 @@ components, so small or empty components borrow strength). Richardson and Green
 (1997) also give the corresponding scale hyperparameter a prior in their
 univariate mixture. The update conditions on the occupied components only,
 which is the exact conditional with the empty components integrated out.
-\code{scale_pool_shape = 0} restores the fixed scale.
+\code{scale_pool_shape = 0} fixes the scale at \eqn{c_p}.
 
 \strong{Gaussian process views (\code{"GP"}, \code{"TAGPM"}).} Component \eqn{k}
 has mean function \eqn{\mu_k = \xi + f_k} with \eqn{\xi} the column means and

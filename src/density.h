@@ -56,7 +56,7 @@ public:
     // The number of parameters in the model
     n_param = 0;
 
-  double complete_likelihood = 0.0, observed_likelihood = 0.0, BIC = 0.0;
+  double complete_likelihood = 0.0, observed_likelihood = 0.0;
 
   uvec
     // The cluster/class labels

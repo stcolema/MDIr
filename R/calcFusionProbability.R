@@ -27,10 +27,10 @@
 #' types <- rep("G", V)
 #'
 #' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
-#' calcFusionProbabiliy(mcmc_out, 1, 2)
+#' calcFusionProbability(mcmc_out, 1, 2)
 #'
 #' @export
-calcFusionProbabiliy <- function(mcmc, v, w, processed = FALSE) {
+calcFusionProbability <- function(mcmc, v, w, processed = FALSE) {
   V <- mcmc$V
   views <- seq(1, V)
   v_not_in_views <- !(v %in% views)

@@ -118,3 +118,15 @@ test_that("GP data need not be standardised and are centred at the column means"
   tab <- table(pred, truth)
   expect_gte(sum(apply(tab, 2, max)) / N, 0.95)
 })
+
+test_that("Gaussian-process acceptance rates are proportions", {
+  skip_on_cran()
+  set.seed(5)
+  N <- 30
+  X <- list(matrix(rnorm(N * 6, rep(c(0, 2), each = 15)), N, 6))
+  rownames(X[[1]]) <- 1:N
+  fit <- callMDI(X, R = 200, thin = 5, types = "GP", K = 3, check_prior = FALSE)
+  ac <- fit$acceptance_count[[1]]
+  expect_true(all(ac >= 0 & ac <= 1))
+  expect_gt(max(ac), 0)
+})

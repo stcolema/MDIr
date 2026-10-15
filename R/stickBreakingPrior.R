@@ -1,4 +1,3 @@
-#!/usr/bin/Rscript
 #' @title Stick breaking prior
 #' @description Draw weights from the stick-breaking prior.
 #' @param alpha The concentration parameter.
@@ -8,13 +7,5 @@
 #' weights <- stickBreakingPrior(1, 50)
 #' @importFrom stats rbeta
 stickBreakingPrior <- function(alpha, K) {
-  v <- stats::rbeta(K, 1, alpha)
-  stick <- 1
-  w <- rep(0, K)
-
-  for (i in seq(1, K)) {
-    w[i] <- v[i] * stick
-    stick <- stick - w[i]
-  }
-  w
+  sampleStickBreakingPrior(alpha, K)
 }
