@@ -25,6 +25,8 @@
 #' third is for the noise. These are not used in other mixture types.
 #' @param dir_path A string for the directory to save samples to. This cannot be
 #' a shorthand containing the `~` symbol.
+#' @param prior MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.
+#' @param density_prior Density-level prior options, see \code{\link{densityPrior}}.
 #' @return A named list containing the sampled partitions, component weights,
 #' phi and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -59,13 +61,15 @@ callMDIWritingToFile <- function(X,
                     alpha = NULL,
                     initial_labels_as_intended = FALSE,
                     proposal_windows = NULL,
-                    dir_path = tempdir()) {
+                    dir_path = tempdir(),
+                    prior = mdiPrior(),
+                    density_prior = densityPrior()) {
   
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
   
   # Check inputs and translate to C++ inputs
-  checkDataCorrectInput(X)
+  checkDataCorrectInput(X, types)
   
   # The number of items modelled
   N <- nrow(X[[1]])
@@ -128,13 +132,18 @@ callMDIWritingToFile <- function(X,
     initial_labels,
     fixed,
     proposal_windows,
-    dir_path
+    dir_path,
+    as.numeric(prior),
+    as.numeric(density_prior)
   )
   
   run_details <- list()
   
   run_details$n_samples <- floor(R / thin) + 1
-  run_details$n_param <- N * V + sum(K) + V + choose(V, 2);
+  run_details$n_param <- N * V + sum(K) + V + choose(V, 2) + 2
+  run_details$N <- N
+  run_details$V <- V
+  run_details$K <- K
   
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0

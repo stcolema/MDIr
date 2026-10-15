@@ -7,12 +7,17 @@
 getLikelihood(mcmc_output)
 }
 \arguments{
-\item{mcmc_output}{The output from the mixture model.}
+\item{mcmc_output}{The output from ``callMDI`` or ``processMCMCChain``.}
 }
 \value{
-A data.frame containing the model log-likelihood and the associated
-iteration.
+A data.frame with the log-likelihood (``log_likelihood``), its
+``type`` and the MCMC ``iteration`` at which it was recorded.
 }
 \description{
-Extracts the model fit score from the mixture model output.
+Extracts the model fit traces from the output of ``callMDI`` (or
+a processed chain): the complete-data log-likelihood (the likelihood of the
+data given the sampled allocations, summed over views) and the observed-data
+log-likelihood (each view's items marginalised over their component under the
+view's own normalised weights; the cross-view coupling is not part of a
+single view's likelihood).
 }

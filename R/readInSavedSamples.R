@@ -29,27 +29,32 @@
 #' mcmc_out <- readInSavedSamples(model_call)
 #' @export
 readInSavedSamples <- function(run_details) {
-  
+  N <- run_details$N
+  V <- run_details$V
+  K <- run_details$K
   n_samples <- run_details$n_samples
   n_param <- run_details$n_param
   dir_path <- run_details$Save_dir
   .output <- readMCMCsamples(n_samples, n_param, dir_path)
-  
+
   mcmc_output <- run_details
   mcmc_output$allocations <- array(dim = c(n_samples, N, V))
-  mcmc_output$weights <- array(dim = c(n_samples, max(K), V))
-  
-  for(v in seq(1, V)) {
-    mcmc_output$allocations[, , v] <- .output[, seq(N * (v - 1) + 1, N * v)]
-    if(v == 1) {
-      mcmc_output$weights[, seq(1, K[v]), v] <- .output[, seq(N * V + 1, N * V + K[v])]
-    } else {
-      mcmc_output$weights[, seq(1, K[v]), v] <- .output[, seq(N * V + 1 + K[v - 1], N * V + K[v])]
-    }
+  mcmc_output$weights <- array(0, dim = c(n_samples, max(K), V))
+
+  # Layout of a saved sample: labels (view by view), weights (view by view),
+  # masses, phis, complete likelihood, observed likelihood.
+  weight_start <- N * V
+  for (v in seq_len(V)) {
+    mcmc_output$allocations[, , v] <- .output[, N * (v - 1) + seq_len(N), drop = FALSE]
+    mcmc_output$weights[, seq_len(K[v]), v] <- .output[, weight_start + seq_len(K[v]), drop = FALSE]
+    weight_start <- weight_start + K[v]
   }
-  
-  mcmc_output$mass <- .output[, seq(N * V + sum(K), N * V + sum(K) + V)]
-  mcmc_output$phis <- .output[, seq(N * V + sum(K) + V, n_param)]
-  
+
+  n_phi <- choose(V, 2)
+  mcmc_output$mass <- .output[, weight_start + seq_len(V), drop = FALSE]
+  mcmc_output$phis <- .output[, weight_start + V + seq_len(n_phi), drop = FALSE]
+  mcmc_output$complete_likelihood <- .output[, weight_start + V + n_phi + 1]
+  mcmc_output$observed_likelihood <- .output[, weight_start + V + n_phi + 2]
+
   mcmc_output
 }

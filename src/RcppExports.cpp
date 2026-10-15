@@ -104,6 +104,263 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// densityHyperparameters
+Rcpp::List densityHyperparameters(arma::mat X, arma::uword K, arma::uword mixture_type, arma::vec density_prior);
+RcppExport SEXP _mdir_densityHyperparameters(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typeSEXP, SEXP density_priorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type mixture_type(mixture_typeSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    rcpp_result_gen = Rcpp::wrap(densityHyperparameters(X, K, mixture_type, density_prior));
+    return rcpp_result_gen;
+END_RCPP
+}
+// simulatePriorPredictiveCpp
+Rcpp::List simulatePriorPredictiveCpp(arma::field<arma::mat> X, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::uword n_datasets, arma::vec prior, arma::vec density_prior);
+RcppExport SEXP _mdir_simulatePriorPredictiveCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP n_datasetsSEXP, SEXP priorSEXP, SEXP density_priorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_datasets(n_datasetsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    rcpp_result_gen = Rcpp::wrap(simulatePriorPredictiveCpp(X, K, mixture_types, outlier_types, n_datasets, prior, density_prior));
+    return rcpp_result_gen;
+END_RCPP
+}
+// simulatePosteriorPredictiveCpp
+Rcpp::List simulatePosteriorPredictiveCpp(arma::field<arma::mat> X, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::field<arma::mat> parameters, arma::cube allocations, arma::cube outliers, arma::vec prior, arma::vec density_prior);
+RcppExport SEXP _mdir_simulatePosteriorPredictiveCpp(SEXP XSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP parametersSEXP, SEXP allocationsSEXP, SEXP outliersSEXP, SEXP priorSEXP, SEXP density_priorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type parameters(parametersSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type allocations(allocationsSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type outliers(outliersSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    rcpp_result_gen = Rcpp::wrap(simulatePosteriorPredictiveCpp(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior));
+    return rcpp_result_gen;
+END_RCPP
+}
+// predictNewItemsCpp
+Rcpp::List predictNewItemsCpp(arma::field<arma::mat> X, arma::field<arma::mat> X_new, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::field<arma::mat> parameters, arma::cube weights, arma::mat phis, arma::mat outlier_weights, arma::cube allocations, bool coclustering, arma::vec prior, arma::vec density_prior);
+RcppExport SEXP _mdir_predictNewItemsCpp(SEXP XSEXP, SEXP X_newSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP parametersSEXP, SEXP weightsSEXP, SEXP phisSEXP, SEXP outlier_weightsSEXP, SEXP allocationsSEXP, SEXP coclusteringSEXP, SEXP priorSEXP, SEXP density_priorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type X_new(X_newSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type mixture_types(mixture_typesSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type outlier_types(outlier_typesSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type parameters(parametersSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phis(phisSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type outlier_weights(outlier_weightsSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type allocations(allocationsSEXP);
+    Rcpp::traits::input_parameter< bool >::type coclustering(coclusteringSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    rcpp_result_gen = Rcpp::wrap(predictNewItemsCpp(X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiNormalisingConstantCpp
+double mdiNormalisingConstantCpp(arma::mat w, arma::uvec K, arma::mat phi);
+RcppExport SEXP _mdir_mdiNormalisingConstantCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiNormalisingConstantCpp(w, K, phi));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiWeightRateCpp
+double mdiWeightRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword lstar, arma::uword kstar);
+RcppExport SEXP _mdir_mdiWeightRateCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lstarSEXP, SEXP kstarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type lstar(lstarSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type kstar(kstarSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiWeightRateCpp(w, K, phi, lstar, kstar));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiWeightRatesCpp
+std::vector<double> mdiWeightRatesCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword lstar);
+RcppExport SEXP _mdir_mdiWeightRatesCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lstarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type lstar(lstarSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiWeightRatesCpp(w, K, phi, lstar));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiSwapLogRatioCpp
+double mdiSwapLogRatioCpp(arma::umat labels, arma::mat phi, arma::mat w, arma::uvec K, double v, arma::uword lstar, arma::uword k, arma::uword kprime);
+RcppExport SEXP _mdir_mdiSwapLogRatioCpp(SEXP labelsSEXP, SEXP phiSEXP, SEXP wSEXP, SEXP KSEXP, SEXP vSEXP, SEXP lstarSEXP, SEXP kSEXP, SEXP kprimeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type v(vSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type lstar(lstarSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type k(kSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type kprime(kprimeSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiSwapLogRatioCpp(labels, phi, w, K, v, lstar, k, kprime));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiPhiRateCpp
+double mdiPhiRateCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m);
+RcppExport SEXP _mdir_mdiPhiRateCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lSEXP, SEXP mSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type l(lSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type m(mSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiPhiRateCpp(w, K, phi, l, m));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mvtImputationCheckCpp
+Rcpp::List mvtImputationCheckCpp(arma::mat X, arma::uvec missing_cols, arma::uword n_rep);
+RcppExport SEXP _mdir_mvtImputationCheckCpp(SEXP XSEXP, SEXP missing_colsSEXP, SEXP n_repSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type missing_cols(missing_colsSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_rep(n_repSEXP);
+    rcpp_result_gen = Rcpp::wrap(mvtImputationCheckCpp(X, missing_cols, n_rep));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calibrateInverseGammaCpp
+arma::vec calibrateInverseGammaCpp(double lower, double upper, double tail);
+RcppExport SEXP _mdir_calibrateInverseGammaCpp(SEXP lowerSEXP, SEXP upperSEXP, SEXP tailSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< double >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< double >::type tail(tailSEXP);
+    rcpp_result_gen = Rcpp::wrap(calibrateInverseGammaCpp(lower, upper, tail));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gpPopulationCheckCpp
+arma::mat gpPopulationCheckCpp(arma::vec y, double centre, double center_sd, double pool_sd_scale, arma::uword n_iter);
+RcppExport SEXP _mdir_gpPopulationCheckCpp(SEXP ySEXP, SEXP centreSEXP, SEXP center_sdSEXP, SEXP pool_sd_scaleSEXP, SEXP n_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type centre(centreSEXP);
+    Rcpp::traits::input_parameter< double >::type center_sd(center_sdSEXP);
+    Rcpp::traits::input_parameter< double >::type pool_sd_scale(pool_sd_scaleSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_iter(n_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(gpPopulationCheckCpp(y, centre, center_sd, pool_sd_scale, n_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiLogMarginalCpp
+double mdiLogMarginalCpp(arma::mat log_g, arma::mat w, arma::uvec K, arma::mat phi);
+RcppExport SEXP _mdir_mdiLogMarginalCpp(SEXP log_gSEXP, SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type log_g(log_gSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiLogMarginalCpp(log_g, w, K, phi));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mdiClassProbabilitiesCpp
+arma::mat mdiClassProbabilitiesCpp(arma::mat log_g, arma::mat w, arma::uvec K, arma::mat phi);
+RcppExport SEXP _mdir_mdiClassProbabilitiesCpp(SEXP log_gSEXP, SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type log_g(log_gSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    rcpp_result_gen = Rcpp::wrap(mdiClassProbabilitiesCpp(log_g, w, K, phi));
+    return rcpp_result_gen;
+END_RCPP
+}
+// phiSliceChainCpp
+arma::vec phiSliceChainCpp(arma::mat w, arma::uvec K, arma::mat phi, arma::uword l, arma::uword m, double N, double N_lm, double shape, double rate, arma::uword n_draws);
+RcppExport SEXP _mdir_phiSliceChainCpp(SEXP wSEXP, SEXP KSEXP, SEXP phiSEXP, SEXP lSEXP, SEXP mSEXP, SEXP NSEXP, SEXP N_lmSEXP, SEXP shapeSEXP, SEXP rateSEXP, SEXP n_drawsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type l(lSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type N(NSEXP);
+    Rcpp::traits::input_parameter< double >::type N_lm(N_lmSEXP);
+    Rcpp::traits::input_parameter< double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< double >::type rate(rateSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type n_draws(n_drawsSEXP);
+    rcpp_result_gen = Rcpp::wrap(phiSliceChainCpp(w, K, phi, l, m, N, N_lm, shape, rate, n_draws));
+    return rcpp_result_gen;
+END_RCPP
+}
+// phiConditionalLogDensityCpp
+arma::vec phiConditionalLogDensityCpp(arma::vec phi, arma::mat w, arma::uvec K, arma::mat phi_matrix, arma::uword l, arma::uword m, double N, double N_lm, double shape, double rate);
+RcppExport SEXP _mdir_phiConditionalLogDensityCpp(SEXP phiSEXP, SEXP wSEXP, SEXP KSEXP, SEXP phi_matrixSEXP, SEXP lSEXP, SEXP mSEXP, SEXP NSEXP, SEXP N_lmSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w(wSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type phi_matrix(phi_matrixSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type l(lSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type N(NSEXP);
+    Rcpp::traits::input_parameter< double >::type N_lm(N_lmSEXP);
+    Rcpp::traits::input_parameter< double >::type shape(shapeSEXP);
+    Rcpp::traits::input_parameter< double >::type rate(rateSEXP);
+    rcpp_result_gen = Rcpp::wrap(phiConditionalLogDensityCpp(phi, w, K, phi_matrix, l, m, N, N_lm, shape, rate));
+    return rcpp_result_gen;
+END_RCPP
+}
 // readMCMCsamples
 arma::mat readMCMCsamples(arma::uword n_samples, arma::uword n_params, std::string load_dir);
 RcppExport SEXP _mdir_readMCMCsamples(SEXP n_samplesSEXP, SEXP n_paramsSEXP, SEXP load_dirSEXP) {
@@ -118,8 +375,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // runMDI
-Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
-RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
+Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, bool save_parameters, bool save_imputed, arma::vec prior, arma::vec density_prior, arma::uvec save_allocation_probabilities, bool save_pointwise, bool phi_slice);
+RcppExport SEXP _mdir_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_parametersSEXP, SEXP save_imputedSEXP, SEXP priorSEXP, SEXP density_priorSEXP, SEXP save_allocation_probabilitiesSEXP, SEXP save_pointwiseSEXP, SEXP phi_sliceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -132,13 +389,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
     Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
     Rcpp::traits::input_parameter< arma::field< arma::vec > >::type proposal_windows(proposal_windowsSEXP);
-    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows));
+    Rcpp::traits::input_parameter< bool >::type save_parameters(save_parametersSEXP);
+    Rcpp::traits::input_parameter< bool >::type save_imputed(save_imputedSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type save_allocation_probabilities(save_allocation_probabilitiesSEXP);
+    Rcpp::traits::input_parameter< bool >::type save_pointwise(save_pointwiseSEXP);
+    Rcpp::traits::input_parameter< bool >::type phi_slice(phi_sliceSEXP);
+    rcpp_result_gen = Rcpp::wrap(runMDI(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice));
     return rcpp_result_gen;
 END_RCPP
 }
 // runMDIWriteToFile
-void runMDIWriteToFile(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, std::string save_dir);
-RcppExport SEXP _mdir_runMDIWriteToFile(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_dirSEXP) {
+void runMDIWriteToFile(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows, std::string save_dir, arma::vec prior, arma::vec density_prior);
+RcppExport SEXP _mdir_runMDIWriteToFile(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP, SEXP save_dirSEXP, SEXP priorSEXP, SEXP density_priorSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::uword >::type R(RSEXP);
@@ -151,7 +415,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
     Rcpp::traits::input_parameter< arma::field< arma::vec > >::type proposal_windows(proposal_windowsSEXP);
     Rcpp::traits::input_parameter< std::string >::type save_dir(save_dirSEXP);
-    runMDIWriteToFile(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir);
+    Rcpp::traits::input_parameter< arma::vec >::type prior(priorSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type density_prior(density_priorSEXP);
+    runMDIWriteToFile(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior);
     return R_NilValue;
 END_RCPP
 }
@@ -164,9 +430,25 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mdir_invWishartLogLikelihood", (DL_FUNC) &_mdir_invWishartLogLikelihood, 4},
     {"_mdir_mvtLogLikelihood", (DL_FUNC) &_mdir_mvtLogLikelihood, 4},
     {"_mdir_pNorm", (DL_FUNC) &_mdir_pNorm, 4},
+    {"_mdir_densityHyperparameters", (DL_FUNC) &_mdir_densityHyperparameters, 4},
+    {"_mdir_simulatePriorPredictiveCpp", (DL_FUNC) &_mdir_simulatePriorPredictiveCpp, 7},
+    {"_mdir_simulatePosteriorPredictiveCpp", (DL_FUNC) &_mdir_simulatePosteriorPredictiveCpp, 9},
+    {"_mdir_predictNewItemsCpp", (DL_FUNC) &_mdir_predictNewItemsCpp, 13},
+    {"_mdir_mdiNormalisingConstantCpp", (DL_FUNC) &_mdir_mdiNormalisingConstantCpp, 3},
+    {"_mdir_mdiWeightRateCpp", (DL_FUNC) &_mdir_mdiWeightRateCpp, 5},
+    {"_mdir_mdiWeightRatesCpp", (DL_FUNC) &_mdir_mdiWeightRatesCpp, 4},
+    {"_mdir_mdiSwapLogRatioCpp", (DL_FUNC) &_mdir_mdiSwapLogRatioCpp, 8},
+    {"_mdir_mdiPhiRateCpp", (DL_FUNC) &_mdir_mdiPhiRateCpp, 5},
+    {"_mdir_mvtImputationCheckCpp", (DL_FUNC) &_mdir_mvtImputationCheckCpp, 3},
+    {"_mdir_calibrateInverseGammaCpp", (DL_FUNC) &_mdir_calibrateInverseGammaCpp, 3},
+    {"_mdir_gpPopulationCheckCpp", (DL_FUNC) &_mdir_gpPopulationCheckCpp, 5},
+    {"_mdir_mdiLogMarginalCpp", (DL_FUNC) &_mdir_mdiLogMarginalCpp, 4},
+    {"_mdir_mdiClassProbabilitiesCpp", (DL_FUNC) &_mdir_mdiClassProbabilitiesCpp, 4},
+    {"_mdir_phiSliceChainCpp", (DL_FUNC) &_mdir_phiSliceChainCpp, 10},
+    {"_mdir_phiConditionalLogDensityCpp", (DL_FUNC) &_mdir_phiConditionalLogDensityCpp, 10},
     {"_mdir_readMCMCsamples", (DL_FUNC) &_mdir_readMCMCsamples, 3},
-    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 9},
-    {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 10},
+    {"_mdir_runMDI", (DL_FUNC) &_mdir_runMDI, 16},
+    {"_mdir_runMDIWriteToFile", (DL_FUNC) &_mdir_runMDIWriteToFile, 12},
     {NULL, NULL, 0}
 };
 

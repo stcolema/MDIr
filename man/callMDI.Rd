@@ -14,7 +14,14 @@ callMDI(
   fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE,
-  proposal_windows = NULL
+  proposal_windows = NULL,
+  save_parameters = TRUE,
+  save_imputed = FALSE,
+  prior = mdiPrior(),
+  density_prior = densityPrior(),
+  check_prior = TRUE,
+  save_pointwise = FALSE,
+  phi_update = c("slice", "gibbs")
 )
 }
 \arguments{
@@ -49,10 +56,60 @@ sampling of Gaussian process hyperparameters. Each entry corresponds to a
 view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
+
+\item{save_parameters}{Logical. Record the component parameters (means,
+covariances, category probabilities, ...) at every saved iteration. These are
+needed for posterior predictive checks (see ``simulatePosteriorPredictive``).
+Set to ``FALSE`` to save memory for large models.}
+
+\item{save_imputed}{Logical. Record the imputed value of every missing entry
+at every saved iteration (``FALSE`` by default).}
+
+\item{prior}{MDI-level prior hyperparameters, created by
+\code{\link{mdiPrior}}. See its documentation for the defaults and how to
+check them with \code{\link{simulatePriorPredictive}}.}
+
+\item{density_prior}{Density-level (hierarchical) prior options, created by
+\code{\link{densityPrior}}: pooling of the variance scale across components and
+the priors of Gaussian process views, including a floor on the GP length scale.}
+
+\item{check_prior}{Logical. Report a message if the prior on the weights is on
+the side of the Rousseau and Mengersen (2011) threshold that duplicates rather
+than empties superfluous components (see \code{\link{mdiPrior}}). Set
+\code{options(mdir.quiet = TRUE)} to silence it globally.}
+
+\item{save_pointwise}{Logical. Record the log-likelihood of every item at every
+saved iteration (an iterations x N matrix, ``pointwise_likelihood``), for
+\code{\link{pointwiseLogLik}} and information criteria. ``FALSE`` by default;
+the total over items (``joint_likelihood``) is always recorded.}
+
+\item{phi_update}{How the \eqn{\phi} parameters are updated. ``"slice"`` (the
+default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
+latent variable integrated out, using one slice-sampling update (Neal, 2003)
+that needs no tuning. ``"gibbs"`` is the update conditional on the
+strategic latent variable used before version 0.11. Both have the same target;
+the slice update mixes faster (see ``NEWS.md``).}
 }
 \value{
-A named list containing the sampled partitions, component weights,
-phi and mass parameters, model fit measures and some details on the model call.
+An object of class \code{mdir_fit}: a named list containing the
+sampled partitions, component weights, phi and mass parameters, model fit
+measures and some details on the model call. It prints as a short report
+(see \code{\link{print.mdir_fit}}); use \code{summary()} for posterior
+summaries. Missing data (``NA`` entries in ``X``) are treated as missing at random and
+imputed within the sampler.
+
+The per-item allocation probabilities (``allocation_probabilities``, an
+\eqn{N \times K \times} draws array per view) are recorded only for
+semi-supervised views, where they give the class probabilities. For other
+views the entry is ``NULL``; the allocations are in ``allocations``.
+
+``joint_likelihood`` is the log-likelihood of the data under the MDI model
+with the component assignments of every item summed out, at each saved
+draw. It differs from ``observed_likelihood``, which sums over each view's
+components separately with that view's own normalised weights and so ignores
+the coupling between views (the two coincide when every \eqn{\phi} is zero).
+In a semi-supervised view the observed labels are treated as data: an item
+with an observed label contributes the joint density of its data and label.
 }
 \description{
 Runs a MCMC chain of the integrative clustering method,
@@ -80,4 +137,8 @@ types <- rep("G", V)
 
 mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
 
+}
+\references{
+Neal, R. M. (2003). Slice sampling. \emph{Annals of Statistics},
+31(3), 705-767.
 }

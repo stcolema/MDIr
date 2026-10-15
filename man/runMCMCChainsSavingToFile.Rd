@@ -74,15 +74,19 @@ data_modelled <- list(X, Y)
 V <- length(data_modelled)
 
 # MCMC parameters
-R <- 5000
-thin <- 50
-burn <- 1000
+R <- 100
+thin <- 10
+burn <- 20
 
 K_max <- 10
 K <- rep(K_max, V)
 types <- rep("G", V)
 
-n_chains <- 3
-mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, R, thin, types, K = K)
+n_chains <- 2
+dir_path <- file.path(tempdir(), "mdir_chains")
+dir.create(dir_path)
+mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, R, thin, types,
+  K = K, dir_path = dir_path
+)
 }
 }

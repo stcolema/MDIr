@@ -15,7 +15,15 @@ runMCMCChains(
   fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE,
-  proposal_windows = NULL
+  proposal_windows = NULL,
+  save_parameters = TRUE,
+  save_imputed = FALSE,
+  prior = mdiPrior(),
+  density_prior = densityPrior(),
+  verbose = FALSE,
+  save_pointwise = FALSE,
+  phi_update = c("slice", "gibbs"),
+  n_cores = NULL
 )
 }
 \arguments{
@@ -50,10 +58,30 @@ sampling of Gaussian process hyperparameters. Each entry corresponds to a
 view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
+
+\item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
+
+\item{verbose}{Logical. Report the start and end of each chain (with run
+time) as a message. \code{FALSE} by default here; \code{\link{fitMDI}}, which
+also assesses convergence, defaults to \code{TRUE}.}
+
+\item{save_pointwise, phi_update}{See ``callMDI``.}
+
+\item{n_cores}{Number of cores on which to run the chains. The default, one,
+runs them in turn exactly as before; \code{options(mdir.cores = )} changes the
+default. With more than one, each chain has its own L'Ecuyer-CMRG random
+number stream (Unix-alikes fork the workers, Windows starts a socket cluster
+that loads \pkg{mdir}), so the result depends on the seed but not on the
+number of cores; it is not the same as the serial result for the same seed.
+The number is capped at the number of chains and of cores available, and at
+two while a package is being checked (\code{_R_CHECK_LIMIT_CORES_} is set), as
+CRAN requires. Progress messages are given when the chains have finished.}
 }
 \value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
+An object of class \code{mdir_fit_list}: a list with one
+\code{\link{callMDI}} result per chain, each with the chain number in
+\code{Chain}. It prints as a short report; \code{summary()} gives per-chain
+detail.
 }
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using
