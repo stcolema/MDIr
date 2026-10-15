@@ -1,5 +1,30 @@
 # mdir (development version)
 
+## New: auto-tuning of the Gaussian process proposal windows, and `mdirControl()`
+
+* The proposal windows of the Gaussian process hyperparameters (amplitude, length scale and noise) are now
+  adapted while the sampler burns in, towards the acceptance rate of about 0.44 of a one-dimensional random-walk
+  Metropolis update (Gelman, Roberts and Gilks, 1996), by a Robbins-Monro recursion with decaying steps
+  (step `n^-0.6`; Garthwaite, Fan and Sisson, 2016) that stops after `n_burn` sweeps (default half of `n_iter`),
+  so that after burn in the windows are fixed and the chain is an ordinary Metropolis-Hastings chain. The
+  windows you give are the starting values. They are adapted for each hyperparameter from the acceptance rate of
+  its own proposals over the occupied components, and the windows at the end are returned in
+  `final_proposal_windows`. Switch it off with `mdirControl(auto_tune = FALSE)`. The adaptation uses no random
+  numbers, so fits without a Gaussian process view are unchanged; fits with one differ from earlier versions
+  for the same seed. Checked: badly scaled starting windows (0.002 and 8) move towards the target, and a run
+  started from the adapted windows accepts at 0.2 to 0.7; the windows are the same after a longer run if
+  `n_burn` is the same; and the existing test of the hyperparameter sampler against the numerically computed
+  marginal posterior passes with adaptation on.
+* The adapted windows are the only ones a user can set. Two other proposals have fixed scales, which are not
+  adapted: the random walk on the log of the mass (standard deviation 0.3) and the one on the standard deviation
+  of the population of Gaussian process amplitudes and noises (0.5).
+* **`mdirControl()`** bundles `proposal_windows`, `auto_tune` and `n_burn`, as `batchmixControl()` does for
+  batchmix, and is passed as `control` to `callMDI()`, `callMixtureModel()`, `callMDIWritingToFile()`,
+  `runMCMCChains()`, `runMCMCChainsSavingToFile()` and `fitMDI()`. The argument `proposal_windows` of those
+  functions is deprecated: it still works, with a warning, and `control` wins if both are given. Choices of
+  what is fitted (`prior`, `density_prior`, `K_max`, `alpha`) and of the moves (`phi_update`, `split_merge`,
+  `joint_allocation`, the tempering ladder) stay as arguments.
+
 ## Changed: argument names, matching batchmix
 
 * **`R` is now `n_iter`** (number of iterations) in `callMDI()`, `callMixtureModel()`, `callMDIWritingToFile()`,

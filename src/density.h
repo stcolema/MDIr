@@ -135,6 +135,14 @@ public:
 
   virtual void receiveHyperParametersProposalWindows(vec proposal_windows) {};
 
+  // Adapt the proposal windows of the Metropolis-Hastings updates from the
+  // acceptance counts so far. Called once per sweep while the sampler is burning
+  // in; densities without such windows leave it empty.
+  virtual void adaptHyperParametersProposalWindows() {};
+
+  // The windows in use, in the order receiveHyperParametersProposalWindows() takes
+  virtual vec hyperParametersProposalWindows() const { return vec(); };
+
   // === Collapsed marginal likelihood (used by the split-merge move) ==========
   // With the component parameters integrated out against their conjugate prior (and
   // the pooled hyperparameters held at their current values), the likelihood of a set

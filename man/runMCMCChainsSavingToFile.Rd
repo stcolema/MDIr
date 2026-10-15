@@ -17,6 +17,7 @@ runMCMCChainsSavingToFile(
   alpha = NULL,
   initial_labels_as_intended = FALSE,
   proposal_windows = NULL,
+  control = mdirControl(),
   R = NULL,
   K = NULL
 )
@@ -50,48 +51,17 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
 
 \item{R}{Deprecated; use \code{n_iter}.}
 
 \item{K}{Deprecated; use \code{K_max}.}
 }
-\value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
-}
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using
 the same inputs in each model run.
-}
-\examples{
-\donttest{
-N <- 100
-X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-
-truth <- c(rep(1, N / 2), rep(2, N / 2))
-data_modelled <- list(X, Y)
-
-V <- length(data_modelled)
-
-# MCMC parameters
-n_iter <- 100
-thin <- 10
-burn <- 20
-
-K_max <- rep(10, V)
-types <- rep("G", V)
-
-n_chains <- 2
-dir_path <- file.path(tempdir(), "mdir_chains")
-dir.create(dir_path)
-mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, n_iter, thin, types,
-  K_max = K_max, dir_path = dir_path
-)
-}
 }

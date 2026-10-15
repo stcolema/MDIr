@@ -16,7 +16,9 @@ runMDIWriteToFile(
   proposal_windows,
   save_dir,
   prior,
-  density_prior
+  density_prior,
+  auto_tune = FALSE,
+  n_burn = 0L
 )
 }
 \arguments{
@@ -48,6 +50,9 @@ label.}
 \item{prior}{Optional vector of MDI-level prior hyperparameters (see `runMDI`).}
 
 \item{density_prior}{Options of the density-level priors (see `runMDI`).}
+
+\item{auto_tune, n_burn}{Adapt the Gaussian process proposal windows during the first
+`n_burn` sweeps (see `runMDI`).}
 }
 \value{
 Nothing; one binary file per saved sample is written to `save_dir`.

@@ -79,11 +79,20 @@ fitMDI <- function(X,
                    swap_every = 1L,
                    split_merge = 0L,
                    joint_allocation = 0L,
+                   control = mdirControl(),
                    R = NULL,
                    K = NULL) {
   n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "fitMDI", required = TRUE)
   K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "fitMDI")
   K <- K_max
+  control <- .mdirResolveControl(
+    missing(control), control,
+    if (!missing(proposal_windows)) list(proposal_windows = proposal_windows) else list(),
+    "fitMDI"
+  )
+  proposal_windows <- control$proposal_windows
+  auto_tune <- control$auto_tune
+  n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (verbose && is.list(X) && length(X) > 0 && is.matrix(X[[1]])) {
@@ -101,7 +110,6 @@ fitMDI <- function(X,
     fixed = fixed,
     alpha = alpha,
     initial_labels_as_intended = initial_labels_as_intended,
-    proposal_windows = proposal_windows,
     save_parameters = save_parameters,
     save_imputed = save_imputed,
     prior = prior,
@@ -114,7 +122,8 @@ fitMDI <- function(X,
     swap_scheme = swap_scheme,
     swap_every = swap_every,
     split_merge = split_merge,
-    joint_allocation = joint_allocation
+    joint_allocation = joint_allocation,
+    control = control
   )
 
   convergence <- tryCatch(
