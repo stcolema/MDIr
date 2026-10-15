@@ -136,7 +136,7 @@ from the data (see `?mdiPrior`), with the variance scale pooled across
 components (`?densityPrior`). That uses the data twice, weakly; it is a deliberate
 trade-off, standard for mixtures, and worth stating in a report.
 
-**The sparsity check.** Fitting with `K = 6` components per view and the default
+**The sparsity check.** Fitting with `K_max = 6` components per view and the default
 prior on `mass` prints a message for the views where the prior on the weights is
 on the side of the Rousseau-Mengersen threshold at which superfluous components
 *duplicate* occupied ones instead of emptying. The result is asymptotic and does
@@ -514,7 +514,7 @@ views, the fusion probabilities), which stay the same.
 pp_weak <- predictFromMultipleChains(fit_weak, burn = 1000)
 pp_bigK <- predictFromMultipleChains(fit_bigK, burn = 1000)
 data.frame(
-  model = c("default phi prior, K = 6", "weak phi prior", "K = 10"),
+  model = c("default phi prior, K_max = 6", "weak phi prior", "K_max = 10"),
   ARI_view1 = c(ari(pooled$pred[[1]], z1), ari(pp_weak$pred[[1]], z1), ari(pp_bigK$pred[[1]], z1)),
   ARI_view2 = c(ari(pooled$pred[[2]], z2), ari(pp_weak$pred[[2]], z2), ari(pp_bigK$pred[[2]], z2)),
   ARI_view3 = c(ari(pooled$pred[[3]], z3), ari(pp_weak$pred[[3]], z3), ari(pp_bigK$pred[[3]], z3)),

@@ -1,5 +1,12 @@
 # mdir (development version)
 
+## Vignettes
+
+* New vignette `mdir-gaussian-process`: a time-course view modelled with `type = "GP"`, the proposal windows, what
+  `auto_tune` does to the acceptance rate, `final_proposal_windows`, and the draws and predictive check.
+* `mdir-workflow` now runs the `loo` comparison (it was not evaluated), and has sections on `mdirControl()` and on
+  the argument names shared with `batchmix`, including the differences that remain.
+
 ## New: auto-tuning of the Gaussian process proposal windows, and `mdirControl()`
 
 * The proposal windows of the Gaussian process hyperparameters (amplitude, length scale and noise) are now
