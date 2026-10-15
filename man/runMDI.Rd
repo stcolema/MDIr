@@ -18,6 +18,7 @@ runMDI(
   save_imputed,
   prior,
   density_prior,
+  time_points,
   save_allocation_probabilities,
   save_pointwise,
   phi_slice,
@@ -65,6 +66,9 @@ mass rate, weight rate, phi shape, phi rate). Empty for the defaults.}
 
 \item{density_prior}{Options of the density-level priors (variance scale 
 pooling and Gaussian process priors), see `densityPrior()` in R.}
+
+\item{time_points}{For each view, the positions of the columns of a Gaussian process
+view (finite and distinct), or an empty vector for 0, 1, ..., P - 1.}
 
 \item{save_allocation_probabilities}{For each view, 1 to record the allocation
 probabilities of every item at every saved iteration (an N x K x draws array, 

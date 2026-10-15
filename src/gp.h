@@ -91,11 +91,14 @@ public:
     length_attempt_count,
     amplitude_attempt_count;
   
-  vec amplitude, length, noise, xi;
+  vec amplitude, length, noise, xi, time_points;
   mat mu, I_p, time_diff_mat;
   cube kernel_sub_block;
   
-  gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior = arma::vec());
+  // `_time_points`: the position of each column (one per measurement, finite and
+  // distinct); empty means 0, 1, ..., P - 1.
+  gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior = arma::vec(),
+     arma::vec _time_points = arma::vec());
   
   virtual ~gp() { };
   

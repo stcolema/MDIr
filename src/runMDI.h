@@ -41,6 +41,8 @@ using namespace arma ;
 //' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 //' @param density_prior Options of the density-level priors (variance scale 
 //' pooling and Gaussian process priors), see `densityPrior()` in R.
+//' @param time_points For each view, the positions of the columns of a Gaussian process
+//' view (finite and distinct), or an empty vector for 0, 1, ..., P - 1.
 //' @param save_allocation_probabilities For each view, 1 to record the allocation
 //' probabilities of every item at every saved iteration (an N x K x draws array, 
 //' needed only for semi-supervised views), 0 to leave them out. A single value is
@@ -79,6 +81,7 @@ Rcpp::List runMDI(
   bool save_imputed,
   arma::vec prior,
   arma::vec density_prior,
+  arma::field< arma::vec > time_points,
   arma::uvec save_allocation_probabilities,
   bool save_pointwise,
   bool phi_slice,

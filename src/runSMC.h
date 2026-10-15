@@ -21,7 +21,7 @@ using namespace arma ;
 //' particle is moved by the tempered Gibbs sweep, which leaves \eqn{\pi_\beta}
 //' invariant.
 //' @param n_particles Number of particles.
-//' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,phi_slice As in `runMDI`.
+//' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,time_points,phi_slice As in `runMDI`.
 //' `fixed` must be all zero (unsupervised views only).
 //' @param betas Fixed schedule: strictly increasing values in (0, 1] ending at 1.
 //' Ignored if `adaptive`.
@@ -57,6 +57,7 @@ Rcpp::List runMDISMC(
   arma::umat fixed,
   arma::vec prior,
   arma::vec density_prior,
+  arma::field< arma::vec > time_points,
   bool phi_slice,
   arma::vec betas,
   bool adaptive,

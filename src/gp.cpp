@@ -40,7 +40,7 @@ arma::vec calibrateInverseGamma(double lower, double upper, double tail) {
   return arma::vec({alpha, beta_for(alpha)});
 }
 
-gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior) : 
+gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prior, arma::vec _time_points) : 
   density(_K, _labels, _X, _density_prior) 
 {
   if(P < 3) {
@@ -60,17 +60,37 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prio
   I_p = eye(P, P);
   
   // -(i - j)^2 / 2, so that K = amplitude * exp(time_diff_mat / length^2)
+  // (with the measurements' positions in place of the indices)
+  if(_time_points.is_empty()) {
+    time_points = arma::regspace<arma::vec>(0.0, (double) (P - 1));
+  } else {
+    if(_time_points.n_elem != P) {
+      Rcpp::stop("`time_points` must have one entry per measurement (column).");
+    }
+    if(!_time_points.is_finite()) {
+      Rcpp::stop("`time_points` must be finite.");
+    }
+    time_points = _time_points;
+  }
+  const arma::vec sorted_time = arma::sort(time_points);
+  const arma::vec spacings = arma::diff(sorted_time);
+  const double min_spacing = spacings.min();
+  if(!(min_spacing > 0.0)) {
+    Rcpp::stop("`time_points` must be distinct.");
+  }
   time_diff_mat.zeros(P, P);
   for(uword ii = 0; ii < P; ii++) {
     for(uword jj = ii + 1; jj < P; jj++) {
-      time_diff_mat(ii, jj) = - 0.5 * std::pow((double) (jj - ii), 2.0);
+      time_diff_mat(ii, jj) = - 0.5 * std::pow(time_points(jj) - time_points(ii), 2.0);
       time_diff_mat(jj, ii) = time_diff_mat(ii, jj);
     }
   }
   
-  // Length scale: floor at min_length and inverse-gamma prior with 1% of mass 
-  // below the floor and 1% above the extent of the grid (at least twice the floor)
-  const double extent = std::max((double) (P - 1), 2.0 * min_length);
+  // Length scale: floor at min_length (in multiples of the smallest spacing
+  // between measurements) and inverse-gamma prior with 1% of mass below the floor
+  // and 1% above the extent of the measurements (at least twice the floor)
+  min_length *= min_spacing;
+  const double extent = std::max(sorted_time(P - 1) - sorted_time(0), 2.0 * min_length);
   const arma::vec ig = calibrateInverseGamma(min_length, extent, 0.01);
   length_shape = ig(0);
   length_rate = ig(1);

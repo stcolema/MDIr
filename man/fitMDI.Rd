@@ -20,6 +20,7 @@ fitMDI(
   save_imputed = FALSE,
   prior = mdiPrior(),
   density_prior = densityPrior(),
+  time_points = NULL,
   convergence_burn = NULL,
   verbose = !isTRUE(getOption("mdir.quiet")),
   save_pointwise = FALSE,
@@ -65,7 +66,7 @@ labels are as intended or should ``generateInitialLabels`` be called.}
 
 \item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
-\item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
+\item{save_parameters, save_imputed, prior, density_prior, time_points}{See ``callMDI``.}
 
 \item{convergence_burn}{Number of iterations treated as burn in when assessing
 convergence. Defaults to half of \code{n_iter}. It only affects the diagnostics

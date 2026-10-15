@@ -192,10 +192,11 @@ pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
 #' @param K Number of components.
 #' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C, 3 = GP).
 #' @param density_prior Density-level prior options (see `runMDI`).
+#' @param time_points For each view, the positions of the columns of a Gaussian process view.
 #' @return A named list of hyperparameters.
 #' @keywords internal
-densityHyperparameters <- function(X, K, mixture_type, density_prior) {
-    .Call(`_mdir_densityHyperparameters`, X, K, mixture_type, density_prior)
+densityHyperparameters <- function(X, K, mixture_type, density_prior, time_points = NULL) {
+    .Call(`_mdir_densityHyperparameters`, X, K, mixture_type, density_prior, time_points)
 }
 
 #' @title Simulate datasets from the prior predictive distribution
@@ -209,11 +210,12 @@ densityHyperparameters <- function(X, K, mixture_type, density_prior) {
 #' @param n_datasets Number of datasets to simulate.
 #' @param prior Optional MDI-level prior vector (see `runMDI`).
 #' @param density_prior Density-level prior options (see `runMDI`).
+#' @param time_points For each view, the positions of the columns of a Gaussian process view.
 #' @return A list with one entry per dataset holding `data` (list of matrices), 
 #' `labels`, `outliers`, `mass`, `phis` and `weights`.
 #' @keywords internal
-simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_datasets, prior, density_prior) {
-    .Call(`_mdir_simulatePriorPredictiveCpp`, X, K, mixture_types, outlier_types, n_datasets, prior, density_prior)
+simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_datasets, prior, density_prior, time_points) {
+    .Call(`_mdir_simulatePriorPredictiveCpp`, X, K, mixture_types, outlier_types, n_datasets, prior, density_prior, time_points)
 }
 
 #' @title Simulate replicate datasets from the posterior predictive distribution
@@ -230,10 +232,11 @@ simulatePriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, n_dat
 #' @param outliers Cube (draws x N x L) of sampled outlier indicators.
 #' @param prior Optional MDI-level prior vector (see `runMDI`).
 #' @param density_prior Density-level prior options (see `runMDI`).
+#' @param time_points For each view, the positions of the columns of a Gaussian process view.
 #' @return A list with one entry per view: a cube (draws x N x P) of replicates.
 #' @keywords internal
-simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior) {
-    .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior)
+simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior, time_points) {
+    .Call(`_mdir_simulatePosteriorPredictiveCpp`, X, K, mixture_types, outlier_types, parameters, allocations, outliers, prior, density_prior, time_points)
 }
 
 #' @title Predict new items from saved MCMC draws
@@ -258,12 +261,13 @@ simulatePosteriorPredictiveCpp <- function(X, K, mixture_types, outlier_types, p
 #' item shares a component with each fitted item.
 #' @param prior Optional MDI-level prior vector (see `runMDI`).
 #' @param density_prior Density-level prior options (see `runMDI`).
+#' @param time_points For each view, the positions of the columns of a Gaussian process view.
 #' @return A list with `log_likelihood` (draws x new items), `class_probability`
 #' (a K_max x new items matrix for each view, averaged over draws) and, if
 #' requested, `coclustering` (a new items x N matrix for each view).
 #' @keywords internal
-predictNewItemsCpp <- function(X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior) {
-    .Call(`_mdir_predictNewItemsCpp`, X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior)
+predictNewItemsCpp <- function(X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior, time_points) {
+    .Call(`_mdir_predictNewItemsCpp`, X, X_new, K, mixture_types, outlier_types, parameters, weights, phis, outlier_weights, allocations, coclustering, prior, density_prior, time_points)
 }
 
 #' @title Test hook: MDI normalising constant
@@ -448,6 +452,8 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
 #' @param density_prior Options of the density-level priors (variance scale 
 #' pooling and Gaussian process priors), see `densityPrior()` in R.
+#' @param time_points For each view, the positions of the columns of a Gaussian process
+#' view (finite and distinct), or an empty vector for 0, 1, ..., P - 1.
 #' @param save_allocation_probabilities For each view, 1 to record the allocation
 #' probabilities of every item at every saved iteration (an N x K x draws array, 
 #' needed only for semi-supervised views), 0 to leave them out. A single value is
@@ -471,8 +477,8 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' during the first `n_burn` sweeps, towards an acceptance rate of 0.44, then keep them fixed.
 #' @param n_burn Number of sweeps over which the windows are adapted.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune = FALSE, n_burn = 0L) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune, n_burn)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, time_points, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune = FALSE, n_burn = 0L) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, time_points, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune, n_burn)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -495,11 +501,12 @@ runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, p
 #' @param save_dir Directory to save MCMC samples to
 #' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
 #' @param density_prior Options of the density-level priors (see `runMDI`).
+#' @param time_points For each view, the positions of the columns of a Gaussian process view (see `runMDI`).
 #' @param auto_tune,n_burn Adapt the Gaussian process proposal windows during the first
 #' `n_burn` sweeps (see `runMDI`).
 #' @return Nothing; one binary file per saved sample is written to `save_dir`.
-runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, auto_tune = FALSE, n_burn = 0L) {
-    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, auto_tune, n_burn))
+runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, time_points, auto_tune = FALSE, n_burn = 0L) {
+    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, time_points, auto_tune, n_burn))
 }
 
 #' @title Sequential Monte Carlo sampler for MDI (C++)
@@ -509,7 +516,7 @@ runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, label
 #' particle is moved by the tempered Gibbs sweep, which leaves \eqn{\pi_\beta}
 #' invariant.
 #' @param n_particles Number of particles.
-#' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,phi_slice As in `runMDI`.
+#' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,time_points,phi_slice As in `runMDI`.
 #' `fixed` must be all zero (unsupervised views only).
 #' @param betas Fixed schedule: strictly increasing values in (0, 1] ending at 1.
 #' Ignored if `adaptive`.
@@ -535,8 +542,8 @@ runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, label
 #' @param joint_allocation Size of the blocks of views redrawn jointly for each item (see `runMDI`).
 #' @return A list with the particles' recorded draws and weights, the evidence
 #' estimate and the trace of the run.
-runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation) {
-    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation)
+runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, time_points, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation) {
+    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, time_points, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge, joint_allocation)
 }
 
 #' @title Collapsed log marginal likelihood of a set of items (test hook)

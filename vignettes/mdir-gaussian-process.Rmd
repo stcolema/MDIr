@@ -159,6 +159,44 @@ The two clusters of about 20 items are the two groups, and their noise estimates
 (about 0.26 and 0.31) are close to the true variance 0.25. The other cluster is
 occupied by one item on average, so its hyperparameters are mostly the prior.
 
+## Unequally spaced measurements
+
+By default the columns are one unit apart. If they are not, say so with
+`time_points`, a list with an entry for each view (`NULL` for the views that are not
+Gaussian processes) giving the position of each column. The positions need not be
+equally spaced, and the length scales are then in their units. The positions are
+the same for every item: if items were measured at different times, make each time
+a column and leave the cells of the unmeasured items as `NA`, which the sampler
+imputes. The fit is less informative about the curve where many items are missing,
+but the cluster curves are still recovered if enough items are observed at each
+position, as here, where 30% of the cells are missing.
+
+```{r irregular}
+set.seed(31)
+times <- c(0, 0.4, 1.5, 2, 3.7, 5, 5.3, 8, 9.5, 12)
+group_curves <- rbind(2 * sin(times / 2.5), -1.5 * cos(times / 4) + 1)
+Y <- group_curves[truth, ] + matrix(rnorm(N * length(times), sd = 0.4), N)
+rownames(Y) <- seq_len(N)
+Y[sample(length(Y), 0.3 * length(Y))] <- NA
+
+irregular <- callMDI(list(Y), n_iter = 6000, thin = 5, types = "GP", K_max = 3,
+                     time_points = list(times), control = mdirControl(n_burn = 3000))
+keep <- 601:1201
+sizes <- rowMeans(irregular$N_k[, 1, keep])
+big <- order(sizes, decreasing = TRUE)[1:2]
+P_t <- length(times)
+est <- sapply(big, function(k) colMeans(irregular$parameters[[1]][keep, (k - 1) * P_t + seq_len(P_t)]))
+matplot(times, est, type = "b", pch = 1, lty = 1, col = c("black", "grey50"),
+        xlab = "time", ylab = "posterior mean curve")
+matlines(times, t(group_curves), lty = 2, col = c("black", "grey50"))
+legend("topright", c("estimate", "truth"), lty = c(1, 2), bty = "n")
+```
+
+The floor on the length scale (`gp_min_length` in `densityPrior()`) is a multiple of
+the smallest spacing between positions, here 0.3. A very close pair of positions
+therefore lowers the floor for all the others; raise `gp_min_length` if that lets
+the length scale fall below what the rest of the measurements can resolve.
+
 ## Checking the fit
 
 ```{r posterior-predictive}

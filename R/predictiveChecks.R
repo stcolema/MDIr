@@ -40,6 +40,8 @@
 #' @param n_datasets Number of datasets to simulate.
 #' @param prior MDI-level priors, see \code{\link{mdiPrior}}.
 #' @param density_prior Density-level priors, see \code{\link{densityPrior}}.
+#' @param time_points Positions of the columns of Gaussian process views, see
+#' \code{\link{callMDI}}.
 #' @param mimic_missingness If \code{TRUE} the entries that are \code{NA} in
 #' \code{X} are set to \code{NA} in every simulated dataset so that summaries
 #' compare like with like (this assumes missingness is independent of the
@@ -68,6 +70,7 @@ simulatePriorPredictive <- function(X,
                                     n_datasets = 20,
                                     prior = mdiPrior(),
                                     density_prior = densityPrior(),
+                                    time_points = NULL,
                                     mimic_missingness = TRUE,
                                     K = NULL) {
   K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "simulatePriorPredictive")
@@ -83,9 +86,10 @@ simulatePriorPredictive <- function(X,
     K <- rep(K, V)
   }
   codes <- .typeCodes(types)
+  time_points <- .mdirTimePoints(time_points, X, types)
   raw <- simulatePriorPredictiveCpp(X, as.integer(K), codes$density, codes$outlier,
                                     as.integer(n_datasets), as.numeric(prior),
-                                    as.numeric(density_prior))
+                                    as.numeric(density_prior), time_points)
 
   replicates <- lapply(raw, function(r) {
     lapply(seq_len(V), function(v) {
@@ -205,7 +209,7 @@ simulatePosteriorPredictive <- function(mcmc_output,
   density_prior <- if (is.null(first$density_prior)) densityPrior() else first$density_prior
   cubes <- simulatePosteriorPredictiveCpp(X, as.integer(K), codes$density, codes$outlier,
                                           parameters, allocations, outliers, as.numeric(prior),
-                                          as.numeric(density_prior))
+                                          as.numeric(density_prior), .mdirFitTimePoints(first, V))
 
   replicates <- lapply(seq_len(n_pick), function(i) {
     lapply(seq_len(V), function(v) {

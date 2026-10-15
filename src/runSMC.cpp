@@ -58,6 +58,7 @@ Rcpp::List runMDISMC(
     arma::umat fixed,
     arma::vec prior,
     arma::vec density_prior,
+    arma::field< arma::vec > time_points,
     bool phi_slice,
     arma::vec betas,
     bool adaptive,
@@ -116,7 +117,7 @@ Rcpp::List runMDISMC(
   particles.reserve(P);
   for(uword i = 0; i < P; i++) {
     particles.push_back(std::unique_ptr<mdi>(
-      new mdi(Y, mixture_types, outlier_types, K, labels0, fixed, prior, density_prior)
+      new mdi(Y, mixture_types, outlier_types, K, labels0, fixed, prior, density_prior, time_points)
     ));
     particles[i]->phi_slice = phi_slice;
     particles[i]->setSplitMerge(split_merge);

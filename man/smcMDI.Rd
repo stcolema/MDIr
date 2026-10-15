@@ -20,6 +20,7 @@ smcMDI(
   thin = 1L,
   prior = mdiPrior(),
   density_prior = densityPrior(),
+  time_points = NULL,
   phi_update = c("slice", "gibbs"),
   max_steps = 2000L,
   check_prior = TRUE,
@@ -80,6 +81,8 @@ check them with \code{\link{simulatePriorPredictive}}.}
 \item{density_prior}{Density-level (hierarchical) prior options, created by
 \code{\link{densityPrior}}: pooling of the variance scale across components and
 the priors of Gaussian process views, including a floor on the GP length scale.}
+
+\item{time_points}{Positions of the columns of Gaussian process views; see \code{\link{callMDI}}.}
 
 \item{phi_update}{How the \eqn{\phi} parameters are updated. ``"slice"`` (the
 default) draws each \eqn{\phi_{lm}} from its conditional with the strategic

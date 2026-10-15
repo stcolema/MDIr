@@ -15,7 +15,8 @@ mixtureModel::mixtureModel(
   arma::uvec _labels,
   arma::uvec _fixed,
   arma::mat _X,
-  arma::vec _density_prior) {
+  arma::vec _density_prior,
+  arma::vec _time_points) {
   
   mixture_type = _mixture_type;
   outlier_type = _outlier_type;
@@ -53,14 +54,15 @@ mixtureModel::mixtureModel(
   
   // The density holds the data and the missing value patterns; the outlier
   // component refers to those patterns
-  initialiseDensity(mixture_type, _X, _density_prior);
+  initialiseDensity(mixture_type, _X, _density_prior, _time_points);
   n_param = density_ptr->n_param;
   initialiseOutlierComponent(outlier_type, _X);
 };
 
-void mixtureModel::initialiseDensity(arma::uword type, const arma::mat& X, const arma::vec& density_prior) {
+void mixtureModel::initialiseDensity(arma::uword type, const arma::mat& X, const arma::vec& density_prior,
+                                     const arma::vec& time_points) {
   densityFactory::densityType val = static_cast<densityFactory::densityType>(type);
-  density_ptr = densityFactory::createDensity(val, K, labels, X, density_prior);
+  density_ptr = densityFactory::createDensity(val, K, labels, X, density_prior, time_points);
 };
 
 void mixtureModel::initialiseOutlierComponent(arma::uword type, const arma::mat& X) {

@@ -13,7 +13,8 @@ simulatePosteriorPredictiveCpp(
   allocations,
   outliers,
   prior,
-  density_prior
+  density_prior,
+  time_points
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ flattened component parameters.}
 \item{prior}{Optional MDI-level prior vector (see `runMDI`).}
 
 \item{density_prior}{Density-level prior options (see `runMDI`).}
+
+\item{time_points}{For each view, the positions of the columns of a Gaussian process view.}
 }
 \value{
 A list with one entry per view: a cube (draws x N x P) of replicates.
