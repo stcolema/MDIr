@@ -522,9 +522,18 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
 #' @param phi_slice Update the phis with the strategic latent variable 
 #' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
+#' @param betas Inverse temperatures of the replicas for parallel tempering,
+#' strictly increasing, the last equal to one (the posterior). Empty or a single
+#' one is an ordinary run. A single value other than one samples that tempered
+#' target and is for testing only.
+#' @param swap_scheme How replicas are paired for exchange: 0, deterministic
+#' even-odd (non-reversible); 1, stochastic even-odd (reversible).
+#' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
+#' @param split_merge Attempts per view and sweep of the sequentially-allocated 
+#' re-partition of two randomly chosen components (0 turns it off).
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -550,5 +559,83 @@ runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, p
 #' @return Nothing; one binary file per saved sample is written to `save_dir`.
 runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior) {
     invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior))
+}
+
+#' @title Sequential Monte Carlo sampler for MDI (C++)
+#' @description Annealed importance sampling / sequential Monte Carlo over the
+#' likelihood-tempered targets \eqn{\pi_\beta \propto L^\beta P}, from the prior
+#' (\eqn{\beta = 0}, sampled exactly) to the posterior (\eqn{\beta = 1}). Each
+#' particle is moved by the tempered Gibbs sweep, which leaves \eqn{\pi_\beta}
+#' invariant.
+#' @param n_particles Number of particles.
+#' @param Y,K,mixture_types,outlier_types,fixed,prior,density_prior,phi_slice As in `runMDI`.
+#' `fixed` must be all zero (unsupervised views only).
+#' @param betas Fixed schedule: strictly increasing values in (0, 1] ending at 1.
+#' Ignored if `adaptive`.
+#' @param adaptive Choose each next inverse temperature so that the conditional
+#' effective sample size of the incremental weights is `cess_target` times
+#' the number of particles (Zhou, Johansen and Aston, 2016, eq. 3.16).
+#' @param cess_target Target conditional ESS fraction, in (0, 1).
+#' @param resample_threshold Resample when the ESS of the weights falls below
+#' this fraction of the number of particles (0 never, 1 always).
+#' @param resample_scheme 0 systematic, 1 multinomial.
+#' @param sweeps_per_step Gibbs sweeps of every particle after each temperature change.
+#' @param max_steps Upper bound on the number of temperatures; if it is reached the
+#' next temperature is set to 1.
+#' @param final_sweeps Extra sweeps at beta = 1 after the last temperature, recorded
+#' every `final_thin` sweeps (the state at the end of annealing is always recorded).
+#' @param final_thin Thinning of the extra sweeps.
+#' @param beta_start Inverse temperature at which the population starts, in [0, 1).
+#' At 0 the particles are exact draws from the prior. Above 0 they are drawn from the
+#' prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
+#' \eqn{\pi_{\beta_{start}}} only to the extent that those sweeps mix.
+#' @param start_sweeps Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).
+#' @param split_merge Split-merge attempts per view and sweep (see `runMDI`).
+#' @return A list with the particles' recorded draws and weights, the evidence
+#' estimate and the trace of the run.
+runMDISMC <- function(n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge) {
+    .Call(`_mdir_runMDISMC`, n_particles, Y, K, mixture_types, outlier_types, fixed, prior, density_prior, phi_slice, betas, adaptive, cess_target, resample_threshold, resample_scheme, sweeps_per_step, max_steps, final_sweeps, final_thin, beta_start, start_sweeps, split_merge)
+}
+
+#' @title Collapsed log marginal likelihood of a set of items (test hook)
+#' @description The log of the integral of the likelihood of the items to the power
+#' `beta` against the density's conjugate prior (hyperparameters at their
+#' data-driven values).
+#' @param X Data matrix.
+#' @param K Number of components (enters the data-driven scale).
+#' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C).
+#' @param density_prior Density-level prior options.
+#' @param rows Zero-based indices of the items.
+#' @param beta Inverse temperature.
+#' @keywords internal
+collapsedLogMarginalCpp <- function(X, K, mixture_type, density_prior, rows, beta) {
+    .Call(`_mdir_collapsedLogMarginalCpp`, X, K, mixture_type, density_prior, rows, beta)
+}
+
+#' @title Run the split-merge move on its own (test hook)
+#' @description One view, weights held fixed at `w`, nothing else updated: the
+#' move followed by the redraw of the parameters of the two components. The labels then
+#' follow the collapsed target proportional to the product over items of `w[c_n]` and
+#' over components of the collapsed marginal likelihood.
+#' @param X Data matrix.
+#' @param K Number of components.
+#' @param mixture_type Integer density code (0 = G, 1 = MVN, 2 = C).
+#' @param density_prior Density-level prior options.
+#' @param labels Initial labels (zero-based).
+#' @param fixed Indicator (0/1) of items with an observed label.
+#' @param w Component weights (length K).
+#' @param n_iter Number of move attempts.
+#' @param beta Inverse temperature.
+#' @param outlier_type Outlier component code (0 = none, 1 = multivariate t).
+#' @param outlier_weight Fixed weight of the outlier component (ignored if none).
+#' @param outliers_init Initial outlier flags (0/1), length N.
+#' @param X_fill Optional (N x P) matrix: its entries replace the initial imputations of the missing
+#' cells (so that a reference can be computed for fixed imputed values); empty for none.
+#' @return The labels and outlier flags after every attempt, the acceptance rate, the
+#' outlier log-density of every item (observed entries, and complete vector with the imputed
+#' values) and the imputed data matrix. Imputed values are held fixed during the move.
+#' @keywords internal
+splitMergeOnlyCpp <- function(X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init, X_fill) {
+    .Call(`_mdir_splitMergeOnlyCpp`, X, K, mixture_type, density_prior, labels, fixed, w, n_iter, beta, outlier_type, outlier_weight, outliers_init, X_fill)
 }
 

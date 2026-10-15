@@ -68,6 +68,10 @@ public:
   // Draw the missing entries of item n given its observed entries, assuming the
   // item is an outlier
   virtual arma::vec sampleMissingValues(arma::uword n) const = 0;
+
+  // Log density of a complete vector (observed and imputed entries) under the outlier law.
+  // Used by the split-merge move, whose state includes the imputed values.
+  virtual double completeLogDensity(const arma::vec& x) const { return -arma::datum::inf; }
   
   // Draw a full observation from the outlier distribution
   virtual arma::vec simulate() const = 0;

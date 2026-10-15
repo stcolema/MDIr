@@ -104,6 +104,12 @@ arma::vec gaussian::pooledHyperparameters() const {
   return scale;
 }
 
+void gaussian::setPooledHyperparameters(const arma::vec& pooled) {
+  if(pooled.n_elem == P) {
+    scale = pooled;
+  }
+}
+
 void gaussian::sampleFromPriors() {
   if(scale_shape > 0.0) {
     for(uword p = 0; p < P; p++) {
@@ -146,13 +152,15 @@ void gaussian::sampleKthComponentParameters(
   if(n_k > 0){
     const arma::mat component_data = X.rows( rel_inds ) ;
     const arma::vec sample_mean = mean(component_data, 0).t();
-    const double kappa_n = kappa + (double) n_k, nu_n = nu + (double) n_k;
-    const arma::vec mu_n = (xi * kappa + (double) n_k * sample_mean) / kappa_n;
+    // Tempered conjugate update (see mvn::sampleKthComponentParameters)
+    const double n_eff = beta * (double) n_k;
+    const double kappa_n = kappa + n_eff, nu_n = nu + n_eff;
+    const arma::vec mu_n = (xi * kappa + n_eff * sample_mean) / kappa_n;
 
     for(uword p = 0; p < P; p++) {
       const double sum_sq = arma::accu(arma::square(component_data.col(p) - sample_mean(p)));
-      const double scale_np = scale(p) + sum_sq
-        + ((double) n_k * kappa / kappa_n) * std::pow(sample_mean(p) - xi(p), 2.0);
+      const double scale_np = scale(p) + beta * sum_sq
+        + (n_eff * kappa / kappa_n) * std::pow(sample_mean(p) - xi(p), 2.0);
 
       // sigma^2 | . ~ InvGamma(nu_n / 2, scale_np / 2); mu | sigma^2, . ~ N(mu_n, sigma^2 / kappa_n)
       setKthVariance(k, p, 1.0 / rGamma(0.5 * nu_n, 0.5 * scale_np));
@@ -199,4 +207,48 @@ void gaussian::setParameters(const arma::vec& theta) {
 
 arma::vec gaussian::simulate(arma::uword k) const {
   return mu.col(k) + sqrt(variances.col(k)) % randn<arma::vec>(P);
+}
+
+
+// === Collapsed marginal likelihood ============================================
+// Per measurement p, with the beta-tempered likelihood and the NIG prior
+// (xi_p, kappa, scale_p, nu),
+//   log m_p = -(beta n / 2) log(pi) + (1 / 2) log(kappa / (kappa + beta n))
+//             + (nu / 2) log(scale_p) - log Gamma(nu / 2)
+//             + log Gamma((nu + beta n) / 2) - ((nu + beta n) / 2) log(scale_np),
+// scale_np = scale_p + beta SS_p + kappa beta n / (kappa + beta n) (xbar_p - xi_p)^2.
+// (Equal to the one-dimensional case of the normal-inverse-Wishart formula;
+// verified against quadrature in verification/tempering/sympy_checks.py.)
+collapsedStats gaussian::emptyStats() const {
+  collapsedStats st;
+  st.n = 0.0;
+  st.s.zeros(P);
+  st.S2.zeros(P, 1);
+  return st;
+}
+
+void gaussian::addItemToStats(collapsedStats& st, arma::uword n) const {
+  st.n += 1.0;
+  for(uword p = 0; p < P; p++) {
+    const double d = X(n, p) - xi(p);
+    st.s(p) += d;
+    st.S2(p, 0) += d * d;
+  }
+}
+
+double gaussian::logMarginalLikelihood(const collapsedStats& st, double beta) const {
+  if(st.n <= 0.0) {
+    return 0.0;
+  }
+  const double n_eff = beta * st.n, kappa_n = kappa + n_eff;
+  double out = 0.0;
+  for(uword p = 0; p < P; p++) {
+    const double dbar = st.s(p) / st.n;
+    const double SS = st.S2(p, 0) - st.s(p) * st.s(p) / st.n;
+    const double scale_np = scale(p) + beta * SS + (kappa * n_eff / kappa_n) * dbar * dbar;
+    out += -0.5 * n_eff * std::log(M_PI) + 0.5 * (std::log(kappa) - std::log(kappa_n))
+      + 0.5 * nu * std::log(scale(p)) - std::lgamma(0.5 * nu)
+      + std::lgamma(0.5 * (nu + n_eff)) - 0.5 * (nu + n_eff) * std::log(scale_np);
+  }
+  return out;
 }

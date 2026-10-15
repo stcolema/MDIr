@@ -29,6 +29,15 @@ using namespace arma ;
 // Gamma(N, Z) (Kirk et al., 2012), so every parameter has a tractable full
 // conditional.
 
+// The complete state of one sampler, enough to copy a particle (see mdi::saveState)
+struct mdiState {
+  arma::umat labels;
+  arma::mat w;
+  arma::vec phis, mass;
+  double v = 0.0, Z = 0.0;
+  std::vector<arma::vec> theta, pooled;
+};
+
 class mdi {
 
 public:
@@ -72,6 +81,11 @@ public:
     outlier_types,      // outliers types used
     K_unfixed,          // Number of components not fixed
     K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
+
+  // For each view, the components that hold no item with an observed label (any
+  // index, not necessarily the last ones). Only these are exchanged by the
+  // label-swap move; a component with an observed member never moves.
+  std::vector<arma::uvec> free_components;
 
   // Options of the density-level priors (see resolveDensityPrior())
   arma::vec density_prior;
@@ -172,6 +186,40 @@ public:
   // Use updatePhisSlice() (TRUE) or the Gibbs update given v (FALSE)
   bool phi_slice = true;
 
+  // === Tempering =============================================================
+
+  // Inverse temperature. The tempered target is
+  //   pi_beta(state) proportional to L(state)^beta P(state),
+  // where L is the likelihood of the data given the labels and the component
+  // parameters, sum_{l,n} log f_l(x_nl | theta_{l, c_nl}), and P is everything
+  // else (the priors, the coupling of the labels through the weights and phis,
+  // and the strategic latent variable). beta = 1 is the posterior. Only the 
+  // allocation and the component parameters involve L, so only those updates 
+  // change with beta; the weights, phis, masses, pooled hyperparameters and the
+  // strategic latent variable have the same conditionals at every beta.
+  double beta = 1.0;
+  void setBeta(double beta_new);
+
+  // log L at the current state: sum over views and items of the log-density of
+  // the item at its component. Unchanged by a relabelling that exchanges 
+  // component parameters with the labels (updateLabels()).
+  double dataLogLikelihood();
+
+  // Copy a state out of, and into, a sampler (used to resample particles). The
+  // state holds the labels, weights, phis, masses, strategic latent variable, the
+  // component parameters and the pooled hyperparameters; everything else is
+  // recomputed. Supported for the densities whose parameters() and
+  // setParameters() are complete (G, MVN, C).
+  mdiState saveState() const;
+  void loadState(const mdiState& state);
+
+  // Replace the state by an exact draw from the prior: masses, phis, weights,
+  // component parameters and pooled hyperparameters from their priors, then the
+  // labels of every item from p(c | w, phi). The strategic latent variable is
+  // drawn from its conditional given the weights and phis. This is a draw from
+  // the beta = 0 target.
+  void initialiseFromPrior();
+
   // === Likelihood ============================================================
 
   // log p(x_n | w, phi, theta) for every item at the current state: the data
@@ -222,6 +270,17 @@ public:
   
   void initialiseMDI();
   void initialiseDatasetL(uword l);
+
+  // === Split-merge ===========================================================
+
+  // Attempts per view and sweep of the sequentially-allocated re-partition of two
+  // randomly chosen components (mixtureModel::splitMergeMove); 0 turns the move off. The
+  // weights, phis and the other views' labels are held fixed, so Z and the
+  // strategic latent variable are unchanged.
+  uword split_merge_moves = 0, split_merge_attempts = 0, split_merge_accepts = 0;
+  void setSplitMerge(uword moves);
+  void updateSplitMerge();
+  void updateSplitMergeViewL(uword l);
 
   // === Label swapping ========================================================
 

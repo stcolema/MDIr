@@ -90,7 +90,8 @@ void categorical::sampleKthComponentParameters(
       counts(Y(relevant_indices(i), p)) += 1.0;
     }
     for(uword ii = 0; ii < n_cat(p); ii++) {
-      category_probabilities(p)(ii, k) = rGamma(cat_prior_probability(p)(ii) + counts(ii), 1.0);
+      // Tempered Dirichlet update: each member counts beta times
+      category_probabilities(p)(ii, k) = rGamma(cat_prior_probability(p)(ii) + beta * counts(ii), 1.0);
     }
     category_probabilities(p).col(k) /= accu(category_probabilities(p).col(k));
   }
@@ -215,4 +216,45 @@ void categorical::replaceData(const arma::mat& X_new) {
       Y(n, p) = category;
     }
   }
+}
+
+
+// === Collapsed marginal likelihood ============================================
+// Per measurement, with the beta-tempered likelihood, counts c and the
+// Dirichlet(alpha) prior: log B(alpha + beta c) - log B(alpha).
+collapsedStats categorical::emptyStats() const {
+  collapsedStats st;
+  st.n = 0.0;
+  st.s.zeros(arma::accu(n_cat));
+  st.S2.zeros(1, 1);
+  return st;
+}
+
+void categorical::addItemToStats(collapsedStats& st, arma::uword n) const {
+  st.n += 1.0;
+  uword offset = 0;
+  for(uword p = 0; p < P; p++) {
+    st.s(offset + Y(n, p)) += 1.0;
+    offset += n_cat(p);
+  }
+}
+
+double categorical::logMarginalLikelihood(const collapsedStats& st, double beta) const {
+  if(st.n <= 0.0) {
+    return 0.0;
+  }
+  double out = 0.0;
+  uword offset = 0;
+  for(uword p = 0; p < P; p++) {
+    double total_alpha = 0.0, total_post = 0.0;
+    for(uword i = 0; i < n_cat(p); i++) {
+      const double alpha = cat_prior_probability(p)(i), post = alpha + beta * st.s(offset + i);
+      out += std::lgamma(post) - std::lgamma(alpha);
+      total_alpha += alpha;
+      total_post += post;
+    }
+    out -= std::lgamma(total_post) - std::lgamma(total_alpha);
+    offset += n_cat(p);
+  }
+  return out;
 }

@@ -49,6 +49,15 @@ using namespace arma ;
 //' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
 //' @param phi_slice Update the phis with the strategic latent variable 
 //' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
+//' @param betas Inverse temperatures of the replicas for parallel tempering,
+//' strictly increasing, the last equal to one (the posterior). Empty or a single
+//' one is an ordinary run. A single value other than one samples that tempered
+//' target and is for testing only.
+//' @param swap_scheme How replicas are paired for exchange: 0, deterministic
+//' even-odd (non-reversible); 1, stochastic even-odd (reversible).
+//' @param swap_every Attempt replica exchanges after every `swap_every` sweeps.
+//' @param split_merge Attempts per view and sweep of the sequentially-allocated 
+//' re-partition of two randomly chosen components (0 turns it off).
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -67,7 +76,11 @@ Rcpp::List runMDI(
   arma::vec density_prior,
   arma::uvec save_allocation_probabilities,
   bool save_pointwise,
-  bool phi_slice
+  bool phi_slice,
+  arma::vec betas,
+  arma::uword swap_scheme,
+  arma::uword swap_every,
+  arma::uword split_merge
 );
 
 #endif /* RUNMDI_H */

@@ -87,7 +87,13 @@ void mixtureModel::calcBIC() {
 
 void mixtureModel::updateOutlierWeights() {
   non_outliers = 1 - outliers;
-  outlierComponent_ptr->updateWeights(non_outliers, outliers);
+
+  // Only items without an observed label can be outliers, and only they carry a
+  // factor of the outlier weight in the likelihood, so only they enter the Beta
+  // update. (Observed items are never outliers; counting them as non-outliers would
+  // bias the weight towards zero.)
+  const arma::uvec is_free = 1 - fixed;
+  outlierComponent_ptr->updateWeights(non_outliers % is_free, outliers % is_free);
 }
 
 void mixtureModel::updateAllocation(const arma::vec& log_weights, const arma::mat& log_upweights) {
@@ -121,6 +127,11 @@ void mixtureModel::updateItemAllocation(
   const vec ll = density_ptr->itemLogLikelihood(n);
   const vec log_component_weight = log_weights + log_upweights;
   
+  // The allocation targets the tempered conditional, in which the component 
+  // log-likelihood enters multiplied by beta. The recorded likelihoods below
+  // stay untempered.
+  const vec ll_sampling = (beta == 1.0) ? ll : vec(beta * ll);
+  
   const double ll_out = has_outliers ? outlierComponent_ptr->outlier_likelihood(n) : -arma::datum::inf;
   const double log_w_non = has_outliers ? std::log(outlierComponent_ptr->non_outlier_weight) : 0.0;
   const double log_w_out = has_outliers ? std::log(outlierComponent_ptr->outlier_weight) : -arma::datum::inf;
@@ -138,7 +149,7 @@ void mixtureModel::updateItemAllocation(
     // Joint draw of the component and the outlier status. Component and 
     // outlier status are sampled together, so each conditional is exact.
     vec log_prob(has_outliers ? 2 * K : K);
-    log_prob.subvec(0, K - 1) = log_component_weight + ll + log_w_non;
+    log_prob.subvec(0, K - 1) = log_component_weight + ll_sampling + log_w_non;
     if(has_outliers) {
       log_prob.subvec(K, 2 * K - 1) = log_component_weight + ll_out + log_w_out;
     }
@@ -209,7 +220,174 @@ void mixtureModel::initialiseMixture(
   { uvec occupied = unique(labels); K_occ = occupied.n_elem; }
 }
 
+void mixtureModel::setBeta(double beta_new) {
+  if(!(beta_new >= 0.0 && beta_new <= 1.0)) {
+    Rcpp::stop("The inverse temperature must lie in [0, 1].");
+  }
+  const bool has_missing = density_ptr->has_missing.n_elem > 0 && accu(density_ptr->has_missing) > 0;
+  if(beta_new != 1.0 && (outlierComponent_ptr->active() || has_missing || mixture_type == 3)) {
+    Rcpp::stop("Tempering supports complete data, no outlier component and "
+               "'G', 'MVN' or 'C' densities only.");
+  }
+  beta = beta_new;
+  density_ptr->beta = beta_new;
+}
+
 void mixtureModel::swapComponents(uword k, uword kprime) {
   density_ptr->swapComponents(k, kprime);
   alloc.swap_cols(k, kprime);
+}
+
+
+void mixtureModel::refreshLikelihoods(const arma::vec& log_weights) {
+  const bool has_outliers = outlierComponent_ptr->active();
+  const vec log_pi = log_weights - logSumExp(log_weights);
+  for(uword n = 0; n < N; n++) {
+    const vec ll = density_ptr->itemLogLikelihood(n);
+    double observed = logSumExp(log_pi + ll);
+    if(has_outliers) {
+      observed = logSumExp(vec({std::log(outlierComponent_ptr->non_outlier_weight) + observed,
+                                std::log(outlierComponent_ptr->outlier_weight) + outlierComponent_ptr->outlier_likelihood(n)}));
+    }
+    observed_likelihood_vec(n) = observed;
+    complete_likelihood_vec(n) = (outliers(n) == 1) ? outlierComponent_ptr->outlier_likelihood(n) : ll(labels(n));
+  }
+  observed_likelihood = accu(observed_likelihood_vec);
+  complete_likelihood = accu(complete_likelihood_vec);
+}
+
+bool mixtureModel::splitMergeMove(
+    uword a, uword b,
+    const arma::vec& log_weights,
+    const arma::mat& log_upweights
+) {
+  const double beta_now = beta;
+  const uword comp[2] = {a, b};
+  const bool has_outliers = outlierComponent_ptr->active();
+  const double log_w_non = has_outliers ? std::log(outlierComponent_ptr->non_outlier_weight) : 0.0;
+  const double log_w_out = has_outliers ? std::log(outlierComponent_ptr->outlier_weight) : -arma::datum::inf;
+
+  // The state of the move includes the imputed values of items with missing entries: a
+  // non-outlier's complete-data density is part of its component's collapsed marginal, an
+  // outlier's is the outlier law of the complete (observed + imputed) vector. The
+  // sampler draws the imputations from exactly these conditionals, so this is the joint
+  // they target. Without missing entries the two outlier densities coincide.
+  auto outlier_density = [&](uword n) {
+    if(density_ptr->missing_indices(n).n_elem == 0) {
+      return outlierComponent_ptr->outlier_likelihood(n);
+    }
+    return outlierComponent_ptr->completeLogDensity(density_ptr->X.row(n).t());
+  };
+
+  // The free items of the two components and the statistics of the fixed ones
+  // (an item flagged as an outlier does not enter the statistics of its component)
+  collapsedStats base[2] = {density_ptr->emptyStats(), density_ptr->emptyStats()};
+  std::vector<uword> items;
+  for(uword n = 0; n < N; n++) {
+    for(uword j = 0; j < 2; j++) {
+      if(labels(n) == comp[j]) {
+        if(fixed(n) == 1) {
+          if(outliers(n) == 0) {
+            density_ptr->addItemToStats(base[j], n);
+          }
+        } else {
+          items.push_back(n);
+        }
+      }
+    }
+  }
+  const uword m = items.size();
+  if(m == 0) {
+    return false;
+  }
+
+  // A uniformly random order (Fisher-Yates)
+  for(uword i = m - 1; i > 0; i--) {
+    const uword j = std::min<uword>((uword) std::floor(randu() * (double) (i + 1)), i);
+    std::swap(items[i], items[j]);
+  }
+
+  // Walk the items in order, following either a random allocation (the proposal) or the 
+  // current state, and return the sum of the log normalisers of the allocation 
+  // probabilities. Each item chooses among (component, outlier flag): a non-outlier adds 
+  // the collapsed predictive ratio of the component, an outlier adds the fixed outlier
+  // density and leaves the component's statistics unchanged. A path entry is 2 * j + flag.
+  auto walk = [&](bool follow_current, std::vector<uword>& path) {
+    collapsedStats stats[2] = {base[0], base[1]};
+    double lm[2] = {density_ptr->logMarginalLikelihood(stats[0], beta_now), 
+                    density_ptr->logMarginalLikelihood(stats[1], beta_now)};
+    double total = 0.0;
+    path.assign(m, 0);
+    for(uword t = 0; t < m; t++) {
+      const uword n = items[t];
+      collapsedStats cand[2] = {stats[0], stats[1]};
+      double lm_cand[2];
+      double score[4];
+      for(uword j = 0; j < 2; j++) {
+        density_ptr->addItemToStats(cand[j], n);
+        lm_cand[j] = density_ptr->logMarginalLikelihood(cand[j], beta_now);
+        const double base_score = log_weights(comp[j]) + log_upweights(comp[j], n);
+        score[2 * j] = base_score + log_w_non + (lm_cand[j] - lm[j]);
+        score[2 * j + 1] = has_outliers ? base_score + log_w_out + outlier_density(n)
+                                        : -arma::datum::inf;
+      }
+      double mx = score[0];
+      for(uword o = 1; o < 4; o++) {
+        mx = std::max(mx, score[o]);
+      }
+      double acc = 0.0;
+      for(uword o = 0; o < 4; o++) {
+        acc += std::exp(score[o] - mx);
+      }
+      const double log_norm = mx + std::log(acc);
+      if(!std::isfinite(log_norm)) {
+        Rcpp::stop("Non-finite allocation probabilities in the split-merge move.");
+      }
+      total += log_norm;
+      uword pick = 0;
+      if(follow_current) {
+        pick = 2 * ((labels(n) == comp[1]) ? 1 : 0) + ((outliers(n) == 1) ? 1 : 0);
+      } else {
+        const double u = randu();
+        double cum = 0.0;
+        pick = 3;
+        for(uword o = 0; o < 4; o++) {
+          cum += std::exp(score[o] - log_norm);
+          if(u < cum) {
+            pick = o;
+            break;
+          }
+        }
+        if(score[pick] == -arma::datum::inf) {
+          // rounding at the upper end of the cumulative sum: take the last feasible option
+          for(uword o = 4; o-- > 0;) {
+            if(std::isfinite(score[o])) {
+              pick = o;
+              break;
+            }
+          }
+        }
+      }
+      path[t] = pick;
+      if(pick % 2 == 0) {
+        stats[pick / 2] = cand[pick / 2];
+        lm[pick / 2] = lm_cand[pick / 2];
+      }
+    }
+    return total;
+  };
+
+  std::vector<uword> proposed_path, current_path;
+  const double log_w_proposed = walk(false, proposed_path);
+  const double log_w_current = walk(true, current_path);
+  const double log_accept = log_w_proposed - log_w_current;
+  const bool accept = (std::log(randu()) < log_accept);
+  if(accept) {
+    for(uword t = 0; t < m; t++) {
+      labels(items[t]) = comp[proposed_path[t] / 2];
+      outliers(items[t]) = proposed_path[t] % 2;
+    }
+    non_outliers = 1 - outliers;
+  }
+  return accept;
 }

@@ -99,16 +99,25 @@ mdi::mdi(
   // The observed labels
   fixed = _fixed;
 
-  // The number of fixed components (i.e. non-symbolic labels) and unfixed
-  // components. Used when aligning components across views.
+  // The components holding an observed label are fixed; the others are free. The
+  // observed labels never change, so this is computed once. Nothing is assumed about
+  // which indices the observed classes occupy.
   K_fixed.set_size(L);
   K_unfixed.set_size(L);
+  free_components.assign(L, arma::uvec());
   for(uword l = 0; l < L; l++){
-    uvec fixed_l = find(fixed.col(l) == 1);
-    uvec labels_l = labels.col(l);
-    uvec fixed_labels = labels_l(fixed_l);
-    { uvec fixed_components = unique(fixed_labels); K_fixed(l) = fixed_components.n_elem; }
-    K_unfixed(l) = K(l) - K_fixed(l);
+    arma::uvec has_observed(K(l), arma::fill::zeros);
+    for(uword n = 0; n < N; n++) {
+      if(fixed(n, l) == 1) {
+        if(labels(n, l) >= K(l)) {
+          Rcpp::stop("An observed label lies outside 0, ..., K - 1 in view %d.", (int) l + 1);
+        }
+        has_observed(labels(n, l)) = 1;
+      }
+    }
+    free_components[l] = arma::find(has_observed == 0);
+    K_unfixed(l) = free_components[l].n_elem;
+    K_fixed(l) = K(l) - K_unfixed(l);
   }
 
   complete_likelihood_vec = zeros< vec >(L);
@@ -307,6 +316,74 @@ arma::vec mdi::pointwiseLogLikelihood() {
   return out;
 }
 
+// === Tempering ===============================================================
+
+void mdi::setBeta(double beta_new) {
+  for(uword l = 0; l < L; l++) {
+    mixtures[l]->setBeta(beta_new);
+  }
+  beta = beta_new;
+}
+
+double mdi::dataLogLikelihood() {
+  double total = 0.0;
+  for(uword l = 0; l < L; l++) {
+    const auto& density = mixtures[l]->density_ptr;
+    for(uword n = 0; n < N; n++) {
+      total += density->logLikelihood(n, labels(n, l));
+    }
+  }
+  return total;
+}
+
+mdiState mdi::saveState() const {
+  mdiState s;
+  s.labels = labels;
+  s.w = w;
+  s.phis = phis;
+  s.mass = mass;
+  s.v = v;
+  s.Z = Z;
+  for(uword l = 0; l < L; l++) {
+    s.theta.push_back(mixtures[l]->density_ptr->parameters());
+    s.pooled.push_back(mixtures[l]->density_ptr->pooledHyperparameters());
+  }
+  return s;
+}
+
+void mdi::loadState(const mdiState& s) {
+  labels = s.labels;
+  w = s.w;
+  phis = s.phis;
+  mass = s.mass;
+  v = s.v;
+  Z = s.Z;
+  partition_tables.clear();
+  partition_tables_phis.reset();
+  for(uword l = 0; l < L; l++) {
+    auto& density = mixtures[l]->density_ptr;
+    density->setParameters(s.theta[l]);
+    if(s.pooled[l].n_elem > 0) {
+      density->setPooledHyperparameters(s.pooled[l]);
+    }
+    mixtures[l]->labels = labels.col(l);
+    density->labels = labels.col(l);
+    refreshMembersViewL(l);
+  }
+}
+
+void mdi::initialiseFromPrior() {
+  sampleFromGlobalPriors();
+  sampleFromLocalPriors();
+  labels = samplePriorLabels(N);
+  for(uword l = 0; l < L; l++) {
+    mixtures[l]->labels = labels.col(l);
+    mixtures[l]->density_ptr->labels = labels.col(l);
+    refreshMembersViewL(l);
+  }
+  Z_start = Z;
+}
+
 // === Priors ==================================================================
 
 void mdi::sampleFromPriors() {
@@ -409,6 +486,11 @@ void mdi::initialiseDatasetL(uword l) {
   labels.col(l) = mixtures[l]->labels;
   non_outliers.col(l) = mixtures[l]->non_outliers;
   outliers.col(l) = mixtures[l]->outliers;
+  // Record the likelihood of the initial state (it was left at zero)
+  complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+  observed_likelihood_vec(l) = mixtures[l]->observed_likelihood;
+  complete_likelihood = accu(complete_likelihood_vec);
+  observed_likelihood = accu(observed_likelihood_vec);
   refreshMembersViewL(l);
 }
 
@@ -430,6 +512,9 @@ void mdi::sweep(uword iteration) {
     mixtures[l]->sampleParameters();
   }
   updateAllocation();
+  if(split_merge_moves > 0) {
+    updateSplitMerge();
+  }
   if((iteration + 1) % 10 == 0) {
     updateLabels();
   }
@@ -533,7 +618,9 @@ void mdi::updateLabels() {
 
 void mdi::updateLabelsViewL(uword lstar) {
 
-  if(K_unfixed(lstar) < 2) {
+  const arma::uvec& free_k = free_components[lstar];
+  const uword n_free = free_k.n_elem;
+  if(n_free < 2) {
     return;
   }
 
@@ -541,14 +628,15 @@ void mdi::updateLabelsViewL(uword lstar) {
   const arma::mat phi_mat = phiMatrix();
   double Z_current = mdiPartitionSumFromC(w, K, partition_tables);
 
-  for(uword k = K_fixed(lstar); k < K(lstar); k++) {
+  for(uword i = 0; i < n_free; i++) {
 
-    // Choose another unfixed component uniformly. The proposal is symmetric.
-    uword k_prime = K_fixed(lstar) + (uword) std::floor(randu() * (double) (K_unfixed(lstar) - 1));
-    k_prime = std::min(k_prime, K(lstar) - 2);
-    if(k_prime >= k) {
-      k_prime++;
+    // Choose another free component uniformly. The proposal is symmetric.
+    const uword k = free_k(i);
+    uword j = std::min<uword>((uword) std::floor(randu() * (double) (n_free - 1)), n_free - 2);
+    if(j >= i) {
+      j++;
     }
+    const uword k_prime = free_k(j);
 
     if(N_k(k, lstar) == 0 && N_k(k_prime, lstar) == 0) {
       continue;
@@ -578,3 +666,61 @@ void mdi::updateLabelsViewL(uword lstar) {
     }
   }
 };
+
+
+// === Split-merge ==============================================================
+
+void mdi::setSplitMerge(uword moves) {
+  if(moves > 0) {
+    for(uword l = 0; l < L; l++) {
+      const auto& mix = mixtures[l];
+      if(!mix->density_ptr->hasCollapsedMarginal()) {
+        Rcpp::stop("The split-merge move needs 'G', 'MVN' or 'C' views (a collapsed marginal likelihood).");
+      }
+    }
+  }
+  split_merge_moves = moves;
+}
+
+void mdi::updateSplitMergeViewL(uword l) {
+  if(K(l) < 2) {
+    return;
+  }
+  const vec log_weights = log(w(span(0, K(l) - 1), l));
+  const mat log_upweights = calculateUpweights(l);
+  auto& mixture = mixtures[l];
+  for(uword move = 0; move < split_merge_moves; move++) {
+    // two distinct components, uniformly
+    const uword a = std::min<uword>((uword) std::floor(randu() * (double) K(l)), K(l) - 1);
+    uword b = std::min<uword>((uword) std::floor(randu() * (double) (K(l) - 1)), K(l) - 2);
+    if(b >= a) {
+      b++;
+    }
+    const bool accepted = mixture->splitMergeMove(a, b, log_weights, log_upweights);
+    split_merge_attempts++;
+    if(accepted) {
+      split_merge_accepts++;
+    }
+    labels.col(l) = mixture->labels;
+    non_outliers.col(l) = mixture->non_outliers;
+    outliers.col(l) = mixture->outliers;
+    refreshMembersViewL(l);
+    // Redraw the parameters of the two components given the new labels (also after
+    // a rejection: the move is a kernel on the labels with the parameters collapsed,
+    // followed by a draw of the parameters from their conditional)
+    mixture->density_ptr->labels = mixture->labels;
+    mixture->density_ptr->sampleKthComponentParameters(a, mixture->members, mixture->non_outliers);
+    mixture->density_ptr->sampleKthComponentParameters(b, mixture->members, mixture->non_outliers);
+  }
+  mixture->refreshLikelihoods(log_weights);
+  complete_likelihood_vec(l) = mixture->complete_likelihood;
+  observed_likelihood_vec(l) = mixture->observed_likelihood;
+}
+
+void mdi::updateSplitMerge() {
+  for(uword l = 0; l < L; l++) {
+    updateSplitMergeViewL(l);
+  }
+  complete_likelihood = accu(complete_likelihood_vec);
+  observed_likelihood = accu(observed_likelihood_vec);
+}

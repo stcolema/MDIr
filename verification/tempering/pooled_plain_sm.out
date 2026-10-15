@@ -1,0 +1,9 @@
+160 independent plain chains of 6000 sweeps, pooled with equal weights
+TV to exact posterior masses: 0.015
+ pattern exact pooled    se
+  1|24|3 0.522  0.519 0.002
+  1|2|34 0.296  0.284 0.002
+  12|3|4 0.099  0.107 0.001
+  13|2|4 0.083  0.090 0.001
+  14|2|3 0.000  0.000 0.000
+share of chains whose dominant pattern is the exact-modal one: 1 

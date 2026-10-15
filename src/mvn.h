@@ -50,6 +50,7 @@ public:
   void sampleFromPriors() override;
   void updatePooledHyperparameters(const arma::uvec& occupied) override;
   arma::vec pooledHyperparameters() const override;
+  void setPooledHyperparameters(const arma::vec& pooled) override;
 
   void sampleKthComponentParameters(uword k, const umat& members, const uvec& non_outliers) override;
 
@@ -62,6 +63,12 @@ public:
   // Likelihood of the observed entries
   arma::vec itemLogLikelihood(arma::uword n) override;
   double logLikelihood(arma::uword n, arma::uword k) override;
+
+  // Collapsed normal-inverse-Wishart marginal likelihood of a set of items
+  bool hasCollapsedMarginal() const override { return true; }
+  collapsedStats emptyStats() const override;
+  void addItemToStats(collapsedStats& st, arma::uword n) const override;
+  double logMarginalLikelihood(const collapsedStats& st, double beta) const override;
 
   void swapComponents(uword k, uword kprime) override;
 

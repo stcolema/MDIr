@@ -16,6 +16,17 @@ arma::vec resolveDensityPrior(const arma::vec& prior);
 
 using namespace arma ;
 
+// Sufficient statistics of a set of items for the collapsed (parameter-integrated)
+// likelihood. Meaning of the fields depends on the density: for the Gaussian
+// densities s and S2 are the sum and sum of squares (cross-products for the MVN) of
+// the items centred at the prior mean; for the categorical density s holds the
+// category counts of every measurement, concatenated.
+struct collapsedStats {
+  double n = 0.0;
+  arma::vec s;
+  arma::mat S2;
+};
+
 // =============================================================================
 // virtual density class
 //
@@ -58,7 +69,10 @@ public:
     K_inds,
 
     // Acceptance count of MH sampled parameters
-    acceptance_count = zeros< uvec >(0);
+    acceptance_count = zeros< uvec >(0),
+
+    // Number of proposals behind each entry of acceptance_count
+    acceptance_attempts = zeros< uvec >(0);
 
   vec
     // Used in recording GP hyperparameters
@@ -66,6 +80,13 @@ public:
 
   // The data, with any missing entries replaced by their current imputation
   mat X;
+
+  // Inverse temperature of the tempered target pi_beta proportional to
+  // L(data | labels, theta)^beta * prior (see mdi::beta). The component
+  // parameters are drawn from the tempered conditional: each member contributes
+  // beta, not one, to the counts and sufficient statistics. At beta = 1 (the
+  // default) every update is the untempered one.
+  double beta = 1.0;
 
   // Missing value storage (common to all densities)
   arma::field<arma::uvec> missing_indices;
@@ -105,6 +126,7 @@ public:
   // Hyperparameters shared across components (partial pooling)
   virtual void updatePooledHyperparameters(const arma::uvec& occupied) { }
   virtual arma::vec pooledHyperparameters() const { return arma::vec(); }
+  virtual void setPooledHyperparameters(const arma::vec& pooled) { }
 
   // === Likelihood ============================================================
   // Log-likelihood of the *observed* entries of item n in each / one component
@@ -112,6 +134,19 @@ public:
   virtual double logLikelihood(arma::uword n, arma::uword k) = 0;
 
   virtual void receiveHyperParametersProposalWindows(vec proposal_windows) {};
+
+  // === Collapsed marginal likelihood (used by the split-merge move) ==========
+  // With the component parameters integrated out against their conjugate prior (and
+  // the pooled hyperparameters held at their current values), the likelihood of a set
+  // of items raised to the power beta is available in closed form from its
+  // sufficient statistics. Densities that do not have it (GP) keep the default.
+  virtual bool hasCollapsedMarginal() const { return false; }
+  virtual collapsedStats emptyStats() const { return collapsedStats(); }
+  virtual void addItemToStats(collapsedStats& st, arma::uword n) const { }
+  virtual double logMarginalLikelihood(const collapsedStats& st, double beta) const {
+    Rcpp::stop("This density has no collapsed marginal likelihood.");
+    return 0.0;
+  }
 
   // === Component relabelling =================================================
   // Exchange every component-specific parameter of components k and k'
