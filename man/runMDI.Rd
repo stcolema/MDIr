@@ -13,7 +13,14 @@ runMDI(
   outlier_types,
   labels,
   fixed,
-  proposal_windows
+  proposal_windows,
+  save_parameters,
+  save_imputed,
+  prior,
+  density_prior,
+  save_allocation_probabilities,
+  save_pointwise,
+  phi_slice
 )
 }
 \arguments{
@@ -22,7 +29,7 @@ runMDI(
 \item{thin}{thinning factor for samples recorded.}
 
 \item{Y}{The list of data matrices to perform integrative clustering upon 
-with items to cluster in rows.}
+with items to cluster in rows. Non-finite entries are treated as missing.}
 
 \item{K}{Vector of the number of components to model in each view. This is the upper 
 limit on the number of clusters that can be found.}
@@ -39,6 +46,29 @@ items being clustered, columns to views.}
 label.}
 
 \item{proposal_windows}{List/field of vectors}
+
+\item{save_parameters}{Record the component parameters at each saved 
+iteration (needed for posterior predictive checks).}
+
+\item{save_imputed}{Record the imputed values of missing entries at each 
+saved iteration.}
+
+\item{prior}{Optional vector of MDI-level prior hyperparameters (mass shape, 
+mass rate, weight rate, phi shape, phi rate). Empty for the defaults.}
+
+\item{density_prior}{Options of the density-level priors (variance scale 
+pooling and Gaussian process priors), see `densityPrior()` in R.}
+
+\item{save_allocation_probabilities}{For each view, 1 to record the allocation
+probabilities of every item at every saved iteration (an N x K x draws array, 
+needed only for semi-supervised views), 0 to leave them out. A single value is
+recycled over the views.}
+
+\item{save_pointwise}{Record the log-likelihood of every item at every saved 
+iteration (see `pointwiseLogLikelihood`); the total is always recorded.}
+
+\item{phi_slice}{Update the phis with the strategic latent variable 
+integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

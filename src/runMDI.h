@@ -22,7 +22,7 @@ using namespace arma ;
 //' @param R The number of iterations to run for.
 //' @param thin thinning factor for samples recorded.
 //' @param Y The list of data matrices to perform integrative clustering upon 
-//' with items to cluster in rows.
+//' with items to cluster in rows. Non-finite entries are treated as missing.
 //' @param K Vector of the number of components to model in each view. This is the upper 
 //' limit on the number of clusters that can be found.
 //' @param mixture_types Character vector of densities used in each view
@@ -33,6 +33,22 @@ using namespace arma ;
 //' @param fixed Binary matrix of the items that are fixed in their initial
 //' label.
 //' @param proposal_windows List/field of vectors
+//' @param save_parameters Record the component parameters at each saved 
+//' iteration (needed for posterior predictive checks).
+//' @param save_imputed Record the imputed values of missing entries at each 
+//' saved iteration.
+//' @param prior Optional vector of MDI-level prior hyperparameters (mass shape, 
+//' mass rate, weight rate, phi shape, phi rate). Empty for the defaults.
+//' @param density_prior Options of the density-level priors (variance scale 
+//' pooling and Gaussian process priors), see `densityPrior()` in R.
+//' @param save_allocation_probabilities For each view, 1 to record the allocation
+//' probabilities of every item at every saved iteration (an N x K x draws array, 
+//' needed only for semi-supervised views), 0 to leave them out. A single value is
+//' recycled over the views.
+//' @param save_pointwise Record the log-likelihood of every item at every saved 
+//' iteration (see `pointwiseLogLikelihood`); the total is always recorded.
+//' @param phi_slice Update the phis with the strategic latent variable 
+//' integrated out (slice sampling; TRUE) or by Gibbs sampling given it (FALSE).
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -44,7 +60,14 @@ Rcpp::List runMDI(
   arma::uvec outlier_types,
   arma::umat labels,
   arma::umat fixed,
-  arma::field< arma::vec > proposal_windows
+  arma::field< arma::vec > proposal_windows,
+  bool save_parameters,
+  bool save_imputed,
+  arma::vec prior,
+  arma::vec density_prior,
+  arma::uvec save_allocation_probabilities,
+  bool save_pointwise,
+  bool phi_slice
 );
 
 #endif /* RUNMDI_H */

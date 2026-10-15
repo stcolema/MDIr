@@ -36,20 +36,23 @@ matrices.
 }
 \examples{
 \donttest{
+set.seed(1)
 model_description_df <- data.frame(
   "Depth" = rep(c(100, 500, 1000), 3),
   "Width" = c(rep(50, 3), rep(100, 3), rep(200, 3))
 )
 n_models <- nrow(model_description_df)
+
+# Toy consensus matrices built from random partitions of 20 items
 cms <- vector("list", n_models)
 for (ii in seq(1, n_models)) {
-  cms[[ii]] <- createSimilarityMat(mcmc[[ii]]$allocations)
+  allocations <- matrix(sample(seq(0, 2), 10 * 20, replace = TRUE), 10, 20)
+  cms[[ii]] <- createSimilarityMat(allocations)
 }
 plot_df <- prepCMssForGGplot(cms, model_description_df)
-plot_df |>
-  ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+ggplot2::ggplot(plot_df, ggplot2::aes(x = Feature, y = Item, fill = Entry)) +
   ggplot2::geom_tile() +
-  ggplot2::facet_grid(Depth ~ Width, labeller = label_both()) +
+  ggplot2::facet_grid(Depth ~ Width, labeller = ggplot2::label_both) +
   ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 }
 

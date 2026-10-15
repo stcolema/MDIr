@@ -61,7 +61,10 @@ arma::vec rInvGamma(uword N, double shape, double rate) {
 //' param rate Rate parameter.
 //' return Sample from Gamma(shape, rate).
 double rGamma(double shape, double rate) {
-  return arma::randg( distr_param(shape, 1.0 / rate) );
+  // Gamma draws with small shape can underflow to exactly zero, which breaks
+  // any subsequent log(). Floor at the smallest positive normal double.
+  double x = arma::randg( distr_param(shape, 1.0 / rate) );
+  return std::max(x, std::numeric_limits<double>::min());
 };
 
 //' title The Gamma Distribution
@@ -142,6 +145,26 @@ arma::vec rBeta(arma::uword n, double a, double b) {
 };
 
 
+double logSumExp(const arma::vec& x) {
+  const double m = x.max();
+  if(!std::isfinite(m)) {
+    return m;
+  }
+  return m + std::log(arma::accu(arma::exp(x - m)));
+}
+
+arma::uword sampleCategorical(const arma::vec& probs) {
+  const double u = arma::randu();
+  double cumulative = 0.0;
+  for(arma::uword i = 0; i + 1 < probs.n_elem; i++) {
+    cumulative += probs(i);
+    if(u < cumulative) {
+      return i;
+    }
+  }
+  return probs.n_elem - 1;
+}
+
 //' title Metropolis acceptance step
 //' description Given a probaility, randomly accepts by sampling from a uniform 
 //' distribution.
@@ -199,52 +222,103 @@ arma::vec sampleMeanRobust(const arma::mat& X) {
   return means;
 }
 
-// Compute covariance robustly with missing values
+// Covariance from pairwise-complete observations. This is used only to set
+// data-driven hyperparameters, so an approximation that tolerates any pattern
+// of missingness is what is wanted. The pairwise estimate need not be positive
+// semi-definite, so negative eigenvalues are lifted to a small positive floor.
+// Columns with fewer than two finite values receive unit variance.
 arma::mat computeCovarianceRobust(const arma::mat& X) {
-  arma::uword N = X.n_rows;
-  arma::uword P = X.n_cols;
+  const arma::uword P = X.n_cols;
+  arma::mat S(P, P, arma::fill::zeros);
+  arma::vec means = sampleMeanRobust(X);
   
-  // Find rows with all finite values (complete observations)
-  arma::uvec complete_rows;
-  arma::uvec has_complete = arma::zeros<arma::uvec>(N);
-  
-  for(arma::uword n = 0; n < N; n++) {
-    arma::rowvec row_n = X.row(n);
-    bool all_finite = true;
-    for(arma::uword p = 0; p < P; p++) {
-      if(!arma::is_finite(row_n(p))) {
-        all_finite = false;
-        break;
+  for(arma::uword p = 0; p < P; p++) {
+    for(arma::uword q = p; q < P; q++) {
+      double total = 0.0;
+      arma::uword n_pair = 0;
+      for(arma::uword n = 0; n < X.n_rows; n++) {
+        if(std::isfinite(X(n, p)) && std::isfinite(X(n, q))) {
+          total += (X(n, p) - means(p)) * (X(n, q) - means(q));
+          n_pair++;
+        }
       }
-    }
-    if(all_finite) {
-      has_complete(n) = 1;
+      if(n_pair > 1) {
+        S(p, q) = total / (double) (n_pair - 1);
+      } else if(p == q) {
+        S(p, q) = 1.0;
+      }
+      S(q, p) = S(p, q);
     }
   }
-  complete_rows = arma::find(has_complete);
   
-  if(complete_rows.n_elem > 1) {
-    // Use complete observations for covariance calculation
-    arma::mat X_complete = X.rows(complete_rows);
-    return arma::cov(X_complete);
-  } else {
-    // Fallback: compute diagonal covariance from column-wise variances
-    arma::mat empirical_cov(P, P, arma::fill::zeros);
-    
-    for(arma::uword p = 0; p < P; p++) {
-      arma::vec col_data = X.col(p);
-      arma::uvec finite_indices = arma::find_finite(col_data);
-      
-      if(finite_indices.n_elem > 1) {
-        empirical_cov(p, p) = arma::var(col_data.elem(finite_indices));
-      } else if(finite_indices.n_elem == 1) {
-        empirical_cov(p, p) = 1.0; // Default variance
-      } else {
-        empirical_cov(p, p) = 1.0; // Default variance
-      }
+  arma::vec eigval;
+  arma::mat eigvec;
+  if(arma::eig_sym(eigval, eigvec, S)) {
+    const double floor_value = std::max(1e-8, 1e-6 * eigval.max());
+    if(eigval.min() < floor_value) {
+      eigval = arma::clamp(eigval, floor_value, arma::datum::inf);
+      S = eigvec * arma::diagmat(eigval) * eigvec.t();
+      S = 0.5 * (S + S.t());
     }
-    return empirical_cov;
   }
+  return S;
+}
+
+// Lower Cholesky factor of a covariance matrix. If the matrix is numerically
+// indefinite a multiple of the identity is added, growing geometrically, until
+// the factorisation succeeds.
+arma::mat cholLowerRobust(const arma::mat& S) {
+  arma::mat A = 0.5 * (S + S.t()), Lower;
+  if(arma::chol(Lower, A, "lower")) {
+    return Lower;
+  }
+  double jitter = 1e-10 * std::max(arma::trace(A) / (double) A.n_rows, 1e-12);
+  for(int attempt = 0; attempt < 12; attempt++) {
+    arma::mat B = A;
+    B.diag() += jitter;
+    if(arma::chol(Lower, B, "lower")) {
+      return Lower;
+    }
+    jitter *= 10.0;
+  }
+  Rcpp::stop("Covariance matrix is not positive definite and could not be repaired.");
+  return Lower;
+}
+
+// Draw from N(mean, cov) via Cholesky.
+arma::vec rmvnormChol(const arma::vec& mean, const arma::mat& cov) {
+  arma::mat Lower = cholLowerRobust(cov);
+  return mean + Lower * arma::randn<arma::vec>(mean.n_elem);
+}
+
+// Conditional distribution of the entries `miss` of a N(mu, Sigma) vector given 
+// the entries `obs`. Also returns the squared Mahalanobis distance of x_obs 
+// from mu_obs (needed for the multivariate t conditional).
+void conditionalMVN(
+    const arma::vec& mu,
+    const arma::mat& Sigma,
+    const arma::uvec& obs,
+    const arma::uvec& miss,
+    const arma::vec& x_obs,
+    arma::vec& cond_mean,
+    arma::mat& cond_cov,
+    double& mahalanobis_obs
+) {
+  if(obs.n_elem == 0) {
+    cond_mean = mu.elem(miss);
+    cond_cov = Sigma.submat(miss, miss);
+    mahalanobis_obs = 0.0;
+    return;
+  }
+  arma::mat S_oo = Sigma.submat(obs, obs), S_mo = Sigma.submat(miss, obs);
+  arma::mat Lower = cholLowerRobust(S_oo);
+  arma::vec diff = x_obs - mu.elem(obs);
+  arma::vec z = arma::solve(arma::trimatl(Lower), diff);
+  mahalanobis_obs = arma::dot(z, z);
+  arma::mat B = arma::solve(arma::trimatl(Lower), S_mo.t());     // L^{-1} S_om
+  cond_mean = mu.elem(miss) + B.t() * z;
+  cond_cov = Sigma.submat(miss, miss) - B.t() * B;
+  cond_cov = 0.5 * (cond_cov + cond_cov.t());
 }
 
 // title Calculate sample covariance
@@ -257,8 +331,8 @@ arma::mat computeCovarianceRobust(const arma::mat& X) {
 // return One of the parameters required to calculate the posterior of the
 //  Multivariate normal with uknown mean and covariance (the unnormalised
 //  sample covariance).
-arma::mat calcSampleCov(arma::mat data,
-                        arma::vec sample_mean,
+arma::mat calcSampleCov(const arma::mat& data,
+                        const arma::vec& sample_mean,
                         arma::uword N,
                         arma::uword P
 ) {
@@ -282,16 +356,9 @@ arma::mat roundMatrix(arma::mat X, int n_places) {
   return round(X * multiplier) / multiplier;
 }
 
-int choose(arma::uword n, arma::uword k) {
-  if (k == 0) {
-    return 1;
-  } 
-  return (n * choose(n - 1, k - 1)) / k;
-}
-
 double logChoose(double n, double k) {
-  if (k == 1 || k == 0) {
-    return 0;
-  } 
-  return log(n) - log(k) + logChoose(n - 1, k - 1);
+  if(k < 0.0 || k > n) {
+    return -arma::datum::inf;
+  }
+  return std::lgamma(n + 1.0) - std::lgamma(k + 1.0) - std::lgamma(n - k + 1.0);
 }

@@ -17,16 +17,16 @@ std::unique_ptr<density> densityFactory::createDensity(
   densityType type,
   arma::uword K,
   arma::uvec labels,
-  arma::mat X
+  arma::mat X,
+  arma::vec density_prior
 ) {
   switch (type) {
-    case G: return std::make_unique<gaussian>(K, labels, X);
-    case MVN: return std::make_unique<mvn>(K, labels, X);
-    case C: return std::make_unique<categorical>(K, labels, X);
-    case GP: return std::make_unique<gp>(K, labels, X);
+    case G: return std::unique_ptr<gaussian>(new gaussian(K, labels, X, density_prior));
+    case MVN: return std::unique_ptr<mvn>(new mvn(K, labels, X, density_prior));
+    case C: return std::unique_ptr<categorical>(new categorical(K, labels, X));
+    case GP: return std::unique_ptr<gp>(new gp(K, labels, X, density_prior));
   default : {
-      Rcpp::Rcerr << "invalid density type.\n";
-      throw;
+      Rcpp::stop("invalid density type.");
     }
   }
 };

@@ -4,11 +4,14 @@
 \alias{checkDataCorrectInput}
 \title{Check data correct input}
 \usage{
-checkDataCorrectInput(X)
+checkDataCorrectInput(X, types = NULL)
 }
 \arguments{
 \item{X}{Data passed to ``callMDI``. Should be a list of matrices each with
-N items held in rows.}
+N items held in rows. ``NA`` and ``NaN`` entries are treated as missing.}
+
+\item{types}{Optional character vector of the density type of each view; if
+given, type-specific checks (e.g. categorical coding) are applied.}
 }
 \value{
 No return value, called for side effects.

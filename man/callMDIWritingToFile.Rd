@@ -15,7 +15,9 @@ callMDIWritingToFile(
   alpha = NULL,
   initial_labels_as_intended = FALSE,
   proposal_windows = NULL,
-  dir_path = tempdir()
+  dir_path = tempdir(),
+  prior = mdiPrior(),
+  density_prior = densityPrior()
 )
 }
 \arguments{
@@ -53,6 +55,10 @@ third is for the noise. These are not used in other mixture types.}
 
 \item{dir_path}{A string for the directory to save samples to. This cannot be
 a shorthand containing the `~` symbol.}
+
+\item{prior}{MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.}
+
+\item{density_prior}{Density-level prior options, see \code{\link{densityPrior}}.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

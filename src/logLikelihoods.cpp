@@ -3,6 +3,7 @@
 // included dependencies
 # include <RcppArmadillo.h>
 # include "logLikelihoods.h"
+# include "genericFunctions.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -26,51 +27,62 @@ double invGammaLogLikelihood(double x, double shape, double scale) {
   return shape * log(scale) - lgamma(shape) + (-shape - 1) * log(x) - scale / x;
 };
 
+namespace {
+
+// Log of the multivariate gamma function
+double logMultivariateGamma(double a, arma::uword P) {
+  double out = 0.25 * (double) P * ((double) P - 1.0) * std::log(M_PI);
+  for(arma::uword j = 1; j <= P; j++) {
+    out += std::lgamma(a + 0.5 * (1.0 - (double) j));
+  }
+  return out;
+}
+
+double logDetSympd(const arma::mat& S) {
+  return arma::log_det_sympd(S);
+}
+
+}
+
 double wishartLogLikelihood(arma::mat X, arma::mat V, double n, arma::uword P){
-  return 0.5*(
-    (n - P - 1) * arma::log_det(X).real() 
-    - trace(arma::inv_sympd(V) * X) 
-    - n * arma::log_det(V).real()
-  );
+  return 0.5 * (
+    (n - (double) P - 1.0) * logDetSympd(X)
+    - arma::trace(arma::solve(V, X, arma::solve_opts::likely_sympd)) 
+    - n * logDetSympd(V)
+    - n * (double) P * std::log(2.0)
+  ) - logMultivariateGamma(0.5 * n, P);
 }
 
 double invWishartLogLikelihood(arma::mat X, arma::mat Psi, double nu, arma::uword P) {
-  return -0.5 * (
-    nu * arma::log_det(Psi).real()
-    + (nu + P + 1) * arma::log_det(X).real()
-    + arma::trace( Psi * arma::inv_sympd(X) ) 
-  );
+  return 0.5 * (
+    nu * logDetSympd(Psi)
+    - (nu + (double) P + 1.0) * logDetSympd(X)
+    - arma::trace(arma::solve(X, Psi, arma::solve_opts::likely_sympd)) 
+    - nu * (double) P * std::log(2.0)
+  ) - logMultivariateGamma(0.5 * nu, P);
 }
 
 double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu) {
-    
-    double P = (double) x.n_rows, exponent = 0.0, ll = 0.0;
-    arma::vec mean_diff = x - mu;
-    
-    exponent = arma::as_scalar(
-      mean_diff.t()
-      * inv(Sigma)
-      * mean_diff
-    );
-
-    ll = lgamma(0.5 * (nu + P)) 
-      - lgamma(0.5 * nu) 
-      - 0.5 * P * log(nu * M_PI)
-      - 0.5 * arma::log_det(Sigma).real()
-      - ((nu + (double) P) / 2.0) * std::log(1.0 + (1.0 / nu) * exponent);
-    
-    return ll;
+  const double P = (double) x.n_rows;
+  const arma::mat Lower = cholLowerRobust(Sigma);
+  const arma::vec z = arma::solve(arma::trimatl(Lower), x - mu);
+  const double exponent = arma::dot(z, z);
+  
+  return std::lgamma(0.5 * (nu + P)) 
+    - std::lgamma(0.5 * nu) 
+    - 0.5 * P * std::log(nu * M_PI)
+    - arma::accu(arma::log(Lower.diag()))
+    - 0.5 * (nu + P) * std::log1p(exponent / nu);
 }
 
-
-double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev) {
+double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec variance) {
   int P = x.n_rows;
   double ll = 0.0, ll_p = 0.0;
   for(int p = 0; p < P; p++) {
     ll_p = -0.5 * (
       log(2.0 * M_PI) 
-      + log(std_dev(p)) 
-      + std::pow(x(p) - mu(p), 2.0) / std_dev(p)
+      + log(variance(p)) 
+      + std::pow(x(p) - mu(p), 2.0) / variance(p)
     );
     ll += ll_p;
   }
@@ -78,15 +90,16 @@ double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev) {
 };
 
 double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd) {
-  // bool cov_is_sympd = Sigma.is_sympd();
   int P = x.n_rows;
   double out = 0.0;
   arma::vec mean_diff = x - mu;
   if(is_sympd) {
+    const arma::mat Lower = cholLowerRobust(Sigma);
+    const arma::vec z = arma::solve(arma::trimatl(Lower), mean_diff);
     out = -0.5 * (
       (double) P * std::log(2.0 * M_PI) 
-      + arma::log_det_sympd(Sigma) 
-      + arma::as_scalar(mean_diff.t() * arma::inv_sympd(Sigma) * mean_diff)
+      + 2.0 * arma::accu(arma::log(Lower.diag()))
+      + arma::dot(z, z)
     );
   } else {
     out = -0.5 * (
