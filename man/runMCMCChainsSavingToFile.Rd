@@ -17,6 +17,7 @@ runMCMCChainsSavingToFile(
   alpha = NULL,
   initial_labels_as_intended = FALSE,
   proposal_windows = NULL,
+  time_points = NULL,
   control = mdirControl(),
   R = NULL,
   K = NULL
@@ -52,6 +53,8 @@ weights in the model.}
 labels are as intended or should ``generateInitialLabels`` be called.}
 
 \item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
+
+\item{time_points}{See \code{\link{callMDI}}.}
 
 \item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
 Gaussian process hyperparameters and whether and for how long they are adapted

@@ -153,7 +153,7 @@ predictMDI <- function(object,
   raw <- predictNewItemsCpp(
     X, newdata, as.integer(K), codes$density, codes$outlier, parameters,
     weights, phis, outlier_weights, allocations, isTRUE(coclustering),
-    as.numeric(prior), as.numeric(density_prior)
+    as.numeric(prior), as.numeric(density_prior), .mdirFitTimePoints(first, V)
   )
 
   new_ids <- rownames(newdata[[1]])

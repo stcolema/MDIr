@@ -23,11 +23,16 @@ mdi::mdi(
   arma::umat _labels,
   arma::umat _fixed,
   arma::vec _prior,
-  arma::vec _density_prior
+  arma::vec _density_prior,
+  arma::field<arma::vec> _time_points
 ) {
 
   setPrior(_prior);
   density_prior = _density_prior;
+  if(_time_points.n_elem != 0 && _time_points.n_elem != _X.n_elem) {
+    Rcpp::stop("`time_points` must have one entry for each view.");
+  }
+  time_points = _time_points;
   mixture_types = _mixture_types;
   outlier_types = _outlier_types;
 
@@ -158,7 +163,8 @@ void mdi::initialiseMixtures() {
         labels.col(l),
         fixed.col(l),
         X(l),
-        density_prior
+        density_prior,
+        (time_points.n_elem == 0) ? arma::vec() : time_points(l)
       ))
     );
     non_outliers.col(l) = mixtures[l]->non_outliers;

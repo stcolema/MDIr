@@ -21,6 +21,7 @@ Rcpp::List runMDI(
     bool save_imputed,
     arma::vec prior,
     arma::vec density_prior,
+    arma::field< arma::vec > time_points,
     arma::uvec save_allocation_probabilities,
     bool save_pointwise,
     bool phi_slice,
@@ -79,7 +80,7 @@ Rcpp::List runMDI(
   replicas.reserve(T);
   for(uword t = 0; t < T; t++) {
     replicas.push_back(std::unique_ptr<mdi>(
-      new mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior)
+      new mdi(Y, mixture_types, outlier_types, K, labels, fixed, prior, density_prior, time_points)
     ));
     replicas[t]->phi_slice = phi_slice;
     for(uword l = 0; l < L; l++) {

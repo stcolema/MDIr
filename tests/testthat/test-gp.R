@@ -30,17 +30,6 @@ test_that("the population update matches the analytic posterior of (m, s)", {
   expect_equal(sd(chain[, 2]), sd_s, tolerance = 0.08)
 })
 
-gp_log_marginal <- function(X, a, lambda, s2, jitter = 1e-8) {
-  # X centred on its column means, so xbar = 0
-  n <- nrow(X); P <- ncol(X)
-  SS <- sum(sweep(X, 2, colMeans(X))^2)
-  D <- outer(seq_len(P), seq_len(P), function(i, j) -0.5 * (i - j)^2)
-  Kmat <- a * exp(D / lambda^2) + diag(jitter * a, P)
-  ch <- chol(Kmat + diag(s2 / n, P))
-  -0.5 * n * P * log(2 * pi * s2) + 0.5 * P * log(2 * pi * s2 / n) - SS / (2 * s2) -
-    0.5 * (P * log(2 * pi) + 2 * sum(log(diag(ch))))
-}
-
 test_that("GP hyperparameter sampler targets the marginal posterior under the guarded, pooled priors", {
   skip_on_cran()
   set.seed(92)

@@ -37,6 +37,7 @@ using namespace arma ;
 //' @param save_dir Directory to save MCMC samples to
 //' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
 //' @param density_prior Options of the density-level priors (see `runMDI`).
+//' @param time_points For each view, the positions of the columns of a Gaussian process view (see `runMDI`).
 //' @param auto_tune,n_burn Adapt the Gaussian process proposal windows during the first
 //' `n_burn` sweeps (see `runMDI`).
 //' @return Nothing; one binary file per saved sample is written to `save_dir`.
@@ -54,6 +55,7 @@ void runMDIWriteToFile(
      std::string save_dir,
      arma::vec prior,
      arma::vec density_prior,
+     arma::field< arma::vec > time_points,
      bool auto_tune = false,
      arma::uword n_burn = 0
  );

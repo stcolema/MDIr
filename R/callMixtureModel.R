@@ -25,6 +25,8 @@
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
 #' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
+#' @param time_points For a Gaussian process (\code{type = "GP"} or \code{"TAGPM"}), a numeric vector
+#' with the position of each column; see \code{\link{callMDI}}.
 #' @return A named list containing the sampled partitions, component weights,
 #' and mass parameters, model fit measures and some details on the model call.
 #' @examples
@@ -56,6 +58,7 @@ callMixtureModel <- function(X,
                              save_imputed = FALSE,
                              prior = mdiPrior(),
                              density_prior = densityPrior(),
+                             time_points = NULL,
                              control = mdirControl(),
                              R = NULL,
                              K = NULL) {
@@ -122,6 +125,7 @@ callMixtureModel <- function(X,
   checkLabels(initial_labels, K)
 
   proposal_windows <- processProposalWindows(proposal_windows, type)
+  time_points <- .mdirTimePoints(time_points, X, type)
   
   t_0 <- Sys.time()
 
@@ -140,6 +144,7 @@ callMixtureModel <- function(X,
     save_imputed,
     as.numeric(prior),
     as.numeric(density_prior),
+    time_points,
     save_allocation_probabilities = as.integer(any(fixed == 1)),
     save_pointwise = FALSE,
     phi_slice = TRUE,
@@ -191,6 +196,7 @@ callMixtureModel <- function(X,
 
   # Density choice
   mcmc_output$type <- type
+  mcmc_output$time_points <- time_points[[1]]
 
   # Dimensions of data
   mcmc_output$P <- P

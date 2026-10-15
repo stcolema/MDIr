@@ -88,3 +88,16 @@ bf_gaussian_loglik <- function(ch, v, s, x) {
   obs <- !is.na(x)
   vapply(seq_len(K), function(k) sum(stats::dnorm(x[obs], mu[obs, k], sqrt(vr[obs, k]), log = TRUE)), numeric(1))
 }
+
+# Log marginal likelihood of the data of one GP component, with the mean function integrated out
+# (a grid of positions may be unequal)
+gp_log_marginal <- function(X, a, lambda, s2, jitter = 1e-8, positions = seq_len(ncol(X))) {
+  # X centred on its column means, so xbar = 0
+  n <- nrow(X); P <- ncol(X)
+  SS <- sum(sweep(X, 2, colMeans(X))^2)
+  D <- outer(positions, positions, function(i, j) -0.5 * (i - j)^2)
+  Kmat <- a * exp(D / lambda^2) + diag(jitter * a, P)
+  ch <- chol(Kmat + diag(s2 / n, P))
+  -0.5 * n * P * log(2 * pi * s2) + 0.5 * P * log(2 * pi * s2 / n) - SS / (2 * s2) -
+    0.5 * (P * log(2 * pi) + 2 * sum(log(diag(ch))))
+}

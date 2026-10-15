@@ -87,6 +87,10 @@ public:
 
   // Options of the density-level priors (see resolveDensityPrior())
   arma::vec density_prior;
+
+  // For each view, the positions of the columns of a Gaussian process view (an
+  // empty vector: 0, 1, ..., P - 1)
+  arma::field<arma::vec> time_points;
   
   arma::vec phis,
     mass,
@@ -136,7 +140,8 @@ public:
     arma::umat _labels,
     arma::umat _fixed,
     arma::vec _prior = arma::vec(),
-    arma::vec _density_prior = arma::vec()
+    arma::vec _density_prior = arma::vec(),
+    arma::field<arma::vec> _time_points = arma::field<arma::vec>()
   ) ;
 
   virtual ~mdi() { };

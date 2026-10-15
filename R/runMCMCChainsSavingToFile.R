@@ -24,6 +24,7 @@
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
+#' @param time_points See \code{\link{callMDI}}.
 runMCMCChainsSavingToFile <- function(X,
                           n_chains,
                           n_iter,
@@ -36,6 +37,7 @@ runMCMCChainsSavingToFile <- function(X,
                           alpha = NULL,
                           initial_labels_as_intended = FALSE,
                           proposal_windows = NULL,
+                          time_points = NULL,
                           control = mdirControl(),
                           R = NULL,
                           K = NULL) {
@@ -69,6 +71,7 @@ runMCMCChainsSavingToFile <- function(X,
             alpha = alpha,
             initial_labels_as_intended = initial_labels_as_intended,
             dir_path = chain_dirs[ii],
+            time_points = time_points,
             control = control
     )
   model_call[[ii]]$Chain <- ii

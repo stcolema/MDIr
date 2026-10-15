@@ -18,6 +18,7 @@ callMDIWritingToFile(
   dir_path = tempdir(),
   prior = mdiPrior(),
   density_prior = densityPrior(),
+  time_points = NULL,
   control = mdirControl(),
   R = NULL,
   K = NULL
@@ -58,6 +59,17 @@ a shorthand containing the `~` symbol.}
 \item{prior}{MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.}
 
 \item{density_prior}{Density-level prior options, see \code{\link{densityPrior}}.}
+
+\item{time_points}{For Gaussian process views (\code{"GP"}, \code{"TAGPM"}): the
+position of each column, for example the times of a time course. \code{NULL} (the
+default) places the columns at 0, 1, ..., P - 1. Otherwise a list with an entry
+for each view, \code{NULL} or a numeric vector with one finite, distinct value per
+column (a plain vector is accepted when there is one view). The values need not
+be equally spaced or sorted, and they are the same for every item: items
+measured at different positions need those positions as columns, with
+\code{NA} where an item was not measured. Length scales are in the units of the
+positions, and \code{gp_min_length} of \code{\link{densityPrior}} is in multiples
+of the smallest spacing between them.}
 
 \item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
 Gaussian process hyperparameters and whether and for how long they are adapted

@@ -1,5 +1,24 @@
 # mdir (development version)
 
+## Gaussian process views at unequally spaced positions: `time_points`
+
+* A Gaussian process view (`"GP"`, `"TAGPM"`) no longer assumes that its columns are one unit apart. Give the
+  position of each column with `time_points` (a list with an entry per view; `NULL` keeps 0, 1, ..., P - 1, which
+  reproduces the earlier results exactly) in `callMDI()`, `callMDIWritingToFile()`, `callMixtureModel()`,
+  `runMCMCChains()`, `runMCMCChainsSavingToFile()`, `fitMDI()`, `smcMDI()` and `simulatePriorPredictive()`. The
+  fit stores them, and `simulatePosteriorPredictive()` and `predictMDI()` use the stored values. The positions are
+  the same for every item. Items measured at different times need those times as columns, with `NA` for the
+  cells not measured, which the sampler imputes (a recovery test with 30% of cells missing is in the tests).
+* The kernel uses the positions, and the length scale is in their units. `gp_min_length` in `densityPrior()` is now
+  a multiple of the *smallest spacing* between positions (the spacing itself for equally spaced columns), and the
+  upper end of the length scale's prior is the distance from the first position to the last. With very unequal
+  spacing the smallest spacing is a judgement, not a derived quantity: it never excludes a length scale that the
+  closest pair can resolve, but a very close pair lowers the floor for all the others (raise `gp_min_length`).
+* Tested against an exact grid posterior of a component's amplitude, length and noise at unequal positions
+  (checked to tell the positions from equal spacing, and to fail when the kernel ignores them), the invariance of the
+  model to shifting and rescaling the positions, and recovery of two curves at unequal positions with missing cells.
+* `runMCMCChainsSavingToFile()` still has no `prior` or `density_prior` argument: it always uses the defaults.
+
 ## Vignettes
 
 * New vignette `mdir-gaussian-process`: a time-course view modelled with `type = "GP"`, the proposal windows, what
