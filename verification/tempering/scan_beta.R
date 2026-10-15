@@ -5,7 +5,7 @@ d <- make_data(sep = sep)
 bs <- c(0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
 res <- parallel::mclapply(bs, function(b) {
   set.seed(500 + round(b * 100))
-  f <- callMDI(list(d$X), R = 4000, thin = 1, types = "MVN", K = 3, betas = b, check_prior = FALSE, save_parameters = FALSE)
+  f <- callMDI(list(d$X), n_iter = 4000, thin = 1, types = "MVN", K_max = 3, betas = b, check_prior = FALSE, save_parameters = FALSE)
   ll <- f$complete_likelihood[-(1:1000)]
   occ <- mean(apply(f$allocations[-(1:1000), , 1][seq(1, 3000, 30), ], 1, function(l) length(unique(l))))
   c(mean(ll), sd(ll), occ)

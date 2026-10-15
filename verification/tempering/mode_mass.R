@@ -58,9 +58,9 @@ pattern_freq <- function(f) {
   as.numeric(tab) / sum(tab)
 }
 settings <- readRDS(paste0(out_rds, ".ladder.rds"))
-run_plain <- function(i) { set.seed(900 + i); f <- callMDI(list(X), R = R, thin = 10, types = "MVN", K = K, check_prior = FALSE,
+run_plain <- function(i) { set.seed(900 + i); f <- callMDI(list(X), n_iter = R, thin = 10, types = "MVN", K_max = K, check_prior = FALSE,
   save_parameters = FALSE, density_prior = dp); pattern_freq(f) }
-run_pt <- function(i) { set.seed(1900 + i); f <- callMDI(list(X), R = R, thin = 10, types = "MVN", K = K, check_prior = FALSE,
+run_pt <- function(i) { set.seed(1900 + i); f <- callMDI(list(X), n_iter = R, thin = 10, types = "MVN", K_max = K, check_prior = FALSE,
   save_parameters = FALSE, density_prior = dp, betas = settings$betas)
   list(freq = pattern_freq(f), diag = mdir:::ptDiagnostics(f)) }
 t0 <- Sys.time()

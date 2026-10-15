@@ -7,7 +7,7 @@
 fit_fixed_component <- function(X, type, K, R = 40000) {
   rownames(X) <- seq_len(nrow(X))
   # every item labelled as component 1: any further component stays empty
-  callMDI(list(X), R = R, thin = 4, types = type, K = K,
+  callMDI(list(X), n_iter = R, thin = 4, types = type, K_max = K,
           initial_labels = matrix(1, nrow(X), 1), fixed = matrix(1, nrow(X), 1))
 }
 
@@ -64,10 +64,10 @@ test_that("pooled scale of the MVN matches its marginal posterior", {
 
 test_that("pooling can be switched off and the fixed scale is the empirical value", {
   X <- matrix(rnorm(60), 30); rownames(X) <- 1:30
-  fit <- callMDI(list(X), R = 40, thin = 4, types = "MVN", K = 3, density_prior = densityPrior(scale_pool_shape = 0))
+  fit <- callMDI(list(X), n_iter = 40, thin = 4, types = "MVN", K_max = 3, density_prior = densityPrior(scale_pool_shape = 0))
   hp <- mdir:::densityHyperparameters(X, 3, 1, c(0, 1, 1, 2, 1))
   expect_true(all(fit$pooled_hyperparameters[[1]] == rep(hp$scale_prior_mean, each = nrow(fit$pooled_hyperparameters[[1]]))))
-  pooled <- callMDI(list(X), R = 40, thin = 4, types = "MVN", K = 3)
+  pooled <- callMDI(list(X), n_iter = 40, thin = 4, types = "MVN", K_max = 3)
   expect_gt(var(pooled$pooled_hyperparameters[[1]][, 1]), 0)
 })
 
@@ -80,7 +80,7 @@ test_that("pooling shrinks the scales of small components toward the shared scal
   rownames(X) <- seq_len(nrow(X))
   labels <- matrix(rep(1:3, c(40, 40, 3)), ncol = 1)
   post_var <- function(dp) {
-    fit <- callMDI(list(X), R = 6000, thin = 3, types = "G", K = 3, initial_labels = labels,
+    fit <- callMDI(list(X), n_iter = 6000, thin = 3, types = "G", K_max = 3, initial_labels = labels,
                    initial_labels_as_intended = TRUE, fixed = matrix(1, nrow(X), 1), density_prior = dp)
     th <- fit$parameters[[1]][-(1:200), , drop = FALSE]     # mu (3), variances (3)
     colMeans(th[, 4:6])

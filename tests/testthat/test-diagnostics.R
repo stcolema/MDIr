@@ -55,7 +55,7 @@ test_that("assessConvergence monitors label-switching-invariant quantities", {
   X <- lapply(1:2, function(v) {
     m <- matrix(rnorm(60 * 2, rep(c(0, 3), each = 30)), 60, 2); rownames(m) <- 1:60; m
   })
-  chains <- runMCMCChains(X, 3, R = 600, thin = 3, types = c("MVN", "G"), K = c(4, 4))
+  chains <- runMCMCChains(X, 3, n_iter = 600, thin = 3, types = c("MVN", "G"), K_max = c(4, 4))
   conv <- assessConvergence(chains, burn = 300)
   expect_s3_class(conv, "mdir_convergence")
   expect_true(all(c("complete_likelihood", "phi[1,2]", "mass[1]") %in% conv$quantity))

@@ -62,7 +62,7 @@
   if (first > n_stored) {
     stop(
       "The burn in (", burn, ") leaves no saved samples; ", n_stored - 1,
-      " iterations were saved (R = ", x$R, ", thin = ", x$thin, ").",
+      " iterations were saved (n_iter = ", x$R, ", thin = ", x$thin, ").",
       call. = FALSE
     )
   }
@@ -107,7 +107,7 @@
 #' @examples
 #' set.seed(1)
 #' X <- list(matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
-#' fit <- callMDI(X, R = 100, thin = 5, types = "MVN", K = 4)
+#' fit <- callMDI(X, n_iter = 100, thin = 5, types = "MVN", K_max = 4)
 #' fit
 print.mdir_fit <- function(x, ...) {
   cat(sprintf(
@@ -130,12 +130,12 @@ print.mdir_fit <- function(x, ...) {
   }
   if (.mdirIsProcessed(x)) {
     cat(sprintf(
-      "  R = %d, thin = %d; burn = %d applied, %d samples retained\n",
+      "  n_iter = %d, thin = %d; burn = %d applied, %d samples retained\n",
       x$R, x$thin, x$burn, nrow(x$mass)
     ))
   } else {
     cat(sprintf(
-      "  R = %d, thin = %d; %d samples saved (burn in not applied)\n",
+      "  n_iter = %d, thin = %d; %d samples saved (burn in not applied)\n",
       x$R, x$thin, nrow(x$mass)
     ))
   }
@@ -158,7 +158,7 @@ print.mdir_fit <- function(x, ...) {
 #' @param object Output of \code{\link{callMDI}} or
 #' \code{\link{processMCMCChain}} (one chain).
 #' @param burn Number of iterations to discard before summarising. Defaults to
-#' half of \code{R}, as in \code{\link{assessConvergence}}. Ignored (the applied
+#' half of \code{n_iter}, as in \code{\link{assessConvergence}}. Ignored (the applied
 #' burn in is used) if the chain has already been through
 #' \code{\link{processMCMCChain}}.
 #' @param ... Unused.
@@ -167,7 +167,7 @@ print.mdir_fit <- function(x, ...) {
 #' @examples
 #' set.seed(1)
 #' X <- lapply(1:2, function(v) matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
-#' fit <- callMDI(X, R = 200, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+#' fit <- callMDI(X, n_iter = 200, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 #' summary(fit)
 summary.mdir_fit <- function(object, burn = NULL, ...) {
   kept <- .mdirRetained(object, burn)
@@ -192,7 +192,7 @@ summary.mdir_fit <- function(object, burn = NULL, ...) {
 
   structure(
     list(
-      N = object$N, V = V, R = object$R, thin = object$thin,
+      N = object$N, V = V, R = object$R, n_iter = object$n_iter %||% object$R, thin = object$thin,
       burn = kept$burn, burn_default = kept$burn_default,
       n_samples = length(index),
       processed = .mdirIsProcessed(object),
@@ -227,12 +227,12 @@ print.summary.mdir_fit <- function(x, digits = 3, ...) {
   cat(.mdirRule(), "\n\n")
 
   cat(sprintf(
-    "%d items, %s; R = %d, thin = %d.\n",
+    "%d items, %s; n_iter = %d, thin = %d.\n",
     x$N, .mdirPlural(x$V, "view"), x$R, x$thin
   ))
   cat(sprintf(
     "Burn in = %d%s; %d samples used.\n\n",
-    x$burn, if (x$burn_default) " (default, R / 2)" else "", x$n_samples
+    x$burn, if (x$burn_default) " (default, n_iter / 2)" else "", x$n_samples
   ))
 
   v <- x$views
@@ -297,12 +297,12 @@ print.mdir_fit_list <- function(x, ...) {
   }
   if (.mdirIsProcessed(first)) {
     cat(sprintf(
-      "  R = %d, thin = %d per chain; burn = %d applied, %d samples retained per chain\n",
+      "  n_iter = %d, thin = %d per chain; burn = %d applied, %d samples retained per chain\n",
       first$R, first$thin, first$burn, nrow(first$mass)
     ))
   } else {
     cat(sprintf(
-      "  R = %d, thin = %d per chain; %d samples saved per chain (burn in not applied)\n",
+      "  n_iter = %d, thin = %d per chain; %d samples saved per chain (burn in not applied)\n",
       first$R, first$thin, nrow(first$mass)
     ))
   }
@@ -368,13 +368,13 @@ print.summary.mdir_fit_list <- function(x, digits = 3, ...) {
   cat("MDI model fitted by MCMC: multiple chains\n")
   cat(.mdirRule(), "\n\n")
   cat(sprintf(
-    "%s; %d items, %s; R = %d, thin = %d.\n",
+    "%s; %d items, %s; n_iter = %d, thin = %d.\n",
     .mdirPlural(x$n_chains, "chain"), first$N, .mdirPlural(first$V, "view"),
     first$R, first$thin
   ))
   cat(sprintf(
     "Burn in = %d%s; %d samples used per chain.\n\n",
-    first$burn, if (first$burn_default) " (default, R / 2)" else "", first$n_samples
+    first$burn, if (first$burn_default) " (default, n_iter / 2)" else "", first$n_samples
   ))
 
   tab <- data.frame(

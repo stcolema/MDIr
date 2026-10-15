@@ -5,7 +5,7 @@ draws_fit <- function() {
     rownames(m) <- 1:40
     m
   })
-  list(X = X, fit = runMCMCChains(X, 3, R = 200, thin = 5, types = c("G", "MVN"), K = c(4, 4)))
+  list(X = X, fit = runMCMCChains(X, 3, n_iter = 200, thin = 5, types = c("G", "MVN"), K_max = c(4, 4)))
 }
 
 test_that("as_draws() gives a draws_array of the label-invariant quantities", {
@@ -86,7 +86,7 @@ test_that("an smcMDI ensemble becomes weighted draws", {
   set.seed(3)
   X <- list(matrix(rnorm(60, rep(c(0, 3), each = 15)), 30, 2), matrix(rnorm(60, rep(c(0, 3), each = 15)), 30, 2))
   rownames(X[[1]]) <- rownames(X[[2]]) <- 1:30
-  s <- smcMDI(X, c("G", "G"), K = c(3, 3), n_particles = 20, final_sweeps = 4, thin = 2)
+  s <- smcMDI(X, c("G", "G"), K_max = c(3, 3), n_particles = 20, final_sweeps = 4, thin = 2)
   dr <- posterior::as_draws(s)
   expect_s3_class(dr, "draws_matrix")
   expect_equal(posterior::ndraws(dr), 20 * 3)
@@ -104,7 +104,7 @@ test_that("pointwise log-likelihoods feed loo", {
     rownames(m) <- 1:30
     m
   })
-  ch <- runMCMCChains(X, 2, R = 120, thin = 3, types = c("G", "G"), K = c(3, 3), save_pointwise = TRUE)
+  ch <- runMCMCChains(X, 2, n_iter = 120, thin = 3, types = c("G", "G"), K_max = c(3, 3), save_pointwise = TRUE)
   ll <- pointwiseLogLik(ch, burn = 60)
   r_eff <- suppressWarnings(loo::relative_eff(exp(ll), chain_id = attr(ll, "chain_id")))
   fit <- suppressWarnings(loo::loo(ll, r_eff = r_eff))

@@ -57,7 +57,7 @@ test_that("the recorded joint log-likelihood equals enumeration at the saved par
   X <- lapply(1:3, function(v) { m <- matrix(rnorm(N * 2, 2 * z), N, 2); rownames(m) <- seq_len(N); m })
   X[[2]][3, 1] <- NA      # a missing entry
   X[[3]][5, ] <- NA       # a view with nothing observed for an item
-  fit <- callMDI(X, R = 40, thin = 10, types = rep("G", 3), K = K, save_pointwise = TRUE)
+  fit <- callMDI(X, n_iter = 40, thin = 10, types = rep("G", 3), K_max = K, save_pointwise = TRUE)
   expect_equal(dim(fit$pointwise_likelihood), c(5, N))
   expect_equal(rowSums(fit$pointwise_likelihood), fit$joint_likelihood, tolerance = 1e-12)
 
@@ -77,12 +77,12 @@ test_that("the joint likelihood differs from the per-view observed likelihood on
   N <- 30
   X <- matrix(rnorm(N * 2, rep(c(0, 3), each = N / 2)), N, 2); rownames(X) <- seq_len(N)
   # One view: the two coincide (after the initial state, which the older traces leave at zero)
-  m <- callMixtureModel(X, R = 30, thin = 10, type = "G", K = 4)
+  m <- callMixtureModel(X, n_iter = 30, thin = 10, type = "G", K_max = 4)
   expect_equal(m$joint_likelihood[-1], m$observed_likelihood[-1], tolerance = 1e-10)
 
   # Two views with a strong association: they do not
   Y <- X + matrix(rnorm(N * 2, sd = 0.2), N, 2)
-  fit <- callMDI(list(X, Y), R = 200, thin = 10, types = c("G", "G"), K = c(4, 4))
+  fit <- callMDI(list(X, Y), n_iter = 200, thin = 10, types = c("G", "G"), K_max = c(4, 4))
   keep <- 12:21
   expect_gt(mean(fit$phis[keep, 1]), 1)
   expect_gt(max(abs(fit$joint_likelihood[keep] - fit$observed_likelihood[keep])), 1)
@@ -92,7 +92,7 @@ test_that("pointwiseLogLik stacks chains, applies the burn in and says when noth
   set.seed(5)
   N <- 20
   X <- lapply(1:2, function(v) { m <- matrix(rnorm(N * 2, rep(c(0, 3), each = N / 2)), N, 2); rownames(m) <- seq_len(N); m })
-  chains <- runMCMCChains(X, 2, R = 50, thin = 5, types = c("G", "G"), K = c(3, 3), save_pointwise = TRUE)
+  chains <- runMCMCChains(X, 2, n_iter = 50, thin = 5, types = c("G", "G"), K_max = c(3, 3), save_pointwise = TRUE)
   ll <- pointwiseLogLik(chains, burn = 20)
   # saved draws 0, 5, ..., 50; the initial state and the first floor(20 / 5) are dropped
   expect_equal(dim(ll), c(2 * 6, N))
@@ -103,7 +103,7 @@ test_that("pointwiseLogLik stacks chains, applies the burn in and says when noth
   one <- pointwiseLogLik(chains[[1]])
   expect_equal(nrow(one), 10)
 
-  no_pointwise <- runMCMCChains(X, 1, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3))
+  no_pointwise <- runMCMCChains(X, 1, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3))
   expect_error(pointwiseLogLik(no_pointwise), "save_pointwise")
   expect_error(pointwiseLogLik(chains, burn = 1000), "No saved iterations")
 })
@@ -121,7 +121,7 @@ test_that("predicting the fitted items reproduces their pointwise likelihoods (a
   )
   for (v in seq_along(X)) rownames(X[[v]]) <- seq_len(N)
   types <- c("G", "MVN", "TAGM", "C")
-  fit <- callMDI(X, R = 60, thin = 20, types = types, K = c(3, 3, 3, 3), save_pointwise = TRUE)
+  fit <- callMDI(X, n_iter = 60, thin = 20, types = types, K_max = c(3, 3, 3, 3), save_pointwise = TRUE)
   # the last saved draw only
   pred <- predictMDI(fit, X, X, burn = 40)
   expect_equal(dim(pred$log_likelihood), c(1, N))
@@ -137,7 +137,7 @@ test_that("predictMDI equals enumeration for new items: class probabilities, co-
   # View 1 semi-supervised: the first 12 items have observed classes
   fixed <- matrix(0, N, 2); fixed[1:12, 1] <- 1
   labels <- matrix(1, N, 2); labels[1:12, 1] <- z[1:12]
-  fit <- callMDI(X, R = 40, thin = 10, types = c("G", "G"), K = K,
+  fit <- callMDI(X, n_iter = 40, thin = 10, types = c("G", "G"), K_max = K,
                  initial_labels = labels, fixed = fixed)
   new <- list(matrix(c(0.1, 3.2, 3, 2.9, NA, 6), 3, 2, byrow = TRUE),
               matrix(c(0.3, 0.1, 5.5, 3.1, 3.2, 3.0), 3, 2, byrow = TRUE))
@@ -169,7 +169,7 @@ test_that("predictMDI pools chains, thins to n_draws and checks its input", {
   set.seed(8)
   N <- 20
   X <- lapply(1:2, function(v) { m <- matrix(rnorm(N * 2, rep(c(0, 3), each = N / 2)), N, 2); rownames(m) <- seq_len(N); m })
-  chains <- runMCMCChains(X, 2, R = 50, thin = 5, types = c("G", "G"), K = c(3, 3))
+  chains <- runMCMCChains(X, 2, n_iter = 50, thin = 5, types = c("G", "G"), K_max = c(3, 3))
   new <- lapply(X, function(m) m[1:4, ])
   all_draws <- predictMDI(chains, X, new, burn = 20)
   expect_equal(dim(all_draws$log_likelihood), c(12, 4))
@@ -186,7 +186,7 @@ test_that("predictMDI pools chains, thins to n_draws and checks its input", {
   processed <- processMCMCChains(chains, burn = 20)
   expect_error(predictMDI(processed, X, new), "processMCMCChain")
 
-  no_pars <- runMCMCChains(X, 1, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3), save_parameters = FALSE)
+  no_pars <- runMCMCChains(X, 1, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3), save_parameters = FALSE)
   expect_error(predictMDI(no_pars, X, new), "save_parameters")
 })
 
@@ -195,7 +195,7 @@ test_that("predictMDI rejects categories the model has not seen", {
   N <- 20
   X <- list(matrix(rbinom(N * 2, 1, 0.5), N, 2), matrix(rnorm(N * 2), N, 2))
   for (v in 1:2) rownames(X[[v]]) <- seq_len(N)
-  fit <- callMDI(X, R = 20, thin = 10, types = c("C", "G"), K = c(2, 2))
+  fit <- callMDI(X, n_iter = 20, thin = 10, types = c("C", "G"), K_max = c(2, 2))
   new <- list(matrix(c(0, 2), 1, 2), matrix(c(0, 0), 1, 2))
   expect_error(predictMDI(fit, X, new, burn = 10), "category")
 })

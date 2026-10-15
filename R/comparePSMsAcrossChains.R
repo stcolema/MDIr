@@ -34,7 +34,7 @@
 #' thin <- 10
 #' types <- c("G", "G", "G")
 #' K <- c(6, 6, 6)
-#' mcmc <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+#' mcmc <- runMCMCChains(data_modelled, n_chains, R, thin, types, K_max = K)
 #'
 #' burn <- 100
 #' mcmc <- processMCMCChains(mcmc, burn, construct_psm = TRUE)

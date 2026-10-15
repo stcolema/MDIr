@@ -3,7 +3,7 @@
 
 run_single_component <- function(X, type, R = 6000) {
   rownames(X) <- seq_len(nrow(X))
-  callMDI(list(X), R = R, thin = 1, types = type, K = 1, initial_labels = matrix(1, nrow(X), 1),
+  callMDI(list(X), n_iter = R, thin = 1, types = type, K_max = 1, initial_labels = matrix(1, nrow(X), 1),
           initial_labels_as_intended = FALSE)
 }
 

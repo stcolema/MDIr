@@ -11,7 +11,7 @@
 #' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #' data_modelled <- list(X, Y)
-#' checkDataCorrectInput(data_modelled)
+#' mdir:::checkDataCorrectInput(data_modelled)
 checkDataCorrectInput <- function(X, types = NULL) {
   data_not_in_list <- !is.list(X)
 

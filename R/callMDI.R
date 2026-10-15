@@ -3,15 +3,17 @@
 #' Multiple Dataset Integration (MDI), to V datasets.
 #' @param X Data to cluster. List of matrices with the N items to cluster held
 #' in rows.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param types Character vector indicating density types to use. 'G' (Gaussian
 #' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 #' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 #' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
-#' @param K Vector indicating the number of components to include (the upper
+#' @param K_max Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N x V$ matrix.
 #' @param fixed Which items are fixed in their initial label. $N x V$ matrix.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
@@ -131,23 +133,22 @@
 #'
 #' V <- length(data_modelled)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #' burn <- 10
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
-#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+#' mcmc_out <- callMDI(data_modelled, n_iter, thin, types, K_max = K_max)
 #'
 #' @export
 callMDI <- function(X,
-                    R,
+                    n_iter,
                     thin,
                     types,
-                    K = NULL,
+                    K_max = NULL,
                     initial_labels = NULL,
                     fixed = NULL,
                     alpha = NULL,
@@ -164,7 +165,12 @@ callMDI <- function(X,
                     swap_scheme = c("deo", "seo"),
                     swap_every = 1L,
                     split_merge = 0L,
-                    joint_allocation = 0L) {
+                    joint_allocation = 0L,
+                    R = NULL,
+                    K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "callMDI", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "callMDI")
+  K <- K_max
 
   phi_update <- match.arg(phi_update)
   .mdirCheckCount(split_merge, "split_merge", 0)
@@ -178,8 +184,8 @@ callMDI <- function(X,
     stop("`save_pointwise` must be TRUE or FALSE.", call. = FALSE)
   }
 
-  # Check that the R > thin
-  checkNumberOfSamples(R, thin)
+  # Check that n_iter >= thin
+  checkNumberOfSamples(n_iter, thin)
 
   # Check inputs and translate to C++ inputs
   checkDataCorrectInput(X, types)
@@ -244,7 +250,7 @@ callMDI <- function(X,
 
   # Pull samples from the MDI model
   mcmc_output <- runMDI(
-    R,
+    n_iter,
     thin,
     X,
     K,
@@ -285,7 +291,9 @@ callMDI <- function(X,
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
-  mcmc_output$R <- R
+  # `R` is the former name of `n_iter`; kept so saved fits and older code still work
+  mcmc_output$n_iter <- n_iter
+  mcmc_output$R <- n_iter
   mcmc_output$burn <- 0
 
   # Density choice

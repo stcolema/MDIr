@@ -59,9 +59,9 @@ test_that("chain streams are reproducible from set.seed and leave the user's gen
 test_that("serial runs (the default) are unchanged by the cores machinery", {
   X <- small_views()
   set.seed(12)
-  a <- runMCMCChains(X, 2, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3))
+  a <- runMCMCChains(X, 2, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3))
   set.seed(12)
-  b <- lapply(1:2, function(i) callMDI(X, 20, 5, c("G", "G"), K = c(3, 3), check_prior = FALSE))
+  b <- lapply(1:2, function(i) callMDI(X, 20, 5, c("G", "G"), K_max = c(3, 3), check_prior = FALSE))
   for (i in 1:2) {
     expect_identical(a[[i]]$phis, b[[i]]$phis)
     expect_identical(a[[i]]$allocations, b[[i]]$allocations)
@@ -76,7 +76,7 @@ test_that("parallel chains are reproducible, differ from each other, and do not 
     old <- options(mdir.parallel_type = type)
     on.exit(options(old))
     set.seed(13)
-    runMCMCChains(X, 3, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3), n_cores = n_cores)
+    runMCMCChains(X, 3, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3), n_cores = n_cores)
   }
   if (.Platform$OS.type != "windows") {
     f1 <- run("FORK")
@@ -106,7 +106,7 @@ test_that("a failing chain is reported", {
   X <- small_views()
   # fixed entries with labels beyond K make every chain fail inside callMDI
   expect_error(
-    runMCMCChains(X, 2, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3), n_cores = 2,
+    runMCMCChains(X, 2, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3), n_cores = 2,
                   initial_labels = matrix(9, 30, 2), fixed = matrix(1, 30, 2),
                   initial_labels_as_intended = TRUE),
     "failed"
@@ -118,7 +118,7 @@ test_that("fitMDI passes n_cores through", {
   skip_on_os("windows")
   X <- small_views()
   set.seed(14)
-  fit <- fitMDI(X, 2, R = 60, thin = 2, types = c("G", "G"), K = c(3, 3), n_cores = 2, verbose = FALSE)
+  fit <- fitMDI(X, 2, n_iter = 60, thin = 2, types = c("G", "G"), K_max = c(3, 3), n_cores = 2, verbose = FALSE)
   expect_length(fit, 2)
   expect_false(is.null(attr(fit, "convergence")))
 })

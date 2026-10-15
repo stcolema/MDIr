@@ -11,7 +11,7 @@ X[2, 1] <- NA; X[5, 2] <- NA; X[7, 1] <- NA
 pairs <- t(combn(N, 2))
 run <- function(sm, seed) {
   set.seed(seed)
-  f <- callMDI(list(X), R = R, thin = 1, types = "MVN", K = 3, split_merge = sm, check_prior = FALSE, save_parameters = FALSE)
+  f <- callMDI(list(X), n_iter = R, thin = 1, types = "MVN", K_max = 3, split_merge = sm, check_prior = FALSE, save_parameters = FALSE)
   a <- f$allocations[-(1:500), , 1]
   colMeans(apply(pairs, 1, function(p) a[, p[1]] == a[, p[2]]))
 }

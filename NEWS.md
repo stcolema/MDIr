@@ -1,5 +1,28 @@
 # mdir (development version)
 
+## Changed: argument names, matching batchmix
+
+* **`R` is now `n_iter`** (number of iterations) in `callMDI()`, `callMixtureModel()`, `callMDIWritingToFile()`,
+  `runMCMCChains()`, `runMCMCChainsSavingToFile()` and `fitMDI()`. **`K` is now `K_max`** (upper bound on the number of
+  components) in those functions and in `smcMDI()`, `smcReplicates()` and `simulatePriorPredictive()`. Positional calls
+  are unaffected, because each argument keeps its position. The old names still work and warn once per call; naming
+  both an argument and its old name is an error. The old names will be removed in a later release. `K` stays the name of
+  the number of components in the fitted object and in the lower-level helpers (`generateInitialLabels()`,
+  `stickBreakingPrior()` and so on), where it is not an upper bound chosen by the user.
+* Fits store `n_iter` alongside `R` (same value), so saved fits and code that reads `fit$R` keep working. `print()` and
+  `summary()` report `n_iter`.
+
+## Changed: exports are listed explicitly
+
+* The namespace no longer uses `exportPattern()`, which exported every function whose name starts with a letter. It
+  lists the functions that carry `@export` (plus `readMCMCsamples()`, `stickBreakingPrior()` and
+  `sampleStickBreakingPrior()`). No longer exported, because they are internal engines, validators or density helpers:
+  `runMDI()`, `runMDISMC()`, `runMDIWriteToFile()`, the `*Cpp()` functions, `checkDataCorrectInput()`,
+  `checkFixedInput()`, `checkLabels()`, `checkNumberOfSamples()`, `checkTypes()`, `processProposalWindows()`,
+  `setupOutlierComponents()`, `translateTypes()`, `sampleViewPriorLabels()`, `densityHyperparameters()`, `pNorm()`,
+  `gammaLogLikelihood()`, `invGammaLogLikelihood()`, `wishartLogLikelihood()`, `invWishartLogLikelihood()` and
+  `mvtLogLikelihood()`. Reach them with `mdir:::` if needed.
+
 ## New: joint allocation (`joint_allocation`)
 
 * `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `joint_allocation` (default 0, off): the number of views

@@ -38,7 +38,7 @@ exact_gauss <- function(type, beta) {
 }
 run <- function(type, betas, seed) {
   set.seed(seed)
-  a <- callMDI(list(X), R = R, thin = 1, types = type, K = K, betas = betas, check_prior = FALSE,
+  a <- callMDI(list(X), n_iter = R, thin = 1, types = type, K_max = K, betas = betas, check_prior = FALSE,
     save_parameters = FALSE, density_prior = dp)$allocations[-(1:200), , 1]
   config_code(a, K)
 }

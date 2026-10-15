@@ -27,13 +27,13 @@ for (i in seq_along(cfg)) {
   X <- mk(100 + i, L = cf$L)
   if (i == 4) X[[1]][c(3, 9), 1] <- NA
   set.seed(7 + i)
-  fit <- callMDI(X, R = 60, thin = 2, types = cf$types, K = cf$K, save_pointwise = TRUE)
+  fit <- callMDI(X, n_iter = 60, thin = 2, types = cf$types, K_max = cf$K, save_pointwise = TRUE)
   res[[i]] <- fit[c("allocations", "phis", "weights", "mass", "complete_likelihood", "observed_likelihood", "joint_likelihood", "parameters", "pooled_hyperparameters", "imputed", "outliers", "evidence")]
 }
 # categorical
 set.seed(5)
 Xc <- list({ m <- matrix(sample(0:2, 60 * 2, TRUE), 60, 2); rownames(m) <- 1:60; m }, { m <- matrix(sample(0:1, 60 * 3, TRUE), 60, 3); rownames(m) <- 1:60; m })
 set.seed(3)
-fit <- callMDI(Xc, R = 60, thin = 2, types = c("C", "C"), K = c(3, 3))
+fit <- callMDI(Xc, n_iter = 60, thin = 2, types = c("C", "C"), K_max = c(3, 3))
 res[[6]] <- fit[c("allocations", "phis", "weights", "mass", "complete_likelihood", "parameters")]
 saveRDS(res, out)

@@ -269,7 +269,7 @@ adaptLadder <- function(X, types, betas, rounds = 3, R_pilot = 500, ...) {
   }
   history <- vector("list", rounds)
   for (i in seq_len(rounds)) {
-    pilot <- callMDI(X, R = R_pilot, thin = max(1L, R_pilot %/% 2L), types = types,
+    pilot <- callMDI(X, n_iter = R_pilot, thin = max(1L, R_pilot %/% 2L), types = types,
       betas = betas, save_parameters = FALSE, check_prior = FALSE, ...)
     d <- ptDiagnostics(pilot)
     rates <- d$pairs$rejection_rate

@@ -25,7 +25,7 @@ exact_fixed <- function(beta) {
 init <- matrix(lab_fixed, N, 1)
 run <- function(betas, seed) {
   set.seed(seed)
-  a <- callMDI(list(X), R = R, thin = 1, types = "C", K = K, betas = betas, check_prior = FALSE, save_parameters = FALSE,
+  a <- callMDI(list(X), n_iter = R, thin = 1, types = "C", K_max = K, betas = betas, check_prior = FALSE, save_parameters = FALSE,
     initial_labels = init, fixed = matrix(fixed, N, 1), initial_labels_as_intended = FALSE)$allocations[-(1:200), , 1]
   stopifnot(all(a[, 1] == 0), all(a[, 2] == 1))     # observed labels kept
   config_code(a[, 3:N], K)

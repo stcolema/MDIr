@@ -4,14 +4,16 @@
 #' @param X Data to cluster. List of $L$ matrices with the $N$ items to cluster
 #' held in rows.
 #' @param n_chains Integer. Number of MCMC chains to run.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param types Character vector indicating density type to use. 'MVN'
 #' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
 #' @param dir_path A string for the directory to save samples to.
-#' @param K Vector indicating the number of components to include (the upper
+#' @param K_max Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N x L$ matrix.
 #' @param fixed Which items are fixed in their initial label. $N x L$ matrix.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
@@ -37,34 +39,38 @@
 #' V <- length(data_modelled)
 #'
 #' # MCMC parameters
-#' R <- 100
+#' n_iter <- 100
 #' thin <- 10
 #' burn <- 20
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
 #' n_chains <- 2
 #' dir_path <- file.path(tempdir(), "mdir_chains")
 #' dir.create(dir_path)
-#' mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, R, thin, types,
-#'   K = K, dir_path = dir_path
+#' mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, n_iter, thin, types,
+#'   K_max = K_max, dir_path = dir_path
 #' )
 #' }
 #' @export
 runMCMCChainsSavingToFile <- function(X,
                           n_chains,
-                          R,
+                          n_iter,
                           thin,
                           types,
                           dir_path,
-                          K = NULL,
+                          K_max = NULL,
                           initial_labels = NULL,
                           fixed = NULL,
                           alpha = NULL,
                           initial_labels_as_intended = FALSE,
-                          proposal_windows = NULL) {
+                          proposal_windows = NULL,
+                          R = NULL,
+                          K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "runMCMCChainsSavingToFile", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "runMCMCChainsSavingToFile")
+  K <- K_max
   model_call <- vector("list", n_chains)
   
   chain_dirs <- paste0(dir_path, "/Chain_", seq(1, n_chains))
@@ -75,10 +81,10 @@ runMCMCChainsSavingToFile <- function(X,
       dir.create(chain_dirs[ii])
     }
   model_call[[ii]] <- callMDIWritingToFile(X,
-            R,
+            n_iter,
             thin,
             types,
-            K = K,
+            K_max = K_max,
             initial_labels = initial_labels,
             fixed = fixed,
             alpha = alpha,

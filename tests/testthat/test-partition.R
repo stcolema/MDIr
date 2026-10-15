@@ -101,7 +101,7 @@ test_that("the MVN complete-data likelihood matches an independent calculation",
     X <- lapply(1:2, function(v) {
       m <- matrix(rnorm(N * P, rep(c(0, 3), each = N / 2)), N, P); rownames(m) <- seq_len(N); m
     })
-    ch <- runMCMCChains(X, 1, R = 20, thin = 5, types = c("MVN", "MVN"), K = K)[[1]]
+    ch <- runMCMCChains(X, 1, n_iter = 20, thin = 5, types = c("MVN", "MVN"), K_max = K)[[1]]
     for (s in 2:5) {
       total <- 0
       for (v in 1:2) {
@@ -127,7 +127,7 @@ test_that("the normalising constant recorded by the sampler tracks the current p
     X <- lapply(seq_len(L), function(v) {
       m <- matrix(rnorm(N * 2, rep(c(0, 3), each = N / 2)), N, 2); rownames(m) <- seq_len(N); m
     })
-    ch <- runMCMCChains(X, 1, R = 25, thin = 1, types = rep("G", L), K = K)[[1]]
+    ch <- runMCMCChains(X, 1, n_iter = 25, thin = 1, types = rep("G", L), K_max = K)[[1]]
     pairs <- t(combn(L, 2))
     phi_at <- function(s) {
       phi <- matrix(0, L, L)

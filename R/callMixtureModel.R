@@ -3,15 +3,17 @@
 #' wrapper to allow more intuitive inputs for the single dataset case of MDI.
 #' @param X Data to cluster. Matrix with the N items to cluster held
 #' in rows.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param type Character vector indicating density type to use. 'G' (Gaussian
 #' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 #' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 #' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
-#' @param K Integer indicating the number of components to include (the upper
+#' @param K_max Integer indicating the number of components to include (the upper
 #' bound on the number of clusters).
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N$-vector.
 #' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
@@ -30,22 +32,22 @@
 #' N <- 100
 #' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #'
 #' alpha <- 1
-#' K <- 10
+#' K_max <- 10
 #' type <- "MVN"
 #'
-#' mcmc_out <- callMixtureModel(X, R, thin, type, K = K)
+#' mcmc_out <- callMixtureModel(X, n_iter, thin, type, K_max = K_max)
 #'
 #' @export
 callMixtureModel <- function(X,
-                             R,
+                             n_iter,
                              thin,
                              type,
-                             K = 75,
+                             K_max = 75,
                              initial_labels = NULL,
                              fixed = NULL,
                              alpha = NULL,
@@ -54,10 +56,16 @@ callMixtureModel <- function(X,
                              save_parameters = TRUE,
                              save_imputed = FALSE,
                              prior = mdiPrior(),
-                             density_prior = densityPrior()) {
+                             density_prior = densityPrior(),
+                             R = NULL,
+                             K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "callMixtureModel", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "callMixtureModel")
+  if (is.null(K_max)) K_max <- 75
+  K <- K_max
 
-  # Check that the R > thin
-  checkNumberOfSamples(R, thin)
+  # Check that n_iter >= thin
+  checkNumberOfSamples(n_iter, thin)
 
   # Check inputs and translate to C++ inputs
   inputDataValid <- is.matrix(X)
@@ -111,7 +119,7 @@ callMixtureModel <- function(X,
 
   # Pull samples from the MDI model
   mcmc_output <- runMDI(
-    R,
+    n_iter,
     thin,
     X,
     K,
@@ -165,7 +173,8 @@ callMixtureModel <- function(X,
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
-  mcmc_output$R <- R
+  mcmc_output$n_iter <- n_iter
+  mcmc_output$R <- n_iter
   mcmc_output$burn <- 0
 
   # Density choice

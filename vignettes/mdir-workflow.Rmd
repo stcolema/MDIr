@@ -53,7 +53,7 @@ that the priors imply before the data are seen.
 ```{r prior-predictive}
 types <- c("MVN", "G")
 K <- c(4, 4)
-prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 30)
+prior_sims <- simulatePriorPredictive(X, types, K_max = K, n_datasets = 30)
 plotPredictiveCheck(X, prior_sims, view = 1, column = 1)
 ```
 
@@ -64,7 +64,7 @@ reports progress as each chain finishes (silenced here with
 `options(mdir.quiet = TRUE)`; use `verbose = TRUE` to see it).
 
 ```{r fit}
-chains <- fitMDI(X, n_chains = 3, R = 1500, thin = 5, types = types, K = K,
+chains <- fitMDI(X, n_chains = 3, n_iter = 1500, thin = 5, types = types, K_max = K,
                  burn = 750, verbose = FALSE)
 chains
 ```
@@ -178,7 +178,7 @@ the likelihood of the whole model, coupling between views included (the
 `loo::loo()` take.
 
 ```{r pointwise, eval = FALSE}
-fit <- fitMDI(X, n_chains = 4, R = 1500, thin = 5, types = types, K = K,
+fit <- fitMDI(X, n_chains = 4, n_iter = 1500, thin = 5, types = types, K_max = K,
               save_pointwise = TRUE)
 ll <- pointwiseLogLik(fit, burn = 750)
 loo::waic(ll)
@@ -192,7 +192,7 @@ from `set.seed()` and do not depend on the number of cores. While a package is
 being checked, at most two cores are used, as CRAN requires.
 
 ```{r parallel, eval = FALSE}
-chains <- fitMDI(X, n_chains = 4, R = 5000, thin = 5, types = types, K = K,
+chains <- fitMDI(X, n_chains = 4, n_iter = 5000, thin = 5, types = types, K_max = K,
                  n_cores = 4)
 ```
 

@@ -91,7 +91,7 @@
 #' \code{"trace"} and \code{"density"}, for example \code{"phi[1,2]"}. The
 #' default is all of them.
 #' @param burn Number of iterations treated as burn in. The default is half of
-#' \code{R}, as in \code{\link{assessConvergence}}. Ignored for chains that have
+#' \code{n_iter}, as in \code{\link{assessConvergence}}. Ignored for chains that have
 #' been through \code{\link{processMCMCChain}}.
 #' @param view The view shown by \code{type = "psm"}.
 #' @param ... Unused.
@@ -109,7 +109,7 @@
 #'   rownames(m) <- 1:40
 #'   m
 #' })
-#' fit <- runMCMCChains(X, n_chains = 2, R = 200, thin = 5, types = c("G", "G"), K = c(4, 4))
+#' fit <- runMCMCChains(X, n_chains = 2, n_iter = 200, thin = 5, types = c("G", "G"), K_max = c(4, 4))
 #' plot(fit)
 #' plot(fit, type = "psm", view = 1)
 plot.mdir_fit_list <- function(x,
@@ -237,7 +237,7 @@ plot.mdir_fit <- function(x, ...) {
 #' set.seed(1)
 #' X <- list(matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
 #' rownames(X[[1]]) <- 1:40
-#' fit <- runMCMCChains(X, n_chains = 2, R = 400, thin = 2, types = "G", K = 4)
+#' fit <- runMCMCChains(X, n_chains = 2, n_iter = 400, thin = 2, types = "G", K_max = 4)
 #' plot(assessConvergence(fit))
 plot.mdir_convergence <- function(x, ...) {
   threshold <- attr(x, "threshold")
