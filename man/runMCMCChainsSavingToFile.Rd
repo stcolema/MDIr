@@ -7,16 +7,18 @@
 runMCMCChainsSavingToFile(
   X,
   n_chains,
-  R,
+  n_iter,
   thin,
   types,
   dir_path,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE,
-  proposal_windows = NULL
+  proposal_windows = NULL,
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
@@ -25,7 +27,7 @@ held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -35,7 +37,7 @@ held in rows.}
 
 \item{dir_path}{A string for the directory to save samples to.}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
@@ -53,6 +55,10 @@ sampling of Gaussian process hyperparameters. Each entry corresponds to a
 view. For views modelled using a Gaussian process, the first entry is the
 proposal window for the ampltiude, the second is for the length-scale and the
 third is for the noise. These are not used in other mixture types.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 A named list containing the sampled partitions, component weights and
@@ -74,19 +80,18 @@ data_modelled <- list(X, Y)
 V <- length(data_modelled)
 
 # MCMC parameters
-R <- 100
+n_iter <- 100
 thin <- 10
 burn <- 20
 
-K_max <- 10
-K <- rep(K_max, V)
+K_max <- rep(10, V)
 types <- rep("G", V)
 
 n_chains <- 2
 dir_path <- file.path(tempdir(), "mdir_chains")
 dir.create(dir_path)
-mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, R, thin, types,
-  K = K, dir_path = dir_path
+mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, n_iter, thin, types,
+  K_max = K_max, dir_path = dir_path
 )
 }
 }

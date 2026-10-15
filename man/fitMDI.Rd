@@ -7,10 +7,10 @@
 fitMDI(
   X,
   n_chains,
-  R,
+  n_iter,
   thin,
   types,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -29,7 +29,9 @@ fitMDI(
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
   split_merge = 0L,
-  joint_allocation = 0L
+  joint_allocation = 0L,
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
@@ -38,7 +40,7 @@ held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -46,7 +48,7 @@ held in rows.}
 \item{types}{Character vector indicating density type to use. 'MVN'
 (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
@@ -68,7 +70,7 @@ third is for the noise. These are not used in other mixture types.}
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
 
 \item{burn}{Number of iterations treated as burn in when assessing
-convergence. Defaults to half of \code{R}. It only affects the diagnostics
+convergence. Defaults to half of \code{n_iter}. It only affects the diagnostics
 attached to the result, not the chains themselves; choose the burn in for
 point estimates in \code{\link{processMCMCChains}}.}
 
@@ -78,6 +80,10 @@ is set.}
 
 \item{save_pointwise, phi_update, n_cores, betas, swap_scheme, swap_every, split_merge, joint_allocation}{See
 \code{\link{runMCMCChains}}.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 An object of class \code{mdir_fit_list} (see
@@ -117,7 +123,7 @@ X <- lapply(1:2, function(v) {
 })
 
 # Far too few iterations for real use
-fit <- fitMDI(X, n_chains = 3, R = 1000, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+fit <- fitMDI(X, n_chains = 3, n_iter = 1000, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 fit
 summary(fit)
 }

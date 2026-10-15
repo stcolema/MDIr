@@ -33,6 +33,6 @@ correct handling of single-view outputs.
 \examples{
 N <- 100
 X <- matrix(rnorm(N * 2, c(0, 3)), ncol = 2)
-mcmc_out <- callMixtureModel(X, R = 100, thin = 5, type = "MVN", K = 10)
+mcmc_out <- callMixtureModel(X, n_iter = 100, thin = 5, type = "MVN", K_max = 10)
 processed <- processMixtureModelChain(mcmc_out, burn = 10)
 }

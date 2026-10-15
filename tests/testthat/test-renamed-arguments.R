@@ -59,7 +59,10 @@ test_that("every entry point accepts the new names without a warning", {
   X <- views()
   types <- c("MVN", "MVN")
   expect_no_warning(runMCMCChains(X, 2, n_iter = 20, thin = 5, types = types, K_max = c(3, 3)))
-  expect_no_warning(fitMDI(X, 2, n_iter = 20, thin = 5, types = types, K_max = c(3, 3), verbose = FALSE))
+  # fitMDI() also warns that 20 iterations are too few for diagnostics; only the
+  # deprecation matters here
+  w <- catch_warnings(fitMDI(X, 2, n_iter = 20, thin = 5, types = types, K_max = c(3, 3), verbose = FALSE))$warnings
+  expect_false(any(grepl("deprecated", w)))
   expect_no_warning(callMixtureModel(X[[1]], n_iter = 20, thin = 5, type = "MVN", K_max = 3))
   expect_no_warning(smcMDI(X, types, K_max = c(3, 3), n_particles = 10))
   expect_no_warning(simulatePriorPredictive(X, types, K_max = c(3, 3), n_datasets = 2))

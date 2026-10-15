@@ -5,7 +5,7 @@
 \alias{plot.mdir_fit}
 \title{Plot an mdir fit}
 \usage{
-plot.mdir_fit_list(
+\method{plot}{mdir_fit_list}(
   x,
   type = c("trace", "density", "rhat", "psm", "fusion"),
   pars = NULL,
@@ -17,13 +17,19 @@ plot.mdir_fit_list(
 \method{plot}{mdir_fit}(x, ...)
 }
 \arguments{
-\item{x}{Output of \code{\link{runMCMCChains}} or \code{\link{fitMDI}} (\code{mdir_fit_list}), or of \code{\link{callMDI}} (\code{mdir_fit}).}
+\item{x}{Output of \code{\link{runMCMCChains}} or \code{\link{fitMDI}}
+(\code{mdir_fit_list}), or of \code{\link{callMDI}} (\code{mdir_fit}).}
 
-\item{type}{One of \code{"trace"}, \code{"density"}, \code{"rhat"}, \code{"psm"} and \code{"fusion"}.}
+\item{type}{One of \code{"trace"}, \code{"density"}, \code{"rhat"}, \code{"psm"} and
+\code{"fusion"}.}
 
-\item{pars}{Optional character vector naming the quantities for \code{"trace"} and \code{"density"}, for example \code{"phi[1,2]"}. The default is all of them.}
+\item{pars}{Optional character vector naming the quantities for
+\code{"trace"} and \code{"density"}, for example \code{"phi[1,2]"}. The
+default is all of them.}
 
-\item{burn}{Number of iterations treated as burn in. The default is half of \code{R}, as in \code{\link{assessConvergence}}. Ignored for chains that have been through \code{\link{processMCMCChain}}.}
+\item{burn}{Number of iterations treated as burn in. The default is half of
+\code{n_iter}, as in \code{\link{assessConvergence}}. Ignored for chains that have
+been through \code{\link{processMCMCChain}}.}
 
 \item{view}{The view shown by \code{type = "psm"}.}
 
@@ -61,6 +67,17 @@ None of the plots proves convergence (see \code{\link{assessConvergence}}).
   clusters only if the indices are aligned between views.}
 }
 }
+\examples{
+set.seed(1)
+X <- lapply(1:2, function(v) {
+  m <- matrix(rnorm(40 * 2, rep(c(0, 3), each = 20)), 40, 2)
+  rownames(m) <- 1:40
+  m
+})
+fit <- runMCMCChains(X, n_chains = 2, n_iter = 200, thin = 5, types = c("G", "G"), K_max = c(4, 4))
+plot(fit)
+plot(fit, type = "psm", view = 1)
+}
 \references{
 Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and
 Burkner, P.-C. (2021). Rank-normalization, folding, and localization: an
@@ -69,15 +86,4 @@ improved Rhat for assessing convergence of MCMC. \emph{Bayesian Analysis},
 }
 \seealso{
 \code{\link{summary.mdir_fit_list}}, \code{\link{assessConvergence}}
-}
-\examples{
-set.seed(1)
-X <- lapply(1:2, function(v) {
-  m <- matrix(rnorm(40 * 2, rep(c(0, 3), each = 20)), 40, 2)
-  rownames(m) <- 1:40
-  m
-})
-fit <- runMCMCChains(X, n_chains = 2, R = 200, thin = 5, types = c("G", "G"), K = c(4, 4))
-plot(fit)
-plot(fit, type = "psm", view = 1)
 }

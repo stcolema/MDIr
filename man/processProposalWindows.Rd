@@ -33,6 +33,6 @@ V <- 3
 proposal_windows <- vector("list", V)
 types <- c("GP", "MVN", "C")
 proposal_windows[[1]] <- c(0.15, 0.20, 0.10)
-processProposalWindows(proposal_windows, types)
+mdir:::processProposalWindows(proposal_windows, types)
 
 }

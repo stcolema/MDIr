@@ -20,16 +20,15 @@
 #'
 #' V <- length(data_modelled)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #' burn <- 10
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
-#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+#' mcmc_out <- callMDI(data_modelled, n_iter, thin, types, K_max = K_max)
 #' createSimilarityMat(mcmc_out$allocations[, , 1])
 #' @export
 createSimilarityMat <- function(allocations) {

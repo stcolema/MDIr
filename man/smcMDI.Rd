@@ -8,7 +8,7 @@ sequential Monte Carlo)}
 smcMDI(
   X,
   types,
-  K = NULL,
+  K_max = NULL,
   n_particles = 200,
   schedule = c("adaptive", "fixed"),
   betas = NULL,
@@ -27,7 +27,8 @@ smcMDI(
   start_sweeps = 0L,
   split_merge = 0L,
   fixed = NULL,
-  joint_allocation = 0L
+  joint_allocation = 0L,
+  K = NULL
 )
 }
 \arguments{
@@ -39,7 +40,7 @@ with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{n_particles}{Number of particles (chains).}
@@ -103,11 +104,13 @@ procedure: read the corresponding item under \emph{What is guaranteed}.}
 \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
 guarantees below are unchanged; they can only change the variance.}
 
+\item{fixed}{Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).}
+
 \item{joint_allocation}{Joint redraw of each item's labels across a block of views in every
 sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
 below are unchanged.}
 
-\item{fixed}{Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).}
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 An object of class \code{mdir_smc}: a list with
@@ -200,7 +203,7 @@ data size and the particles run in sequence.
 set.seed(1)
 X <- list(matrix(rnorm(60 * 2, rep(c(0, 4), each = 30)), 60, 2))
 rownames(X[[1]]) <- 1:60
-fit <- smcMDI(X, "MVN", K = 3, n_particles = 20)
+fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 20)
 smcDiagnostics(fit)
 }
 \references{

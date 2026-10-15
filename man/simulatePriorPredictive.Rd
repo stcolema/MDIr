@@ -7,11 +7,12 @@
 simulatePriorPredictive(
   X,
   types,
-  K = NULL,
+  K_max = NULL,
   n_datasets = 20,
   prior = mdiPrior(),
   density_prior = densityPrior(),
-  mimic_missingness = TRUE
+  mimic_missingness = TRUE,
+  K = NULL
 )
 }
 \arguments{
@@ -21,7 +22,7 @@ hyperparameters.}
 
 \item{types}{Density type of each view, as for \code{\link{callMDI}}.}
 
-\item{K}{Number of components in each view. Defaults to \code{min(10, N/2)}
+\item{K_max}{Number of components in each view. Defaults to \code{min(10, N/2)}
 in every view.}
 
 \item{n_datasets}{Number of datasets to simulate.}
@@ -34,6 +35,8 @@ in every view.}
 \code{X} are set to \code{NA} in every simulated dataset so that summaries
 compare like with like (this assumes missingness is independent of the
 values, as the model does).}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 A list of class \code{mdir_predictive} with \code{replicates} (a list
@@ -62,7 +65,7 @@ and its dimensions.
 set.seed(1)
 X <- matrix(rnorm(80 * 2, rep(c(0, 3), each = 40)), 80, 2)
 rownames(X) <- seq_len(nrow(X))
-prior_sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 5)
+prior_sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 5)
 plotPredictiveCheck(X, prior_sims, column = 1)
 }
 \references{
