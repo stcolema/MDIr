@@ -1,0 +1,38 @@
+                   cfg seed rhat_key occupied_v1 ari_v1 ari_v2 joint_ll
+                 plain 2001     2.66        19.2  0.402  0.387    -7330
+             joint_all 2001     1.92        20.5  0.437  0.402    -7349
+           split_merge 2001     2.71        20.5  0.434  0.332    -7390
+ joint_all_split_merge 2001     2.71        18.2  0.392  0.332    -7419
+                 plain 2002     3.17        19.2  0.454  0.400    -7367
+             joint_all 2002     3.11        19.2  0.464  0.376    -7428
+           split_merge 2002     2.93        20.8  0.391  0.362    -7372
+ joint_all_split_merge 2002     1.97        21.2  0.497  0.458    -7312
+                 plain 2003     2.67        18.8  0.334  0.316    -7458
+             joint_all 2003     2.21        19.2  0.406  0.349    -7377
+           split_merge 2003     2.62        21.2  0.459  0.446    -7289
+ joint_all_split_merge 2003     2.15        19.5  0.479  0.432    -7337
+ joint_ll_sd seconds
+        89.8      97
+        52.5     175
+        91.4     131
+        74.7     211
+       120.9     102
+        57.1     181
+        54.0     131
+        43.1     210
+       132.4     102
+        82.2     181
+       115.9     133
+        96.0     209
+
+Means by configuration
+                    cfg rhat_key occupied_v1 ari_v1 ari_v2 joint_ll joint_ll_sd
+1             joint_all    2.415       19.67 0.4357 0.3758    -7385       63.92
+2 joint_all_split_merge    2.277       19.67 0.4559 0.4076    -7356       71.24
+3                 plain    2.833       19.08 0.3965 0.3675    -7385      114.34
+4           split_merge    2.753       20.83 0.4281 0.3800    -7350       87.09
+  seconds
+1   179.1
+2   210.3
+3   100.2
+4   131.8

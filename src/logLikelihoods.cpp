@@ -75,20 +75,6 @@ double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu) {
     - 0.5 * (nu + P) * std::log1p(exponent / nu);
 }
 
-double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec variance) {
-  int P = x.n_rows;
-  double ll = 0.0, ll_p = 0.0;
-  for(int p = 0; p < P; p++) {
-    ll_p = -0.5 * (
-      log(2.0 * M_PI) 
-      + log(variance(p)) 
-      + std::pow(x(p) - mu(p), 2.0) / variance(p)
-    );
-    ll += ll_p;
-  }
-  return ll;
-};
-
 double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd) {
   int P = x.n_rows;
   double out = 0.0;
@@ -115,27 +101,3 @@ double pNorm(double x, double mu, double sigma_2) {
   return (-0.5 * (log(2.0 * M_PI) + log(sigma_2) + pow(x - mu, 2.0) / sigma_2));
 }
 
-
-
-//' title The Half-Cauchy Distribution
-//' description Calculates the pdf of the Half-Cauchy distribution for value x.
-//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-//' param x Value to calculate the probability density of.
-//' param mu Location parameter.
-//' param scale Scale parameter.
-//' return Sample from HalfCauchy(mu, scale).
-double pHalfCauchy(double x, double mu, double scale, bool logValue) {
-  double denom = 0.0;
-  
-  if(x < mu) {
-    Rcpp::Rcerr << "\nIn Half-Cauchy p.d.f, the considered value is less than the threshold.";
-    return 0;
-  }
-  denom = 1.0 + std::pow((x - mu) / scale, 2.0);
-  if(logValue) {
-    // denom = 2.0 * std::log((x - mu) / scale);
-    return log(2.0) - log(M_PI) - log(scale) - log(denom);
-  } else {
-    return 2.0 / (M_PI * scale * denom);
-  }
-};

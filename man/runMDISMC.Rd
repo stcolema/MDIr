@@ -25,7 +25,8 @@ runMDISMC(
   final_thin,
   beta_start,
   start_sweeps,
-  split_merge
+  split_merge,
+  joint_allocation
 )
 }
 \arguments{
@@ -66,6 +67,8 @@ prior and then moved by `start_sweeps` sweeps at `beta_start`, so they follow
 \item{start_sweeps}{Sweeps at `beta_start` before annealing (ignored if `beta_start = 0`).}
 
 \item{split_merge}{Split-merge attempts per view and sweep (see `runMDI`).}
+
+\item{joint_allocation}{Size of the blocks of views redrawn jointly for each item (see `runMDI`).}
 }
 \value{
 A list with the particles' recorded draws and weights, the evidence

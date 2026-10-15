@@ -98,6 +98,9 @@
 #' @param split_merge Split-merge style moves in every sweep of every particle; see
 #' \code{\link{callMDI}}. The moves leave each tempered target invariant, so the
 #' guarantees below are unchanged; they can only change the variance.
+#' @param joint_allocation Joint redraw of each item's labels across a block of views in every
+#' sweep of every particle; see \code{\link{callMDI}}. It is a Gibbs block, so the guarantees
+#' below are unchanged.
 #' @param fixed Not supported; any non-\code{NULL} value is an error (the prior start needs unsupervised models).
 #' @param beta_start,start_sweeps Start the particles at inverse temperature
 #' \code{beta_start} after \code{start_sweeps} sweeps there, instead of at the prior. Conditional
@@ -162,7 +165,8 @@ smcMDI <- function(X,
                    beta_start = 0,
                    start_sweeps = 0L,
                    split_merge = 0L,
-                   fixed = NULL) {
+                   fixed = NULL,
+                   joint_allocation = 0L) {
   if (!is.null(fixed)) {
     stop("smcMDI is unsupervised only: the particles start from exact draws of the prior, which are not available ",
       "given observed labels. Use callMDI(..., betas = ) (parallel tempering) for semi-supervised models.")
@@ -176,6 +180,7 @@ smcMDI <- function(X,
   .mdirCheckCount(thin, "thin", 1)
   .mdirCheckCount(max_steps, "max_steps", 1)
   .mdirCheckCount(split_merge, "split_merge", 0)
+  .mdirCheckJointAllocation(joint_allocation)
   if (!is.numeric(final_sweeps) || length(final_sweeps) != 1 || is.na(final_sweeps) || final_sweeps < 0) {
     stop("`final_sweeps` must be a non-negative integer.", call. = FALSE)
   }
@@ -244,7 +249,8 @@ smcMDI <- function(X,
     final_thin = as.integer(thin),
     beta_start = beta_start,
     start_sweeps = as.integer(start_sweeps),
-    split_merge = as.integer(split_merge)
+    split_merge = as.integer(split_merge),
+    joint_allocation = as.integer(joint_allocation)
   )
   time_taken <- Sys.time() - t_0
 
@@ -289,6 +295,17 @@ smcMDI <- function(X,
       "the weights are probably degenerate.", call. = FALSE)
   }
   out
+}
+
+.mdirCheckJointAllocation <- function(x) {
+  .mdirCheckCount(x, "joint_allocation", 0)
+  if (x == 1) {
+    stop("`joint_allocation` must be 0 (off) or at least 2: the number of views redrawn together.", call. = FALSE)
+  }
+  if (x > 12) {
+    stop("`joint_allocation` can be at most 12 views.", call. = FALSE)
+  }
+  invisible(x)
 }
 
 .mdirCheckCount <- function(x, name, minimum) {
@@ -833,7 +850,8 @@ smcSE <- function(runs, fun, view = NULL, discrete = NULL) {
 #' differently. Agreement is necessary and not sufficient: runs can agree and
 #' all miss the same mode.
 #' @param runs A list of fits (\code{mdir_fit}, \code{mdir_smc}), or the result
-#' of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}.
+#' of \code{\link{runMCMCChains}} or \code{\link{smcReplicates}}. Lists of chains
+#' (from \code{\link{runMCMCChains}} or \code{\link{fitMDI}}) among the runs contribute each of their chains.
 #' @param view The view.
 #' @param burn Burn in (iterations) removed from \code{mdir_fit} runs; the first
 #' saved draw is always dropped.
@@ -847,6 +865,12 @@ smcSE <- function(runs, fun, view = NULL, discrete = NULL) {
 #' @export
 compareRuns <- function(runs, view = 1, burn = 0, tolerance = 0.1) {
   fits <- if (inherits(runs, "mdir_smc_runs")) runs$runs else unclass(runs)
+  # a list of chains (mdir_fit_list) among the runs contributes each of its chains
+  if (is.list(fits)) {
+    fits <- unlist(lapply(fits, function(f) {
+      if (inherits(f, "mdir_fit_list")) unclass(f)[seq_along(f)] else list(f)
+    }), recursive = FALSE)
+  }
   if (!is.list(fits) || length(fits) < 2) {
     stop("`runs` must hold at least two fits.", call. = FALSE)
   }
@@ -937,6 +961,7 @@ smcAsChain <- function(fit, n_draws = 1000) {
     mass = mass,
     weights = weights,
     complete_likelihood = vapply(seq_len(nrow(idx)), function(r) fit$data_log_likelihood[idx$draw[r], idx$particle[r]], numeric(1)),
+    normalising_constant = rep(NA_real_, nrow(idx)),
     evidence = rep(NA_real_, nrow(idx)),
     N_k = array(vapply(seq_len(nrow(idx) * V), function(i) {
       r <- (i - 1) %% nrow(idx) + 1; v <- (i - 1) %/% nrow(idx) + 1

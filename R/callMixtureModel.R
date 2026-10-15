@@ -130,7 +130,8 @@ callMixtureModel <- function(X,
     betas = numeric(0),
     swap_scheme = 0L,
     swap_every = 1L,
-    split_merge = 0L
+    split_merge = 0L,
+    joint_allocation = 0L
   )
 
   t_1 <- Sys.time()
@@ -151,6 +152,7 @@ callMixtureModel <- function(X,
   mcmc_output$N_k <- mcmc_output$N_k[, 1, ]
   mcmc_output$complete_likelihood <- as.numeric(mcmc_output$complete_likelihood)
   mcmc_output$observed_likelihood <- as.numeric(mcmc_output$observed_likelihood)
+  mcmc_output$normalising_constant <- NULL
   mcmc_output$evidence <- NULL
   mcmc_output$parameters <- mcmc_output$parameters[[1]]
   mcmc_output$pooled_hyperparameters <- mcmc_output$pooled_hyperparameters[[1]]

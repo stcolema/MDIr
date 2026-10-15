@@ -44,7 +44,7 @@ test_that("five views with different numbers of components and mixed supervision
 })
 
 test_that("a view with a single component survives label swaps in the other views", {
-  # The only weight of that view used to be exchanged with an unused (zero) slot
+  # A swap in another view must leave the single weight of this view in its slot
   for (seed in 1:3) {
     run <- ragged_run(K = c(1L, 3L, 2L, 4L, 2L), types = c("G", "G", "C", "MVN", "G"), supervised = c(2L, 4L), seed = seed)
     check_ragged_run(run, paste("seed", seed))

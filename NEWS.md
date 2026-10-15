@@ -1,5 +1,41 @@
 # mdir (development version)
 
+## New: joint allocation (`joint_allocation`)
+
+* `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `joint_allocation` (default 0, off): the number of views
+  whose allocations of one item are drawn together, exactly from their joint conditional given the other items. The draw
+  runs view by view with the set-partition sums used for the weights, so its cost is linear in the number of components
+  and exponential only in the block size (at most 12), and it does not enumerate joint allocations. Values 2 to 12 draw
+  random blocks of that many views. Invariance is checked by enumeration of the joint conditional, by an exact
+  two-view posterior and by recovery of the prior.
+* In the settings tried (see `verification/joint_allocation`), joint allocation reduces stuck chains only modestly.
+  Aligned splits of a cluster in several views persist because the barrier is the rich-get-richer prior, which a joint
+  item move does not remove; `split_merge` is the more effective remedy.
+* Prior draws of labels (`check_prior`, prior-predictive) no longer fail beyond 5e6 joint allocations: they are drawn
+  sequentially.
+
+## New: vignette
+
+* `vignette("mdir-multimodal")`: an end-to-end workflow for multimodal clustering with MDI on simulated data with partial
+  agreement between views: prior and prior predictive checks, several chains, convergence for a mixture, fusion
+  probabilities, posterior predictive checks, sensitivity to the `phi` prior and `K`, prediction and
+  semi-supervised use.
+
+## New: draws formats
+
+* `posterior::as_draws()` (and `as_draws_array()`, `_df()`, `_matrix()`, `_list()`, `_rvars()`) methods for `callMDI()`,
+  `runMCMCChains()`/`fitMDI()` output and, with the particle weights attached, for `smcMDI()` ensembles. The variables
+  are quantities that do not depend on the cluster labelling (log-likelihoods, `mass`, `phi`, occupied components,
+  pooled hyperparameters); sorted weights and allocations are optional. This makes `posterior::summarise_draws()`,
+  `subset_draws()`, `resample_draws()` and `bayesplot` available.
+
+## New: plot methods
+
+* `plot()` for fits (`mdir_fit`, `mdir_fit_list`): trace plots (default), densities by chain, Rhat and effective sample
+  size, the posterior similarity matrix of a view and the fusion probabilities of view pairs, as ggplot2 objects.
+  `plot()` of `assessConvergence()` output and of `smcMDI()` fits (annealing path) are also available. Before, `plot()`
+  of a fit failed with an unrelated error from the default method.
+
 ## New: split-merge move (`split_merge`)
 
 * `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `split_merge`: the number of attempts
@@ -213,9 +249,17 @@
   two views); the last digits can differ with more views because the sums are
   accumulated in a different order.
 
+## Deprecated and renamed
+
+* `calcFusionProbabiliy()` and `calcFusionProbabiliyAllViews()` are renamed `calcFusionProbability()` and
+  `calcFusionProbabilityAllViews()`. The old names still work and warn.
+* The `evidence` element of `callMDI()` output is renamed `normalising_constant` (it is the MDI normalising constant
+  `Z` at the start of each saved sweep, not a marginal likelihood). `evidence` remains as an alias.
+* Removed unused internal C++ helpers; `stickBreakingPrior()` now calls `sampleStickBreakingPrior()`.
+
 ## Corrections
 
-* **Review corrections (statistical).**
+* **Corrections to the sampler and diagnostics.**
   * The outlier weight of a TAGM view was updated with the labelled items counted as non-outliers, although they can
     never be outliers and carry no outlier factor in the likelihood. The conditional is now
     `Beta(a + n_out, b + n_free - n_out)` over the items without an observed label; before, the weight was biased
@@ -229,7 +273,7 @@
   * Gaussian-process acceptance rates are now accepted over proposed (they could reach 2, and ignored empty components).
   * The effective sample size follows the Stan / Vehtari et al. (2021) estimator exactly (final-term correction,
     only lag 0 rescaled); it agrees with `posterior::ess_bulk()` and `ess_tail()`.
-* **Review corrections (R).** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
+* **Corrections to the R functions.** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
   classes and failed when one class was observed under a code other than 1; `stickBreakingPrior()` drew `Beta(alpha, 1)`
   sticks instead of `Beta(1, alpha)`; `compileConsensusClustering()` kept only the last chain's weights and was off by
   one for `evidence`; `calcAllocProb()` dropped a sample when `burn < thin` (and now drops the initial state like
