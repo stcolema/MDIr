@@ -21,7 +21,11 @@ callMDI(
   density_prior = densityPrior(),
   check_prior = TRUE,
   save_pointwise = FALSE,
-  phi_update = c("slice", "gibbs")
+  phi_update = c("slice", "gibbs"),
+  betas = 1,
+  swap_scheme = c("deo", "seo"),
+  swap_every = 1L,
+  split_merge = 0L
 )
 }
 \arguments{
@@ -87,8 +91,44 @@ the total over items (``joint_likelihood``) is always recorded.}
 default) draws each \eqn{\phi_{lm}} from its conditional with the strategic
 latent variable integrated out, using one slice-sampling update (Neal, 2003)
 that needs no tuning. ``"gibbs"`` is the update conditional on the
-strategic latent variable used before version 0.11. Both have the same target;
+strategic latent variable used in earlier releases. Both have the same target;
 the slice update mixes faster (see ``NEWS.md``).}
+
+\item{betas}{Inverse temperatures for parallel tempering: a strictly
+increasing vector in (0, 1] whose last element is 1 (the posterior), for
+example from \code{\link{ptLadder}}. One replica of the sampler runs at
+each temperature and neighbouring replicas exchange states. The chain at
+\code{beta = 1} targets the posterior for any ladder: each exchange leaves the
+product of tempered targets invariant (proved for finite state spaces, see
+\code{verification/tempering/theory.md}). That the exchanges speed up mixing is
+\strong{not} guaranteed, and no finite-time bound is available; the plain chain
+(\code{betas = 1}, the default) has the same asymptotic guarantee. A single
+value other than 1 samples the likelihood-tempered target and is only useful
+for testing. Tempering requires complete data, \code{"G"}, \code{"MVN"} or
+\code{"C"} views and no outlier component, and multiplies the run time by
+\code{length(betas)}; see \code{\link{ptDiagnostics}}.}
+
+\item{swap_scheme}{How replicas are paired for exchange. \code{"deo"}
+(default) alternates deterministically between even and odd neighbouring
+pairs, the non-reversible scheme of Syed et al. (2022); \code{"seo"} chooses
+the parity at random (reversible). Both leave the tempered targets invariant.}
+
+\item{swap_every}{Attempt exchanges after every \code{swap_every} sweeps.}
+
+\item{split_merge}{Number of attempts per view and sweep of a split-merge style
+move: two components are chosen at random, the free items in them are
+re-allocated one at a time in random order with probability proportional to the
+item's prior factor times the collapsed predictive density, and the
+proposal is accepted or rejected exactly (an independence Metropolis-Hastings
+step; Dahl, 2005). It targets the same posterior (invariance proved for
+finite spaces, \code{verification/tempering/theory.md}); that it improves mixing
+is not guaranteed. \code{0} (default) turns it off. Requires \code{"G"},
+\code{"MVN"}, \code{"C"} or outlier-component (\code{"TAGM"}) views; with an outlier
+component each item chooses a (component, outlier flag) pair, the outlier option adding the fixed
+outlier density and leaving the component statistics unchanged. Observed labels
+(semi-supervised views) and missing values are allowed (the move scores a flagged item with the
+outlier density of its complete, imputed vector); \code{betas} may be combined with it for views without an outlier
+component (tempering itself refuses outlier components).}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the
@@ -110,6 +150,12 @@ components separately with that view's own normalised weights and so ignores
 the coupling between views (the two coincide when every \eqn{\phi} is zero).
 In a semi-supervised view the observed labels are treated as data: an item
 with an observed label contributes the joint density of its data and label.
+
+``evidence`` is the MDI normalising constant \eqn{Z} at the start of each saved sweep (a trace of the
+weights and \eqn{\phi}), not a marginal likelihood of the data; use ``joint_likelihood`` or
+\code{\link{smcMDI}} for that. In a semi-supervised view observed labels are held fixed and the
+classes are numbered in sorted order, so that class \eqn{j} of the sorted observed classes is
+component \eqn{j} (``allocations`` are 0-based, ``pred`` and ``allocation_probability`` 1-based).
 }
 \description{
 Runs a MCMC chain of the integrative clustering method,

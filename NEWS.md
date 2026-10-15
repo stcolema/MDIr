@@ -1,5 +1,85 @@
 # mdir (development version)
 
+## New: split-merge move (`split_merge`)
+
+* `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `split_merge`: the number of attempts
+  per view and sweep of a sequentially allocated reallocation between two random components
+  (Metropolis-Hastings with an exact acceptance ratio; in the style of Dahl, 2005, without anchor items).
+  Invariance for finite spaces is proved in Lean 4 and checked by exact enumeration for the kernel
+  alone and inside the full sampler (plain, tempered, parallel tempering, observed labels); see
+  `verification/tempering/theory.md`, section 5b. **Mixing is not guaranteed.** In the four-cluster
+  example it removed the basin-weight problem of pooled independent chains (total variation 0.31 to 0.015;
+  0.001 at wider separation), which is an observation about that example.
+* Supported: `"G"`, `"MVN"`, `"C"` and `"TAGM"` (outlier component) views, unsupervised or semi-supervised,
+  one or several views, with or without missing values (for flagged items the missing cells are imputed from the outlier
+  density and the move scores them with the complete-vector outlier density). Tempering refuses both missing values and
+  outlier components. Refused: `"GP"` (no collapsed marginal).
+  For TAGM the move acts on (component, outlier flag) pairs; checked by exact enumeration of the joint law
+  and, for the full sampler, only by agreement with the plain chain.
+* `smcMDI()` now refuses `fixed` explicitly (exact prior draws are not available given observed labels).
+* The fit's `split_merge` entry holds `moves`, `attempts` and `accepts`.
+
+## New: weighted ensembles, and a map of what is guaranteed
+
+* **`smcMDI()`** runs many particles from exact draws of the prior to the posterior along the
+  likelihood-tempered path and weights them (annealed importance sampling / sequential Monte
+  Carlo, with a conditional-ESS adaptive or a fixed schedule, systematic or multinomial
+  resampling). **`smcReplicates()`** fixes the schedule from a pilot run and runs independent
+  ensembles; **`combineSMC()`** pools them by their evidence estimates.
+* Guarantees, each with its status in `verification/tempering/theory.md`: with a fixed schedule
+  the weighted sum is exactly unbiased for the unnormalised posterior and the evidence estimate is
+  unbiased, for any number of particles and without any mixing assumption (Lean 4 for annealed
+  importance sampling; exact rational enumeration for resampling schemes; Del Moral, 2004); the
+  ratio estimators are consistent as the number of independent runs or particles grows. An
+  adaptive schedule is consistent but exactly biased (shown by enumeration). Starting above the
+  prior (`beta_start`) is conditional on an exact start, with a proved bound on the bias in
+  terms of the start's total-variation error (Lean 4). No bound on the variance is available.
+* In the four-cluster example the variance is the problem: with a sharp transition on the
+  path from prior to posterior, 20,000 particles had an effective sample size of 1.6, and with
+  resampling the effective sample size looked healthy while the mode masses were wrong. Pooling
+  independent plain chains converges to the basin weights (total variation distance 0.31 from the
+  exact masses with 160 chains).
+* Helpers: `smcDiagnostics()`, `smcWeightDiagnostic()` (Pareto k-hat of Vehtari et al., 2024, for
+  unresampled runs), `smcWeights()`, `weightedPSM()`, `weightedConsensus()`, `smcPosterior()`,
+  `resampleSMC()`, `smcAsChain()` (feeds `processMCMCChain()`), `smcSE()` (jackknife over
+  independent runs), `compareRuns()` (agreement of independent runs, for tempered chains too).
+  Diagnostics are labelled as having no guarantee.
+* Supported: complete data, `G`/`MVN`/`C` views, no outlier component, unsupervised views.
+
+## New: parallel tempering
+
+* **`betas`** (in `callMDI()`, `runMCMCChains()` and `fitMDI()`) runs one replica of the
+  sampler at each inverse temperature of a ladder ending at 1 and exchanges neighbouring
+  replicas. The replica at `beta` targets `L^beta P`, with `L` the likelihood of the data
+  given the labels and component parameters and `P` the rest of the model (priors, the
+  coupling of the views through the weights and phis, the strategic latent variable); the
+  recorded draws are those of the replica at `beta = 1`. Exchanges are accepted with
+  probability `min(1, exp((beta_i - beta_j)(l_j - l_i)))`, `l` the data log-likelihood, and use the
+  deterministic even-odd schedule of Syed et al. (2022) by default (`swap_scheme = "deo"`;
+  `"seo"` is its reversible, stochastic-parity counterpart). `betas = 1` (the default)
+  is the previous sampler, draw for draw (checked on seeded chains of every density,
+  with missing data and outliers).
+* `ptLadder()` builds a ladder, `ptDiagnostics()` reports exchange rates, the
+  estimated communication barrier and round trips, `tuneLadder()` and `adaptLadder()`
+  equalise neighbouring rejection rates (Syed et al., 2022, Algorithm 2).
+* Supported: complete data, `"G"`, `"MVN"` and `"C"` views, no outlier component; other
+  models stop with an error (the tempered conditionals of the missing-data, t-outlier and
+  Gaussian process updates are not implemented).
+* What was checked (`verification/tempering/`, `tests/testthat/test-tempering.R`): the
+  tempered conjugate updates against the closed forms, symbolically (SymPy) and by
+  simulation; the exchange acceptance, detailed balance, invariance of every exchange round
+  and the cold marginal in Lean 4 with Mathlib (finite state spaces, no `sorry`); the same
+  in exact rational arithmetic for a small chain, including that the even-odd scheme is
+  invariant but not reversible; and the sampler's label posterior against exact references
+  for tiny categorical models (one and two views) and Gaussian models, with negative
+  controls that must fail.
+* What parallel tempering does not guarantee: finite-time convergence. The
+  ergodicity of the product chain and the bounds on mixing are not proved here. In a
+  four-cluster example the model's tempering path has a sharp transition, hot replicas
+  made 0 to 3 round trips in 20,000 rounds although the exchange rates predicted about
+  900, and the cold chain nevertheless recovered the exact mode weights when 12 runs were
+  pooled (single runs were still noisy); see the README.
+
 ## New: likelihood of the whole model, and prediction
 
 * **`joint_likelihood`** is recorded at every saved draw: the log-likelihood of the
@@ -134,6 +214,31 @@
   accumulated in a different order.
 
 ## Corrections
+
+* **Review corrections (statistical).**
+  * The outlier weight of a TAGM view was updated with the labelled items counted as non-outliers, although they can
+    never be outliers and carry no outlier factor in the likelihood. The conditional is now
+    `Beta(a + n_out, b + n_free - n_out)` over the items without an observed label; before, the weight was biased
+    towards zero in proportion to the number of labelled items.
+  * The label-swap move assumed that the observed classes were the first components of a view. With observed classes
+    such as `{0, 2}` (0-based labels with a gap) it moved components that held observed items and silently changed
+    the observed labels. The move now exchanges only components that hold no observed item, whatever their index,
+    and `callMDI()` recodes the observed classes to `0, 1, ...` in sorted order (other starting labels follow).
+    Split-merge never moved observed items; both moves are now tested with gaps, several views, `"TAGM"` and `"C"`.
+  * The likelihood of the initial state was recorded as zero in `complete_likelihood` and `observed_likelihood`.
+  * Gaussian-process acceptance rates are now accepted over proposed (they could reach 2, and ignored empty components).
+  * The effective sample size follows the Stan / Vehtari et al. (2021) estimator exactly (final-term correction,
+    only lag 0 rescaled); it agrees with `posterior::ess_bulk()` and `ess_tail()`.
+* **Review corrections (R).** `generateInitialSemiSupervisedLabels()` paired the class proportions with the wrong
+  classes and failed when one class was observed under a code other than 1; `stickBreakingPrior()` drew `Beta(alpha, 1)`
+  sticks instead of `Beta(1, alpha)`; `compileConsensusClustering()` kept only the last chain's weights and was off by
+  one for `evidence`; `calcAllocProb()` dropped a sample when `burn < thin` (and now drops the initial state like
+  `processMCMCChain()`); `callMDIWritingToFile()`/`readInSavedSamples()` failed for a single view;
+  `getLikelihood()` mislabelled the iterations when `R` was not a multiple of `thin`;
+  `predictFromMultipleChains()` replaced the class predictions of overfitted semi-supervised views by an unrelated
+  clustering; `makeCMComparisonSummaryDF()` failed with one depth or width; `processProposalWindows()` failed for a
+  vector window in a non-GP view; the unused vector `rHalfCauchy()` set negative draws to zero. `evidence` is documented as the
+  normalising constant `Z`, not a marginal likelihood.
 
 * **Label swaps now exchange the weights of one view only.** The move that
   exchanges two components of a view (labels, weights and component parameters)

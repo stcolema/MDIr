@@ -103,12 +103,7 @@ double rHalfCauchy(double mu, double scale) {
 //' return Sample from HalfCauchy(mu, scale).
 arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
   vec x(N), y(N);
-  x = arma::randn(N);
-  for(uword n = 0; n < N; n++) {
-    if(x(n) < 0.0) {
-      x(n) = 0.0;
-    }
-  }
+  x = arma::abs(arma::randn(N));
   y = rInvGamma(N, 0.5, 0.5 * std::pow(scale, 2.0));
   return mu + x * arma::sqrt(y);
 };

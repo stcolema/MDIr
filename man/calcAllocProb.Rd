@@ -11,7 +11,7 @@ calcAllocProb(mcmc_samples, view, burn = 0, method = "mean")
 
 \item{view}{The view for which to calculate the allocation probabilities.}
 
-\item{burn}{The number of samples to discard.}
+\item{burn}{The number of iterations to treat as burn in (0 keeps every saved sample). As in ``processMCMCChain``, the initial state and ``floor(burn / thin)`` further saved samples are dropped.}
 
 \item{method}{The point estimate to use. ``method = 'mean'`` or
 ``method = 'median'``. ``'median'`` is the default.}

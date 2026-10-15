@@ -1,0 +1,10 @@
+PASS  N=2 fixed schedule, multinomial, resample always           unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=2: 2.30e-02
+PASS  N=2 fixed schedule, multinomial, adaptive resampling (ESS < N/2) unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=2: 2.76e-02
+PASS  N=2 fixed schedule, systematic, resample always            unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=2: 2.24e-02
+PASS  N=2 fixed schedule, systematic, adaptive resampling (ESS < N/2) unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=2: 2.76e-02
+PASS  N=2 fixed schedule, never resample (AIS)                   unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=2: 2.76e-02
+PASS  N=3 fixed schedule, multinomial, adaptive resampling (ESS < 0.7 N) unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=3: 7.88e-03
+PASS  N=3 fixed schedule, systematic, adaptive resampling (ESS < 0.7 N) unbiased; E[Zhat] - Z = +0.000e+00; self-normalised bias at N=3: 7.53e-03
+PASS  N=2 ADAPTIVE schedule (conditional ESS >= 0.7 N), multinomial biased; E[Zhat] - Z = -2.205e-03; self-normalised bias at N=2: 6.75e-02
+PASS  N=2 ADAPTIVE schedule (conditional ESS >= 0.9 N), multinomial biased; E[Zhat] - Z = -1.200e-03; self-normalised bias at N=2: 6.72e-02
+all exact SMC checks passed

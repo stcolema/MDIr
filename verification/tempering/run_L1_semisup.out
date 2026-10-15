@@ -1,0 +1,5 @@
+semi-supervised plain chain                TV 0.0039 (noise ~0.0041) | states 141 | max|z| 3.12 | mean z^2 1.00 (expect ~1.12)
+semi-supervised PT (0.2, 0.5, 1)           TV 0.0036 (noise ~0.0038) | states 141 | max|z| 3.23 | mean z^2 0.98 (expect ~1.12)
+semi-supervised, split-merge               TV 0.0037 (noise ~0.0036) | states 141 | max|z| 3.35 | mean z^2 1.08 (expect ~1.12)
+semi-supervised, tempered beta = 0.4       TV 0.0038 (noise ~0.0040) | states 243 | max|z| 3.27 | mean z^2 1.00 (expect ~1.12)
+CONTROL: beta = 0.4 vs exact beta = 1      TV 0.2601 (noise ~0.0040) | states 141 | max|z| 328.62 | mean z^2 6442.33 (expect ~1.12)
