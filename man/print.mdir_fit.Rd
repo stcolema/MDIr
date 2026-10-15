@@ -25,6 +25,6 @@ underneath (\code{x$allocations}, \code{x$phis} and so on keep working).
 \examples{
 set.seed(1)
 X <- list(matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
-fit <- callMDI(X, R = 100, thin = 5, types = "MVN", K = 4)
+fit <- callMDI(X, n_iter = 100, thin = 5, types = "MVN", K_max = 4)
 fit
 }

@@ -6,10 +6,10 @@
 \usage{
 callMixtureModel(
   X,
-  R,
+  n_iter,
   thin,
   type,
-  K = 75,
+  K_max = 75,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -18,14 +18,17 @@ callMixtureModel(
   save_parameters = TRUE,
   save_imputed = FALSE,
   prior = mdiPrior(),
-  density_prior = densityPrior()
+  density_prior = densityPrior(),
+  control = mdirControl(),
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
 \item{X}{Data to cluster. Matrix with the N items to cluster held
 in rows.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -35,7 +38,7 @@ with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
-\item{K}{Integer indicating the number of components to include (the upper
+\item{K_max}{Integer indicating the number of components to include (the upper
 bound on the number of clusters).}
 
 \item{initial_labels}{Initial clustering. $N$-vector.}
@@ -48,13 +51,17 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 A named list containing the sampled partitions, component weights,
@@ -68,14 +75,14 @@ wrapper to allow more intuitive inputs for the single dataset case of MDI.
 N <- 100
 X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 
-# This R is much too low for real applications
-R <- 100
+# This n_iter is much too low for real applications
+n_iter <- 100
 thin <- 5
 
 alpha <- 1
-K <- 10
+K_max <- 10
 type <- "MVN"
 
-mcmc_out <- callMixtureModel(X, R, thin, type, K = K)
+mcmc_out <- callMixtureModel(X, n_iter, thin, type, K_max = K_max)
 
 }

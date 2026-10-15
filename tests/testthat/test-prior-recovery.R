@@ -8,7 +8,7 @@ prior_recovery_run <- function(K, R, N = 12, seed = 1) {
   set.seed(seed)
   L <- length(K)
   X <- lapply(seq_len(L), function(l) { m <- matrix(0, N, 1); rownames(m) <- seq_len(N); m })
-  callMDI(X, R = R, thin = 10, types = rep("C", L), K = K)
+  callMDI(X, n_iter = R, thin = 10, types = rep("C", L), K_max = K)
 }
 
 prior_simulator <- function(K, N = 12) {

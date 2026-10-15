@@ -20,16 +20,15 @@
 #'
 #' V <- length(data_modelled)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #' burn <- 10
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
-#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+#' mcmc_out <- callMDI(data_modelled, n_iter, thin, types, K_max = K_max)
 #' createSimilarityMat(mcmc_out$allocations[, , 1])
 #' @export
 createSimilarityMat <- function(allocations) {
@@ -468,9 +467,12 @@ readMCMCsamples <- function(n_samples, n_params, load_dir) {
 #' re-partition of two randomly chosen components (0 turns it off).
 #' @param joint_allocation Size of the blocks of views whose labels are redrawn jointly for each
 #' item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).
+#' @param auto_tune Adapt the proposal windows of the Gaussian process hyperparameters
+#' during the first `n_burn` sweeps, towards an acceptance rate of 0.44, then keep them fixed.
+#' @param n_burn Number of sweeps over which the windows are adapted.
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation) {
-    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune = FALSE, n_burn = 0L) {
+    .Call(`_mdir_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_parameters, save_imputed, prior, density_prior, save_allocation_probabilities, save_pointwise, phi_slice, betas, swap_scheme, swap_every, split_merge, joint_allocation, auto_tune, n_burn)
 }
 
 #' @title Call Multiple Dataset Integration and Write to File
@@ -493,9 +495,11 @@ runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, p
 #' @param save_dir Directory to save MCMC samples to
 #' @param prior Optional vector of MDI-level prior hyperparameters (see `runMDI`).
 #' @param density_prior Options of the density-level priors (see `runMDI`).
+#' @param auto_tune,n_burn Adapt the Gaussian process proposal windows during the first
+#' `n_burn` sweeps (see `runMDI`).
 #' @return Nothing; one binary file per saved sample is written to `save_dir`.
-runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior) {
-    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior))
+runMDIWriteToFile <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, auto_tune = FALSE, n_burn = 0L) {
+    invisible(.Call(`_mdir_runMDIWriteToFile`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows, save_dir, prior, density_prior, auto_tune, n_burn))
 }
 
 #' @title Sequential Monte Carlo sampler for MDI (C++)

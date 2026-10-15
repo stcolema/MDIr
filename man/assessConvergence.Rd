@@ -29,7 +29,9 @@ the iterations run.}
 (1.01 following Vehtari et al., 2021).}
 
 \item{min_ess_per_chain}{Minimum bulk and tail ESS per chain for a quantity to pass
-(100, following Vehtari et al., 2021).}
+(100, following Vehtari et al., 2021). A tail ESS that is undefined (\code{NA}, see
+\code{\link{rankNormalizedRhat}}) is not assessable and does not fail the quantity;
+an undefined Rhat or bulk ESS does.}
 
 \item{x}{An \code{mdir_convergence} object.}
 
@@ -71,7 +73,7 @@ X <- lapply(1:2, function(v) {
   rownames(m) <- 1:60
   m
 })
-chains <- runMCMCChains(X, 3, R = 1000, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+chains <- runMCMCChains(X, 3, n_iter = 1000, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 assessConvergence(chains, burn = 500)
 }
 }

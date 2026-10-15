@@ -11,11 +11,12 @@ smcReplicates(
   n_runs = 8,
   n_particles = 200,
   betas = NULL,
-  K = NULL,
+  K_max = NULL,
   n_cores = NULL,
   verbose = FALSE,
   check_prior = TRUE,
-  ...
+  ...,
+  K = NULL
 )
 
 \method{print}{mdir_smc_runs}(x, ...)
@@ -35,7 +36,7 @@ mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
 \item{betas}{A fixed schedule, or \code{NULL} to take it from a pilot run.}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{n_cores}{Cores for the runs (see \code{\link{runMCMCChains}}).}
@@ -45,6 +46,8 @@ bound on the number of clusters in each dataset).}
 \item{check_prior}{Report prior warnings once (for the pilot run).}
 
 \item{...}{Unused.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 
 \item{x}{An object returned by the function this page documents.}
 }

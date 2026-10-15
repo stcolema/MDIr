@@ -77,6 +77,13 @@ public:
     noise_proposal_window = 0.15,
     pool_proposal_window = 0.5;
   
+  // Robbins-Monro adaptation of the amplitude, length and noise windows. The
+  // target is the acceptance rate of a one-dimensional random-walk Metropolis
+  // update, about 0.44 (Gelman, Roberts and Gilks, 1996). The counts at the
+  // previous adaptation give the acceptances and attempts since then.
+  uword adaptation_events = 0;
+  uvec adapt_prev_accept, adapt_prev_attempt;
+
   uvec noise_acceptance_count,
     length_acceptance_count,
     amplitude_acceptance_count,
@@ -115,6 +122,8 @@ public:
   void updatePopulation(const arma::vec& y, double& m, double& s) const;
   
   void receiveHyperParametersProposalWindows(vec proposal_windows) override;
+  void adaptHyperParametersProposalWindows() override;
+  vec hyperParametersProposalWindows() const override;
   
   // Log-density of f_k under N(0, kernel)
   double muLogDensity(const vec& f_k, const mat& kernel) const;

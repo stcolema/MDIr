@@ -11,13 +11,13 @@ source("../joint_allocation/setup.R")
 d <- make_large(); V <- 3
 t0 <- Sys.time()
 set.seed(21)
-pilot <- smcMDI(d$X, d$types, K = d$K, n_particles = P, cess = 0.9, prior = d$prior, check_prior = FALSE,
+pilot <- smcMDI(d$X, d$types, K_max = d$K, n_particles = P, cess = 0.9, prior = d$prior, check_prior = FALSE,
                 joint_allocation = V, split_merge = 2L, sweeps_per_step = 2L)
 cat(sprintf("pilot: %d temperatures, %.0f s, min ESS %.1f of %d, final ESS %.1f, forced final step: %s\n",
             nrow(pilot$trace), as.numeric(Sys.time() - t0, units = "secs"), min(pilot$trace$ess), P,
             1 / sum(pilot$particle_weights^2), pilot$forced_final_step))
 print(pilot$trace[round(seq(1, nrow(pilot$trace), length.out = 10)), c("step", "beta", "ess", "cess", "resampled")], row.names = FALSE)
-rr <- smcReplicates(d$X, d$types, n_runs = n_runs, n_particles = P, betas = pilot$trace$beta, K = d$K,
+rr <- smcReplicates(d$X, d$types, n_runs = n_runs, n_particles = P, betas = pilot$trace$beta, K_max = d$K,
                     n_cores = n_cores, prior = d$prior, check_prior = FALSE, joint_allocation = V, split_merge = 2L,
                     sweeps_per_step = 2L, resample_threshold = 0.5)
 logz <- vapply(rr$runs, `[[`, numeric(1), "log_evidence")

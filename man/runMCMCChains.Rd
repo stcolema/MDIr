@@ -7,10 +7,10 @@
 runMCMCChains(
   X,
   n_chains,
-  R,
+  n_iter,
   thin,
   types,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -28,7 +28,10 @@ runMCMCChains(
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
   split_merge = 0L,
-  joint_allocation = 0L
+  joint_allocation = 0L,
+  control = mdirControl(),
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
@@ -37,7 +40,7 @@ held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -45,7 +48,7 @@ held in rows.}
 \item{types}{Character vector indicating density type to use. 'MVN'
 (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
@@ -58,11 +61,7 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
 
@@ -87,6 +86,14 @@ CRAN requires. Progress messages are given when the chains have finished.}
 
 \item{split_merge, joint_allocation}{Split-merge style moves and joint allocation within each
 chain; see \code{\link{callMDI}}.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 An object of class \code{mdir_fit_list}: a list with one
@@ -110,15 +117,14 @@ data_modelled <- list(X, Y)
 V <- length(data_modelled)
 
 # MCMC parameters
-R <- 5000
+n_iter <- 5000
 thin <- 50
 burn <- 1000
 
-K_max <- 10
-K <- rep(K_max, V)
+K_max <- rep(10, V)
 types <- rep("G", V)
 
 n_chains <- 3
-mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+mcmc_out <- runMCMCChains(data_modelled, n_chains, n_iter, thin, types, K_max = K_max)
 }
 }

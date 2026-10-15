@@ -6,10 +6,10 @@
 \usage{
 callMDI(
   X,
-  R,
+  n_iter,
   thin,
   types,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -26,14 +26,17 @@ callMDI(
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
   split_merge = 0L,
-  joint_allocation = 0L
+  joint_allocation = 0L,
+  control = mdirControl(),
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
 \item{X}{Data to cluster. List of matrices with the N items to cluster held
 in rows.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -43,7 +46,7 @@ with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x V$ matrix.}
@@ -56,11 +59,7 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
 \item{save_parameters}{Logical. Record the component parameters (means,
 covariances, category probabilities, ...) at every saved iteration. These are
@@ -131,7 +130,26 @@ outlier density and leaving the component statistics unchanged. Observed labels
 outlier density of its complete, imputed vector); \code{betas} may be combined with it for views without an outlier
 component (tempering itself refuses outlier components).}
 
-\item{joint_allocation}{Size of the blocks of views whose labels are redrawn together for each item (a block of views per item and sweep, after the ordinary allocation step). The labels of an item in the views of a block are drawn from their exact joint conditional given everything else, so the move leaves the posterior invariant (it is a block of a Gibbs sweep). It matters when views are strongly associated: a move of an item in one view alone breaks its agreement with the others and pays a factor (1 + phi) for each view it agrees with, so clusters that are aligned across views are hard to merge or split by single-view moves; a joint move keeps the alignment. Use the number of views to redraw the item in all of them at once; with more views than the block size a random subset of views is used for each item. The cost grows as 3 to the power of the block size, with the number of components entering linearly, so a block of the 2 to 4 views is cheap even with 100 components. \code{0} (default) turns it off. Allowed for every density, outlier components, missing values and observed labels, and with \code{betas}.}
+\item{joint_allocation}{Size of the blocks of views whose labels are redrawn together for each item (a block of
+views per item and sweep, after the ordinary allocation step). The labels of an item in the views of
+a block are drawn from their exact joint conditional given everything else, so the move leaves
+the posterior invariant (it is a block of a Gibbs sweep). It matters when views are
+strongly associated: a move of an item in one view alone breaks its agreement with the others and
+pays a factor (1 + phi) for each view it agrees with, so clusters that are aligned across
+views are hard to merge or split by single-view moves; a joint move keeps the alignment.
+Use the number of views to redraw the item in all of them at once; with more views than the block
+size a random subset of views is used for each item. The cost grows as 3 to the power of
+the block size, with the number of components entering linearly, so a block of the 2 to 4
+views is cheap even with 100 components. \code{0} (default) turns it off. Allowed for every
+density, outlier components, missing values and observed labels, and with \code{betas}.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 An object of class \code{mdir_fit}: a named list containing the
@@ -154,9 +172,9 @@ the coupling between views (the two coincide when every \eqn{\phi} is zero).
 In a semi-supervised view the observed labels are treated as data: an item
 with an observed label contributes the joint density of its data and label.
 
-``evidence`` is the MDI normalising constant \eqn{Z} at the start of each saved sweep (a trace of the
+``normalising_constant`` is the MDI normalising constant \eqn{Z} at the start of each saved sweep (a trace of the
 weights and \eqn{\phi}), not a marginal likelihood of the data; use ``joint_likelihood`` or
-\code{\link{smcMDI}} for that. In a semi-supervised view observed labels are held fixed and the
+\code{\link{smcMDI}} for that. ``evidence`` is a deprecated alias of the same vector. In a semi-supervised view observed labels are held fixed and the
 classes are numbered in sorted order, so that class \eqn{j} of the sorted observed classes is
 component \eqn{j} (``allocations`` are 0-based, ``pred`` and ``allocation_probability`` 1-based).
 }
@@ -175,16 +193,15 @@ data_modelled <- list(X, Y)
 
 V <- length(data_modelled)
 
-# This R is much too low for real applications
-R <- 100
+# This n_iter is much too low for real applications
+n_iter <- 100
 thin <- 5
 burn <- 10
 
-K_max <- 10
-K <- rep(K_max, V)
+K_max <- rep(10, V)
 types <- rep("G", V)
 
-mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+mcmc_out <- callMDI(data_modelled, n_iter, thin, types, K_max = K_max)
 
 }
 \references{

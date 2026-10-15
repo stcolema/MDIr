@@ -12,7 +12,7 @@ hp <- mdir:::densityHyperparameters(X, K, 2, numeric(0)); alpha <- hp$concentrat
 fixed <- matrix(c(1, 1, rep(0, N - 2)), ncol = 1); lab <- matrix(c(0, 1, rep(0, N - 2)), ncol = 1)
 run <- function(betas, sm, seed) {
   set.seed(seed)
-  fit <- callMDI(list(X), R = R, thin = 1, types = "C", K = K, betas = betas, split_merge = sm, fixed = fixed,
+  fit <- callMDI(list(X), n_iter = R, thin = 1, types = "C", K_max = K, betas = betas, split_merge = sm, fixed = fixed,
     initial_labels = lab, check_prior = FALSE, save_parameters = FALSE)
   stopifnot(all(fit$allocations[, 1, 1] == 0), all(fit$allocations[, 2, 1] == 1))
   fit$allocations[-(1:200), 3:N, 1]

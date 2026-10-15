@@ -39,7 +39,7 @@ test_that("cluster means are recovered with missing data (no stale-imputation bi
   Xm <- X; Xm[miss] <- NA
   Xm <- Xm[rowSums(!is.na(Xm)) > 0, , drop = FALSE]     # keep some information in every row
   truth <- d$truth[as.integer(rownames(Xm))]
-  out <- callMDI(list(Xm), R = 3000, thin = 5, types = "MVN", K = 2)
+  out <- callMDI(list(Xm), n_iter = 3000, thin = 5, types = "MVN", K_max = 2)
   keep <- seq(200, nrow(out$allocations))
   # Cluster-specific mean of the first feature from the saved parameters
   P <- 2; K <- 2
@@ -57,7 +57,7 @@ test_that("imputations are stored and consistent with the observed cells", {
   set.seed(24)
   d <- sim_two_clusters(80)
   X <- d$X; X[sample(length(X), 30)] <- NA
-  out <- suppressWarnings(callMDI(list(X), R = 100, thin = 10, types = "MVN", K = 3, save_imputed = TRUE))
+  out <- suppressWarnings(callMDI(list(X), n_iter = 100, thin = 10, types = "MVN", K_max = 3, save_imputed = TRUE))
   cells <- out$missing_cells[[1]]
   expect_equal(nrow(cells), sum(is.na(X)))
   expect_equal(ncol(out$imputed[[1]]), nrow(cells))
@@ -74,7 +74,7 @@ test_that("missing values are handled in every density and with outliers", {
     X <- if (type == "C") cat_x else base
     X[sample(length(X), 15)] <- NA
     X[1, ] <- NA                                    # a wholly missing item
-    out <- suppressWarnings(callMDI(list(X), R = 60, thin = 6, types = type, K = 3))
+    out <- suppressWarnings(callMDI(list(X), n_iter = 60, thin = 6, types = type, K_max = 3))
     expect_true(all(is.finite(out$complete_likelihood)), info = type)
     expect_true(all(is.finite(out$observed_likelihood)), info = type)
   }
@@ -83,5 +83,5 @@ test_that("missing values are handled in every density and with outliers", {
 test_that("data validation catches unusable missing data patterns", {
   X <- matrix(rnorm(40), 20); rownames(X) <- 1:20
   X[, 2] <- NA
-  expect_error(callMDI(list(X), R = 10, thin = 1, types = "MVN", K = 2), "no observed")
+  expect_error(callMDI(list(X), n_iter = 10, thin = 1, types = "MVN", K_max = 2), "no observed")
 })

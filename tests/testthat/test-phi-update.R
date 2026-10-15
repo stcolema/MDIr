@@ -98,12 +98,12 @@ test_that("both phi updates run and record the same quantities; the choice is va
   N <- 30
   X <- lapply(1:3, function(v) { m <- matrix(rnorm(N * 2, rep(c(0, 3), each = N / 2)), N, 2); rownames(m) <- seq_len(N); m })
   for (upd in c("slice", "gibbs")) {
-    fit <- callMDI(X, R = 40, thin = 10, types = rep("G", 3), K = rep(3, 3), phi_update = upd)
+    fit <- callMDI(X, n_iter = 40, thin = 10, types = rep("G", 3), K_max = rep(3, 3), phi_update = upd)
     expect_equal(fit$phi_update, upd)
     expect_equal(dim(fit$phis), c(5, 3))
     expect_true(all(is.finite(fit$phis)) && all(fit$phis > 0))
   }
-  expect_error(callMDI(X, R = 40, thin = 10, types = rep("G", 3), K = rep(3, 3), phi_update = "mh"), "should be one of")
+  expect_error(callMDI(X, n_iter = 40, thin = 10, types = rep("G", 3), K_max = rep(3, 3), phi_update = "mh"), "should be one of")
 })
 
 # Two samplers with one target: the Gibbs update given v and the collapsed slice
@@ -121,7 +121,7 @@ test_that("slice and Gibbs updates give the same posterior of the phis (L = 3)",
   summarise <- function(upd, seed) {
     set.seed(seed)
     out <- vapply(seq_len(16), function(i) {
-      f <- callMDI(X, R = 12000, thin = 10, types = rep("G", L), K = rep(4, L), save_parameters = FALSE, phi_update = upd)
+      f <- callMDI(X, n_iter = 12000, thin = 10, types = rep("G", L), K_max = rep(4, L), save_parameters = FALSE, phi_update = upd)
       k <- 101:1201
       c(colMeans(f$phis[k, ]), log_phi1 = mean(log(f$phis[k, 1])))
     }, numeric(4))
@@ -148,7 +148,7 @@ test_that("the sampler recovers the prior of every phi with four and five views"
     L <- length(K)
     set.seed(60 + L)
     X <- lapply(seq_len(L), function(l) { m <- matrix(0, 12, 1); rownames(m) <- 1:12; m })
-    out <- callMDI(X, R = 150000, thin = 10, types = rep("C", L), K = K)
+    out <- callMDI(X, n_iter = 150000, thin = 10, types = rep("C", L), K_max = K)
     keep <- -(1:500)
     for (i in seq_len(ncol(out$phis))) {
       x <- out$phis[keep, i]

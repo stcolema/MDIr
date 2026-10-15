@@ -16,7 +16,7 @@ pc <- mc_prior_cells(N, K, n_draws = 4e7, chunk = 1e6)
 cat(sprintf("prior MC done in %.0fs; max relative MC se of cell prior: %.4f\n", as.numeric(Sys.time() - t0, units = "secs"), max(pc$se / pc$prior)))
 run <- function(betas, seed) {
   set.seed(seed)
-  fit <- callMDI(list(X1, X2), R = R, thin = 1, types = c("C", "C"), K = c(K, K), betas = betas, joint_allocation = 2L,
+  fit <- callMDI(list(X1, X2), n_iter = R, thin = 1, types = c("C", "C"), K_max = c(K, K), betas = betas, joint_allocation = 2L,
                  check_prior = FALSE, save_parameters = FALSE)
   a <- fit$allocations[-(1:200), , ]
   config_code(a[, , 1], K) + K^N * config_code(a[, , 2], K)

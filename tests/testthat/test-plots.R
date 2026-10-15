@@ -7,7 +7,7 @@ plot_chains <- function() {
   })
   withr_quiet <- options(mdir.quiet = TRUE)
   on.exit(options(withr_quiet))
-  fitMDI(X, 3, R = 200, thin = 5, types = c("G", "MVN"), K = c(4, 4), verbose = FALSE)
+  fitMDI(X, 3, n_iter = 200, thin = 5, types = c("G", "MVN"), K_max = c(4, 4), verbose = FALSE)
 }
 
 built <- function(p) {
@@ -76,7 +76,7 @@ test_that("plot() fails clearly on bad requests", {
   ch <- plot_chains()
   expect_error(plot(ch, pars = "nope"), "Unknown quantity")
   expect_error(plot(ch, type = "psm", view = 3), "view")
-  one <- callMDI(list(matrix(rnorm(40), 20, 2)), R = 40, thin = 5, types = "G", K = 3, check_prior = FALSE)
+  one <- callMDI(list(matrix(rnorm(40), 20, 2)), n_iter = 40, thin = 5, types = "G", K_max = 3, check_prior = FALSE)
   expect_s3_class(plot(one), "ggplot")
   expect_error(plot(one, type = "fusion"), "two views")
 })
@@ -90,7 +90,7 @@ test_that("convergence and smc objects have plot methods", {
   set.seed(2)
   X <- list(matrix(rnorm(60, rep(c(0, 3), each = 15)), 30, 2))
   rownames(X[[1]]) <- 1:30
-  s <- smcMDI(X, "G", K = 3, n_particles = 30)
+  s <- smcMDI(X, "G", K_max = 3, n_particles = 30)
   expect_error(built(plot(s)), NA)
   expect_equal(nrow(plot(s)$data), 3 * nrow(s$trace))
 })

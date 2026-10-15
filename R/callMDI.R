@@ -3,26 +3,27 @@
 #' Multiple Dataset Integration (MDI), to V datasets.
 #' @param X Data to cluster. List of matrices with the N items to cluster held
 #' in rows.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param types Character vector indicating density types to use. 'G' (Gaussian
 #' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 #' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 #' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
-#' @param K Vector indicating the number of components to include (the upper
+#' @param K_max Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param control A \code{\link{mdirControl}} object: the proposal windows of the
+#' Gaussian process hyperparameters and whether and for how long they are adapted
+#' during burn in.
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N x V$ matrix.
 #' @param fixed Which items are fixed in their initial label. $N x V$ matrix.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
-#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
-#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
-#' view. For views modelled using a Gaussian process, the first entry is the
-#' proposal window for the ampltiude, the second is for the length-scale and the
-#' third is for the noise. These are not used in other mixture types.
+#' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
 #' @param save_parameters Logical. Record the component parameters (means,
 #' covariances, category probabilities, ...) at every saved iteration. These are
 #' needed for posterior predictive checks (see ``simulatePosteriorPredictive``).
@@ -131,23 +132,22 @@
 #'
 #' V <- length(data_modelled)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #' burn <- 10
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
-#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+#' mcmc_out <- callMDI(data_modelled, n_iter, thin, types, K_max = K_max)
 #'
 #' @export
 callMDI <- function(X,
-                    R,
+                    n_iter,
                     thin,
                     types,
-                    K = NULL,
+                    K_max = NULL,
                     initial_labels = NULL,
                     fixed = NULL,
                     alpha = NULL,
@@ -164,7 +164,21 @@ callMDI <- function(X,
                     swap_scheme = c("deo", "seo"),
                     swap_every = 1L,
                     split_merge = 0L,
-                    joint_allocation = 0L) {
+                    joint_allocation = 0L,
+                    control = mdirControl(),
+                    R = NULL,
+                    K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "callMDI", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "callMDI")
+  K <- K_max
+  control <- .mdirResolveControl(
+    missing(control), control,
+    if (!missing(proposal_windows)) list(proposal_windows = proposal_windows) else list(),
+    "callMDI"
+  )
+  proposal_windows <- control$proposal_windows
+  auto_tune <- control$auto_tune
+  n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
 
   phi_update <- match.arg(phi_update)
   .mdirCheckCount(split_merge, "split_merge", 0)
@@ -178,8 +192,8 @@ callMDI <- function(X,
     stop("`save_pointwise` must be TRUE or FALSE.", call. = FALSE)
   }
 
-  # Check that the R > thin
-  checkNumberOfSamples(R, thin)
+  # Check that n_iter >= thin
+  checkNumberOfSamples(n_iter, thin)
 
   # Check inputs and translate to C++ inputs
   checkDataCorrectInput(X, types)
@@ -244,7 +258,7 @@ callMDI <- function(X,
 
   # Pull samples from the MDI model
   mcmc_output <- runMDI(
-    R,
+    n_iter,
     thin,
     X,
     K,
@@ -264,13 +278,17 @@ callMDI <- function(X,
     swap_scheme = as.integer(swap_scheme == "seo"),
     swap_every = as.integer(swap_every),
     split_merge = as.integer(split_merge),
-    joint_allocation = as.integer(joint_allocation)
+    joint_allocation = as.integer(joint_allocation),
+    auto_tune = auto_tune,
+    n_burn = n_burn
   )
   
   # Traces are returned as one-column matrices; use plain vectors
   for (nm in c("complete_likelihood", "observed_likelihood", "joint_likelihood", "normalising_constant", "mass_acceptance_rate")) {
     mcmc_output[[nm]] <- as.numeric(mcmc_output[[nm]])
   }
+  # The windows in use at the end, as plain vectors like the ones passed in
+  mcmc_output$final_proposal_windows <- lapply(mcmc_output$final_proposal_windows, as.numeric)
   # `evidence` is the former name of `normalising_constant`; both are kept
   mcmc_output$evidence <- mcmc_output$normalising_constant
   if (!save_pointwise) {
@@ -285,7 +303,9 @@ callMDI <- function(X,
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
-  mcmc_output$R <- R
+  # `R` is the former name of `n_iter`; kept so saved fits and older code still work
+  mcmc_output$n_iter <- n_iter
+  mcmc_output$R <- n_iter
   mcmc_output$burn <- 0
 
   # Density choice
@@ -318,6 +338,8 @@ callMDI <- function(X,
 
   # Proposal windows if any used
   mcmc_output$proposal_windows <- proposal_windows
+  mcmc_output$auto_tune <- auto_tune
+  mcmc_output$n_burn <- n_burn
 
   for (v in seq(1, V)) {
     if (is_semisupervised[v]) {

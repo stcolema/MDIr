@@ -15,10 +15,11 @@
 #' The sampler is compiled C++ and does not report progress within a chain, so
 #' messages appear when each chain starts and finishes.
 #' @inheritParams runMCMCChains
-#' @param burn Number of iterations treated as burn in when assessing
-#' convergence. Defaults to half of \code{R}. It only affects the diagnostics
+#' @param convergence_burn Number of iterations treated as burn in when assessing
+#' convergence. Defaults to half of \code{n_iter}. It only affects the diagnostics
 #' attached to the result, not the chains themselves; choose the burn in for
 #' point estimates in \code{\link{processMCMCChains}}.
+#' @param burn Deprecated; use \code{convergence_burn}.
 #' @param save_pointwise,phi_update,n_cores,betas,swap_scheme,swap_every,split_merge,joint_allocation See
 #' \code{\link{runMCMCChains}}.
 #' @param verbose Logical. Report progress and the convergence verdict as
@@ -50,16 +51,16 @@
 #' })
 #'
 #' # Far too few iterations for real use
-#' fit <- fitMDI(X, n_chains = 3, R = 1000, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+#' fit <- fitMDI(X, n_chains = 3, n_iter = 1000, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 #' fit
 #' summary(fit)
 #' }
 fitMDI <- function(X,
                    n_chains,
-                   R,
+                   n_iter,
                    thin,
                    types,
-                   K = NULL,
+                   K_max = NULL,
                    initial_labels = NULL,
                    fixed = NULL,
                    alpha = NULL,
@@ -69,7 +70,7 @@ fitMDI <- function(X,
                    save_imputed = FALSE,
                    prior = mdiPrior(),
                    density_prior = densityPrior(),
-                   burn = NULL,
+                   convergence_burn = NULL,
                    verbose = !isTRUE(getOption("mdir.quiet")),
                    save_pointwise = FALSE,
                    phi_update = c("slice", "gibbs"),
@@ -78,25 +79,42 @@ fitMDI <- function(X,
                    swap_scheme = c("deo", "seo"),
                    swap_every = 1L,
                    split_merge = 0L,
-                   joint_allocation = 0L) {
+                   joint_allocation = 0L,
+                   control = mdirControl(),
+                   burn = NULL,
+                   R = NULL,
+                   K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "fitMDI", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "fitMDI")
+  K <- K_max
+  control <- .mdirResolveControl(
+    missing(control), control,
+    if (!missing(proposal_windows)) list(proposal_windows = proposal_windows) else list(),
+    "fitMDI"
+  )
+  proposal_windows <- control$proposal_windows
+  auto_tune <- control$auto_tune
+  n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
+  convergence_burn <- .mdirRenamedArg(
+    if (missing(convergence_burn)) NULL else convergence_burn, burn, "convergence_burn", "burn", "fitMDI"
+  )
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (verbose && is.list(X) && length(X) > 0 && is.matrix(X[[1]])) {
     message(sprintf(
       "Fitting MDI to %d items in %s (%s): %s of %d iterations, thin = %d (%d samples saved per chain).",
       nrow(X[[1]]), .mdirPlural(length(X), "view"), paste(types, collapse = ", "),
-      .mdirPlural(n_chains, "chain"), R, thin, floor(R / thin) + 1
+      .mdirPlural(n_chains, "chain"), n_iter, thin, floor(n_iter / thin) + 1
     ))
   }
 
   chains <- runMCMCChains(
-    X, n_chains, R, thin, types,
-    K = K,
+    X, n_chains, n_iter, thin, types,
+    K_max = K_max,
     initial_labels = initial_labels,
     fixed = fixed,
     alpha = alpha,
     initial_labels_as_intended = initial_labels_as_intended,
-    proposal_windows = proposal_windows,
     save_parameters = save_parameters,
     save_imputed = save_imputed,
     prior = prior,
@@ -109,11 +127,12 @@ fitMDI <- function(X,
     swap_scheme = swap_scheme,
     swap_every = swap_every,
     split_merge = split_merge,
-    joint_allocation = joint_allocation
+    joint_allocation = joint_allocation,
+    control = control
   )
 
   convergence <- tryCatch(
-    assessConvergence(chains, burn = burn),
+    assessConvergence(chains, burn = convergence_burn),
     error = function(e) {
       warning(
         "Convergence diagnostics could not be computed: ", conditionMessage(e),

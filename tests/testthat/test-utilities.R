@@ -15,7 +15,7 @@ test_that("consensus clustering keeps every chain's weights and accepts a short 
     rownames(m) <- 1:40
     m
   })
-  ch <- runMCMCChains(X, 3, R = 100, thin = 5, types = c("G", "G"), K = c(4, 4))
+  ch <- runMCMCChains(X, 3, n_iter = 100, thin = 5, types = c("G", "G"), K_max = c(4, 4))
   cc <- compileConsensusClustering(ch, D = 100, W = 3)
   expect_equal(dim(cc$weights[[1]]), c(3, 4))
   for (w in 1:3) expect_equal(unname(cc$weights[[1]][w, ]), unname(ch[[w]]$weights[21, 1:4, 1]))
@@ -34,7 +34,7 @@ test_that("calcAllocProb drops the initial state and floor(burn / thin) samples"
   fixed <- matrix(0, 40, 2)
   fixed[c(1:5, 21:25), 1] <- 1
   lab[21:25, 1] <- 2
-  f <- callMDI(X, R = 50, thin = 5, types = c("G", "G"), K = c(4, 4), initial_labels = lab,
+  f <- callMDI(X, n_iter = 50, thin = 5, types = c("G", "G"), K_max = c(4, 4), initial_labels = lab,
                fixed = fixed, check_prior = FALSE)
   a <- f$allocation_probabilities[[1]]
   expect_equal(calcAllocProb(f, 1, burn = 0, method = "mean"), rowSums(a, dims = 2) / 11)
@@ -49,7 +49,7 @@ test_that("a single view round-trips through the saved-sample files", {
   rownames(X[[1]]) <- 1:20
   d <- tempfile()
   dir.create(d)
-  rd <- callMDIWritingToFile(X, R = 20, thin = 5, types = "G", K = 4, dir_path = d)
+  rd <- callMDIWritingToFile(X, n_iter = 20, thin = 5, types = "G", K_max = 4, dir_path = d)
   out <- readInSavedSamples(rd)
   expect_equal(dim(out$allocations), c(5, 20, 1))
   expect_true(all(out$allocations %in% 0:3))
@@ -64,7 +64,7 @@ test_that("likelihood traces are labelled with the iterations at which they were
   set.seed(3)
   X <- list(matrix(rnorm(40), 20, 2))
   rownames(X[[1]]) <- 1:20
-  fit <- callMDI(X, R = 103, thin = 5, types = "G", K = 4, check_prior = FALSE)
+  fit <- callMDI(X, n_iter = 103, thin = 5, types = "G", K_max = 4, check_prior = FALSE)
   gl <- getLikelihood(fit)
   expect_equal(range(gl$iteration), c(0, 100))
   expect_equal(sum(gl$type == "complete"), 21)
@@ -83,7 +83,7 @@ test_that("pooled semi-supervised predictions are the most probable class", {
   fixed <- matrix(0, 40, 2)
   fixed[c(1:5, 21:25), 1] <- 1
   lab[21:25, 1] <- 2
-  ch <- runMCMCChains(X, 2, R = 60, thin = 5, types = c("G", "G"), K = c(4, 4), initial_labels = lab,
+  ch <- runMCMCChains(X, 2, n_iter = 60, thin = 5, types = c("G", "G"), K_max = c(4, 4), initial_labels = lab,
                       fixed = fixed)
   pooled <- predictFromMultipleChains(ch, burn = 20)
   expect_equal(unname(pooled$pred[[1]]), unname(apply(pooled$allocation_probability[[1]], 1, which.max)))
@@ -106,7 +106,7 @@ test_that("the deprecated names forward to the current functions with a warning"
     rownames(m) <- 1:40
     m
   })
-  fit <- callMDI(X, R = 20, thin = 5, types = c("G", "G"), K = c(3, 3), check_prior = FALSE)
+  fit <- callMDI(X, n_iter = 20, thin = 5, types = c("G", "G"), K_max = c(3, 3), check_prior = FALSE)
   expect_warning(old <- calcFusionProbabiliy(fit, 1, 2), "deprecated")
   expect_equal(old, calcFusionProbability(fit, 1, 2))
   expect_warning(old_all <- calcFusionProbabiliyAllViews(fit), "deprecated")

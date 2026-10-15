@@ -20,7 +20,9 @@ void runMDIWriteToFile(
     arma::field< arma::vec > proposal_windows,
     std::string save_dir,
     arma::vec prior,
-    arma::vec density_prior
+    arma::vec density_prior,
+    bool auto_tune,
+    arma::uword n_burn
 ) {
   
   if(thin < 1) {
@@ -70,6 +72,11 @@ void runMDIWriteToFile(
   for(uword r = 0; r < R; r++) {
     Rcpp::checkUserInterrupt();
     my_mdi.sweep(r);
+    if(auto_tune && r < n_burn) {
+      for(uword l = 0; l < L; l++) {
+        my_mdi.mixtures[l]->density_ptr->adaptHyperParametersProposalWindows();
+      }
+    }
     if((r + 1) % thin == 0) {
       save_ind++;
       save_sample(save_ind);

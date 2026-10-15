@@ -133,7 +133,7 @@
 #' \code{\link{processMCMCChains}} (\code{mdir_fit_list}), or of
 #' \code{\link{smcMDI}} (\code{mdir_smc}).
 #' @param burn Number of iterations treated as burn in. The default is half of
-#' \code{R}, as in \code{\link{summary.mdir_fit}}. Ignored for chains that have
+#' \code{n_iter}, as in \code{\link{summary.mdir_fit}}. Ignored for chains that have
 #' been through \code{\link{processMCMCChain}}.
 #' @param weights Include the sorted normalised component weights.
 #' @param allocations Include the item allocations (large: one variable per item
@@ -153,7 +153,7 @@
 #'     rownames(m) <- 1:40
 #'     m
 #'   })
-#'   fit <- runMCMCChains(X, n_chains = 2, R = 400, thin = 5, types = c("G", "G"), K = c(4, 4))
+#'   fit <- runMCMCChains(X, n_chains = 2, n_iter = 400, thin = 5, types = c("G", "G"), K_max = c(4, 4))
 #'   draws <- posterior::as_draws(fit)
 #'   posterior::summarise_draws(draws)
 #' }

@@ -24,7 +24,7 @@ as_vec <- function(x) { v <- setNames(rep(0, length(exact)), names(exact)); v[na
 
 # the schedule from a pilot run, shared by all SMC runs
 set.seed(5)
-pilot <- smcMDI(list(d$X), "MVN", K = K, n_particles = 300, cess = 0.9, density_prior = dp, check_prior = FALSE)
+pilot <- smcMDI(list(d$X), "MVN", K_max = K, n_particles = 300, cess = 0.9, density_prior = dp, check_prior = FALSE)
 betas <- pilot$trace$beta
 cat("pilot schedule:", length(betas), "temperatures\n")
 
@@ -36,7 +36,7 @@ chain_patterns <- function(f, last_only) {
 ensemble_run <- function(job) {
   set.seed(job$seed)
   pats <- lapply(seq_len(job$W), function(i) {
-    f <- callMDI(list(d$X), R = job$D, thin = max(1, job$D %/% 100), types = "MVN", K = K, check_prior = FALSE,
+    f <- callMDI(list(d$X), n_iter = job$D, thin = max(1, job$D %/% 100), types = "MVN", K_max = K, check_prior = FALSE,
                  save_parameters = FALSE, density_prior = dp, split_merge = job$sm)
     list(last = chain_patterns(f, TRUE), pooled = chain_patterns(f, FALSE))
   })
@@ -58,7 +58,7 @@ smc_est <- function(fit) {
 }
 smc_block <- function(sm, m, P, n_runs) {
   t0 <- Sys.time()
-  rr <- smcReplicates(list(d$X), "MVN", n_runs = n_runs, n_particles = P, betas = betas, K = K,
+  rr <- smcReplicates(list(d$X), "MVN", n_runs = n_runs, n_particles = P, betas = betas, K_max = K,
                       n_cores = n_cores, density_prior = dp, check_prior = FALSE, split_merge = sm,
                       sweeps_per_step = m, resample_threshold = 0.5)
   est <- t(vapply(rr$runs, smc_est, numeric(length(exact))))

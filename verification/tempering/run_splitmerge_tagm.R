@@ -18,7 +18,7 @@ summ <- function(f, view) {
 }
 run <- function(Xs, types, sm, seed, view) {
   set.seed(seed)
-  f <- callMDI(Xs, R = R, thin = 1, types = types, K = rep(3, length(Xs)), split_merge = sm, check_prior = FALSE, save_parameters = FALSE)
+  f <- callMDI(Xs, n_iter = R, thin = 1, types = types, K_max = rep(3, length(Xs)), split_merge = sm, check_prior = FALSE, save_parameters = FALSE)
   summ(f, view)
 }
 est <- function(Xs, types, sm, base) do.call(cbind, parallel::mclapply(seq_len(n_chains), function(i) run(Xs, types, sm, base + i, 1), mc.cores = n_cores))

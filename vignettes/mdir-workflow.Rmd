@@ -53,7 +53,7 @@ that the priors imply before the data are seen.
 ```{r prior-predictive}
 types <- c("MVN", "G")
 K <- c(4, 4)
-prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 30)
+prior_sims <- simulatePriorPredictive(X, types, K_max = K, n_datasets = 30)
 plotPredictiveCheck(X, prior_sims, view = 1, column = 1)
 ```
 
@@ -64,8 +64,8 @@ reports progress as each chain finishes (silenced here with
 `options(mdir.quiet = TRUE)`; use `verbose = TRUE` to see it).
 
 ```{r fit}
-chains <- fitMDI(X, n_chains = 3, R = 1500, thin = 5, types = types, K = K,
-                 burn = 750, verbose = FALSE)
+chains <- fitMDI(X, n_chains = 3, n_iter = 1500, thin = 5, types = types, K_max = K,
+                 convergence_burn = 750, verbose = FALSE)
 chains
 ```
 
@@ -177,12 +177,39 @@ the likelihood of the whole model, coupling between views included (the
 `pointwiseLogLik()` returns it as the draws by items matrix that `loo::waic()` and
 `loo::loo()` take.
 
-```{r pointwise, eval = FALSE}
-fit <- fitMDI(X, n_chains = 4, R = 1500, thin = 5, types = types, K = K,
-              save_pointwise = TRUE)
+```{r pointwise, eval = requireNamespace("loo", quietly = TRUE)}
+fit <- fitMDI(X, n_chains = 3, n_iter = 1500, thin = 5, types = types, K_max = K,
+              save_pointwise = TRUE, convergence_burn = 750, verbose = FALSE)
 ll <- pointwiseLogLik(fit, burn = 750)
-loo::waic(ll)
+r_eff <- loo::relative_eff(exp(ll), chain_id = rep(1:3, each = nrow(ll) / 3))
+loo::loo(ll, r_eff = r_eff)
 ```
+
+Check the Pareto-$k$ diagnostics that `loo()` reports, as an item that alone defines
+a component is influential. These chains are far too short for the comparison to
+be reliable.
+
+## Sampler settings
+
+The settings that govern how the sampler explores the posterior, and not what is
+fitted, go in `control = mdirControl()`. At present they are the proposal windows
+of the Gaussian process hyperparameters and their automatic tuning (the
+`mdir-gaussian-process` vignette); the views here have no such hyperparameters, so
+`control` has no effect on them. What is fitted, such as `prior`, `density_prior`
+and `K_max`, and the choice of moves (`phi_update`, `split_merge`,
+`joint_allocation`), are ordinary arguments.
+
+## Naming conventions
+
+`mdir` and `batchmix` (batch correction for mixture models) share their names
+for shared ideas. `n_iter`, `thin`, `n_chains`, `K_max`, `control`, `n_cores`
+and `convergence_burn` mean the same in the fitting functions of both,
+and both have `as_draws()`, `pointwiseLogLik()` and `simulatePosteriorPredictive()`.
+The differences that remain are: `callMDI()` runs one chain where `batchmix::runBatchMix()`
+does; the data go to `plotPredictiveCheck()` as `predictive` and `view` here,
+`replicates` and `column` there; and `pointwiseLogLik()` reads the log-likelihood
+saved during the run here (`save_pointwise = TRUE`) and recomputes it from the data
+there. The old argument names (`K`, `R`, `burn` in `fitMDI()`) still work and warn.
 
 ## Running chains in parallel
 
@@ -192,7 +219,7 @@ from `set.seed()` and do not depend on the number of cores. While a package is
 being checked, at most two cores are used, as CRAN requires.
 
 ```{r parallel, eval = FALSE}
-chains <- fitMDI(X, n_chains = 4, R = 5000, thin = 5, types = types, K = K,
+chains <- fitMDI(X, n_chains = 4, n_iter = 5000, thin = 5, types = types, K_max = K,
                  n_cores = 4)
 ```
 

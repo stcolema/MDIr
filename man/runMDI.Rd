@@ -25,7 +25,9 @@ runMDI(
   swap_scheme,
   swap_every,
   split_merge,
-  joint_allocation
+  joint_allocation,
+  auto_tune = FALSE,
+  n_burn = 0L
 )
 }
 \arguments{
@@ -90,6 +92,11 @@ re-partition of two randomly chosen components (0 turns it off).}
 
 \item{joint_allocation}{Size of the blocks of views whose labels are redrawn jointly for each
 item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).}
+
+\item{auto_tune}{Adapt the proposal windows of the Gaussian process hyperparameters
+during the first `n_burn` sweeps, towards an acceptance rate of 0.44, then keep them fixed.}
+
+\item{n_burn}{Number of sweeps over which the windows are adapted.}
 }
 \value{
 Named list of the different quantities drawn by the sampler.

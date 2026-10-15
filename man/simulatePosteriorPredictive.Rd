@@ -54,7 +54,7 @@ misfit, and do not read values in the middle as proof of fit.
 set.seed(1)
 X <- matrix(rnorm(80 * 2, rep(c(0, 3), each = 40)), 80, 2)
 rownames(X) <- seq_len(nrow(X))
-fit <- callMDI(list(X), R = 500, thin = 5, types = "MVN", K = 4)
+fit <- callMDI(list(X), n_iter = 500, thin = 5, types = "MVN", K_max = 4)
 post_sims <- simulatePosteriorPredictive(fit, X, n_draws = 20, burn = 250)
 plotPredictiveCheck(X, post_sims, column = 1)
 }

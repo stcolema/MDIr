@@ -1,5 +1,76 @@
 # mdir (development version)
 
+## Vignettes
+
+* New vignette `mdir-gaussian-process`: a time-course view modelled with `type = "GP"`, the proposal windows, what
+  `auto_tune` does to the acceptance rate, `final_proposal_windows`, and the draws and predictive check.
+* `mdir-workflow` now runs the `loo` comparison (it was not evaluated), and has sections on `mdirControl()` and on
+  the argument names shared with `batchmix`, including the differences that remain.
+
+## New: auto-tuning of the Gaussian process proposal windows, and `mdirControl()`
+
+* The proposal windows of the Gaussian process hyperparameters (amplitude, length scale and noise) are now
+  adapted while the sampler burns in, towards the acceptance rate of about 0.44 of a one-dimensional random-walk
+  Metropolis update (Gelman, Roberts and Gilks, 1996), by a Robbins-Monro recursion with decaying steps
+  (step `n^-0.6`; Garthwaite, Fan and Sisson, 2016) that stops after `n_burn` sweeps (default half of `n_iter`),
+  so that after burn in the windows are fixed and the chain is an ordinary Metropolis-Hastings chain. The
+  windows you give are the starting values. They are adapted for each hyperparameter from the acceptance rate of
+  its own proposals over the occupied components, and the windows at the end are returned in
+  `final_proposal_windows`. Switch it off with `mdirControl(auto_tune = FALSE)`. The adaptation uses no random
+  numbers, so fits without a Gaussian process view are unchanged; fits with one differ from earlier versions
+  for the same seed. Checked: badly scaled starting windows (0.002 and 8) move towards the target, and a run
+  started from the adapted windows accepts at 0.2 to 0.7; the windows are the same after a longer run if
+  `n_burn` is the same; and the existing test of the hyperparameter sampler against the numerically computed
+  marginal posterior passes with adaptation on.
+* The adapted windows are the only ones a user can set. Two other proposals have fixed scales, which are not
+  adapted: the random walk on the log of the mass (standard deviation 0.3) and the one on the standard deviation
+  of the population of Gaussian process amplitudes and noises (0.5).
+* **`mdirControl()`** bundles `proposal_windows`, `auto_tune` and `n_burn`, as `batchmixControl()` does for
+  batchmix, and is passed as `control` to `callMDI()`, `callMixtureModel()`, `callMDIWritingToFile()`,
+  `runMCMCChains()`, `runMCMCChainsSavingToFile()` and `fitMDI()`. The argument `proposal_windows` of those
+  functions is deprecated: it still works, with a warning, and `control` wins if both are given. Choices of
+  what is fitted (`prior`, `density_prior`, `K_max`, `alpha`) and of the moves (`phi_update`, `split_merge`,
+  `joint_allocation`, the tempering ladder) stay as arguments.
+
+## Changed: argument names, matching batchmix
+
+* **`R` is now `n_iter`** (number of iterations) in `callMDI()`, `callMixtureModel()`, `callMDIWritingToFile()`,
+  `runMCMCChains()`, `runMCMCChainsSavingToFile()` and `fitMDI()`. **`K` is now `K_max`** (upper bound on the number of
+  components) in those functions and in `smcMDI()`, `smcReplicates()` and `simulatePriorPredictive()`. Positional calls
+  are unaffected, because each argument keeps its position. The old names still work and warn once per call; naming
+  both an argument and its old name is an error. The old names will be removed in a later release. `K` stays the name of
+  the number of components in the fitted object and in the lower-level helpers (`generateInitialLabels()`,
+  `stickBreakingPrior()` and so on), where it is not an upper bound chosen by the user.
+* `fitMDI(burn = )` is now **`convergence_burn`**, the name `batchmix::fitBatchMix()` uses for the same thing (the
+  iterations dropped when assessing convergence; it does not change the chains). The old name still works, with a
+  warning. `burn` keeps its meaning in `assessConvergence()`, `summary()`, `as_draws()`, `pointwiseLogLik()` and the
+  other functions that analyse a fit; `n_burn` in `mdirControl()` is the length of the adaptation of the proposal
+  windows.
+* Fits store `n_iter` alongside `R` (same value), so saved fits and code that reads `fit$R` keep working. `print()` and
+  `summary()` report `n_iter`.
+
+## Corrected: tail ESS follows Stan
+
+* `rankNormalizedRhat()` (and so `assessConvergence()`) took the 5% and 95% cut-offs of the tail ESS after splitting the
+  chains, which drops the middle draw when the number of draws is odd; `posterior` takes them before. The two now agree
+  (for 801 draws the tail ESS was 2972 against 2987, and 1551 against 1562). Even numbers of draws are unchanged. The
+  tail ESS is now `NA` when the 5% or 95% quantile indicator is constant (a count of occupied components, say), which
+  is what rstan's `ess_tail()` and `posterior::ess_tail()` (which brms calls) return, since the minimum of
+  two ESS values is `NA` if either is; before, the smaller ESS of the other quantile was reported. `assessConvergence()` treats an
+  undefined tail ESS as not assessable, not as a failure (an undefined Rhat or bulk ESS still fails), so `converged` for
+  such a quantity depends on Rhat and the bulk ESS alone.
+
+## Changed: exports are listed explicitly
+
+* The namespace no longer uses `exportPattern()`, which exported every function whose name starts with a letter. It
+  lists the functions that carry `@export` (plus `readMCMCsamples()`, `stickBreakingPrior()` and
+  `sampleStickBreakingPrior()`). No longer exported, because they are internal engines, validators or density helpers:
+  `runMDI()`, `runMDISMC()`, `runMDIWriteToFile()`, the `*Cpp()` functions, `checkDataCorrectInput()`,
+  `checkFixedInput()`, `checkLabels()`, `checkNumberOfSamples()`, `checkTypes()`, `processProposalWindows()`,
+  `setupOutlierComponents()`, `translateTypes()`, `sampleViewPriorLabels()`, `densityHyperparameters()`, `pNorm()`,
+  `gammaLogLikelihood()`, `invGammaLogLikelihood()`, `wishartLogLikelihood()`, `invWishartLogLikelihood()` and
+  `mvtLogLikelihood()`. Reach them with `mdir:::` if needed.
+
 ## New: joint allocation (`joint_allocation`)
 
 * `callMDI()`, `runMCMCChains()`, `fitMDI()` and `smcMDI()` take `joint_allocation` (default 0, off): the number of views

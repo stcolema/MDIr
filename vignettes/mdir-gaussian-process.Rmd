@@ -1,0 +1,176 @@
+---
+title: "Time-course views with a Gaussian process"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Time-course views with a Gaussian process}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 3.5)
+options(mdir.quiet = TRUE)
+```
+
+A view whose columns are ordered measurements, such as a time course, can be
+modelled with `type = "GP"` instead of a multivariate normal. Each cluster then
+has a mean *curve*, a Gaussian process over the measurement index with a squared
+exponential kernel, so neighbouring measurements are tied together and the
+cluster is described by three hyperparameters (amplitude, length scale and noise)
+instead of a full covariance matrix. This vignette fits one such view alongside an
+ordinary view, and shows how the sampler's one tuning setting, the proposal
+windows of those hyperparameters, behaves. `"TAGPM"` adds an outlier component to
+the same model. The workflow of the other steps (priors, convergence, predictive
+checks) is in the `mdir-workflow` vignette.
+
+## Data
+
+Two groups of items with different smooth curves over eight time points, and a
+second view on which the same groups differ.
+
+```{r data}
+library(mdir)
+set.seed(2)
+
+N <- 40
+P <- 8
+time <- seq_len(P)
+truth <- rep(1:2, each = N / 2)
+curves <- rbind(2 * sin(time / 2), -1.5 * cos(time / 3) + 1)
+
+X_time <- curves[truth, ] + matrix(rnorm(N * P, sd = 0.5), N, P)
+X_other <- matrix(rnorm(N * 2, mean = ifelse(truth == 1, 0, 3)), N, 2)
+rownames(X_time) <- rownames(X_other) <- seq_len(N)
+X <- list(X_time, X_other)
+types <- c("GP", "MVN")
+K_max <- c(4, 4)
+```
+
+The columns are taken to be one unit apart, so the length scale is in units of the
+spacing between measurements. `densityPrior()` holds the priors on the
+hyperparameters, which are documented in `?densityPrior`: the length scale is kept
+above `gp_min_length` (one spacing by default), since a shorter one cannot be
+distinguished from measurement noise, and the amplitude and noise are partially
+pooled across clusters.
+
+## Fitting, and the proposal windows
+
+The amplitude, length scale and noise of each cluster have no closed-form
+conditional, so they are updated by Metropolis-Hastings random walks on the log
+scale. Their step sizes (`proposal_windows`) are the one place where the sampler
+needs a user-chosen scale. By default `mdir` adapts them during the first half of
+the run towards an acceptance rate of about 0.44, the rate that is near optimal for
+a one-dimensional random walk (Gelman, Roberts and Gilks, 1996), with a
+Robbins-Monro recursion whose steps decay (Garthwaite, Fan and Sisson, 2016), and
+then fixes them, so the retained draws come from a chain with fixed
+proposals. The settings live in `mdirControl()`:
+
+```{r control}
+mdirControl()
+```
+
+```{r fit}
+fit <- fitMDI(X, n_chains = 3, n_iter = 20000, thin = 10, types = types,
+              K_max = K_max, convergence_burn = 10000, verbose = FALSE,
+              control = mdirControl(n_burn = 10000))
+fit
+```
+
+The adapted windows are returned with each chain, a vector of
+(amplitude, length, noise) per view; one column per chain below, for view 1:
+
+```{r windows}
+sapply(fit, function(chain) chain$final_proposal_windows[[1]])
+```
+
+To see what the adaptation does, start the windows too small and too large, and
+compare the acceptance rate of the updates with and without it. A rate far from
+0.44 is not an error, but it makes the chain mix slowly: tiny steps accept nearly
+always and move very little, and huge ones are nearly always rejected.
+
+```{r adaptation}
+acceptance <- function(chain) {
+  ac <- chain$acceptance_count[[1]]
+  K <- length(ac) / 3
+  # an empty cluster makes no proposals and shows a rate of 0
+  vapply(0:2, function(h) mean(ac[h * K + seq_len(K)][ac[h * K + seq_len(K)] > 0]), numeric(1))
+}
+run <- function(window, auto_tune) {
+  chain <- callMDI(X, n_iter = 4000, thin = 5, types = types, K_max = K_max,
+                   check_prior = FALSE,
+                   control = mdirControl(proposal_windows = list(rep(window, 3), NULL),
+                                         auto_tune = auto_tune, n_burn = 10000))
+  c(start_window = window, auto_tune = auto_tune,
+    setNames(round(acceptance(chain), 2), c("amplitude", "length", "noise")))
+}
+as.data.frame(rbind(run(0.002, FALSE), run(0.002, TRUE), run(8, FALSE), run(8, TRUE)))
+```
+
+(The rates with `auto_tune = TRUE` are averages over the whole run, so they include
+the adaptation period.) Only the windows of the Gaussian process hyperparameters are
+adapted. The random walk on the log of the mass parameter (standard deviation 0.3)
+and the one on the spread of the population of amplitudes and noises (0.5) have
+fixed scales; whether they should be tuned too is open.
+
+## Convergence
+
+The convergence report concerns quantities that do not depend on how the clusters
+are labelled. The hyperparameters themselves are per cluster, and cluster 1 of one
+chain is not cluster 1 of another, so they are not compared across chains;
+`as_draws()` keeps the pooled
+hyperparameters (`pooled[v,j]`, the parameters of the populations of amplitudes and
+noises shared by the clusters of view `v`; `?as_draws.mdir_fit`), which are label
+free.
+
+The chains here are short, and the report above still flags the mass parameters
+(`Rhat` about 1.06); run longer chains before reporting anything.
+
+```{r draws, eval = requireNamespace("posterior", quietly = TRUE)}
+draws <- posterior::as_draws(fit, burn = 10000)
+posterior::summarise_draws(draws, "mean", "rhat", "ess_bulk")
+```
+
+## What the fit finds
+
+```{r partition}
+pooled <- predictFromMultipleChains(fit, burn = 10000)
+table(fitted = pooled$pred[[1]], truth = truth)
+```
+
+The posterior mean hyperparameters of each cluster that is occupied in view 1, in
+one chain after burn in. The clusters are labelled arbitrarily, so this describes
+this chain only. The length scale is in units of the spacing between measurements.
+
+```{r hypers}
+chain <- fit[[1]]
+hypers <- chain$hypers[[1]]
+keep <- seq(floor(dim(chain$N_k)[3] / 2) + 1, dim(chain$N_k)[3])
+occupied <- which(rowMeans(chain$N_k[, 1, keep]) > 1)
+round(data.frame(
+  cluster = occupied,
+  mean_size = rowMeans(chain$N_k[occupied, 1, keep]),
+  amplitude = colMeans(hypers$amplitude[keep, occupied, drop = FALSE]),
+  length = colMeans(hypers$length[keep, occupied, drop = FALSE]),
+  noise = colMeans(hypers$noise[keep, occupied, drop = FALSE])
+), 2)
+```
+
+The two clusters of about 20 items are the two groups, and their noise estimates
+(about 0.26 and 0.31) are close to the true variance 0.25. The other cluster is
+occupied by one item on average, so its hyperparameters are mostly the prior.
+
+## Checking the fit
+
+```{r posterior-predictive}
+post_sims <- simulatePosteriorPredictive(fit, X, n_draws = 50, burn = 10000)
+plotPredictiveCheck(X, post_sims, view = 1, column = 1)
+```
+
+## References
+
+Garthwaite, P. H., Fan, Y. and Sisson, S. A. (2016). Adaptive optimal scaling of
+Metropolis-Hastings algorithms using the Robbins-Monro process. *Communications in
+Statistics - Theory and Methods*, 45(17), 5098-5111.
+
+Gelman, A., Roberts, G. O. and Gilks, W. R. (1996). Efficient Metropolis jumping
+rules. In *Bayesian Statistics 5*, 599-607. Oxford University Press.

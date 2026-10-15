@@ -11,32 +11,32 @@ smc_small <- function(N = 40, seed = 1) {
 
 test_that("input checks", {
   X <- smc_small()
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 1), "n_particles")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, cess = 1), "cess")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, schedule = "fixed"), "needs `betas`")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, schedule = "fixed", betas = c(0.5, 0.4, 1)), "increasing")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, schedule = "fixed", betas = c(0.2, 0.5)), "must be 1")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, schedule = "fixed", betas = c(0.6, 1), beta_start = 0.5, start_sweeps = 5),
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 1), "n_particles")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, cess = 1), "cess")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, schedule = "fixed"), "needs `betas`")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, schedule = "fixed", betas = c(0.5, 0.4, 1)), "increasing")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, schedule = "fixed", betas = c(0.2, 0.5)), "must be 1")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, schedule = "fixed", betas = c(0.6, 1), beta_start = 0.5, start_sweeps = 5),
     NA)
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, schedule = "fixed", betas = c(0.4, 1), beta_start = 0.5, start_sweeps = 5),
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, schedule = "fixed", betas = c(0.4, 1), beta_start = 0.5, start_sweeps = 5),
     "above `beta_start`")
-  expect_error(smcMDI(X, "MVN", K = 3, n_particles = 10, beta_start = 1), "beta_start")
-  expect_warning(smcMDI(X, "MVN", K = 3, n_particles = 10, beta_start = 0.5), "not draws from the tempered")
-  expect_error(smcReplicates(X, "MVN", n_runs = 1, K = 3), "n_runs")
+  expect_error(smcMDI(X, "MVN", K_max = 3, n_particles = 10, beta_start = 1), "beta_start")
+  expect_warning(smcMDI(X, "MVN", K_max = 3, n_particles = 10, beta_start = 0.5), "not draws from the tempered")
+  expect_error(smcReplicates(X, "MVN", n_runs = 1, K_max = 3), "n_runs")
 })
 
 test_that("models without tempered conditionals are refused", {
   X <- smc_small()
   Xm <- X
   Xm[[1]][3, 1] <- NA
-  expect_error(smcMDI(Xm, "MVN", K = 3, n_particles = 10, check_prior = FALSE), "complete data")
-  expect_error(smcMDI(X, "TAGM", K = 3, n_particles = 10, check_prior = FALSE), "outlier")
+  expect_error(smcMDI(Xm, "MVN", K_max = 3, n_particles = 10, check_prior = FALSE), "complete data")
+  expect_error(smcMDI(X, "TAGM", K_max = 3, n_particles = 10, check_prior = FALSE), "outlier")
 })
 
 test_that("a run has the documented structure", {
   X <- smc_small()
   set.seed(2)
-  fit <- smcMDI(X, "MVN", K = 3, n_particles = 30, final_sweeps = 6, thin = 3, check_prior = FALSE)
+  fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 30, final_sweeps = 6, thin = 3, check_prior = FALSE)
   expect_s3_class(fit, "mdir_smc")
   expect_equal(dim(fit$allocations), c(3, 40, 1, 30))
   expect_equal(sum(fit$particle_weights), 1)
@@ -53,10 +53,10 @@ test_that("a run has the documented structure", {
   expect_identical(summary(fit)$n_particles, 30L)
   expect_equal(smcWeights(fit, "draw"), rep(fit$particle_weights, each = 3) / 3)
   # resampling thresholds: never resample keeps unequal weights, always keeps equal
-  never <- smcMDI(X, "MVN", K = 3, n_particles = 30, resample_threshold = 0, check_prior = FALSE)
+  never <- smcMDI(X, "MVN", K_max = 3, n_particles = 30, resample_threshold = 0, check_prior = FALSE)
   expect_false(any(never$trace$resampled))
   expect_gt(stats::sd(never$particle_weights), 0)
-  always <- smcMDI(X, "MVN", K = 3, n_particles = 30, resample_threshold = 1.01, check_prior = FALSE)
+  always <- smcMDI(X, "MVN", K_max = 3, n_particles = 30, resample_threshold = 1.01, check_prior = FALSE)
   expect_true(all(always$trace$resampled))
   expect_equal(always$particle_weights, rep(1 / 30, 30))
 })
@@ -65,7 +65,7 @@ test_that("a fixed schedule is honoured and the multi-view model runs", {
   set.seed(3)
   X <- lapply(1:2, function(v) { m <- matrix(rnorm(30 * 2, rep(c(0, 4), each = 15)), 30, 2); rownames(m) <- 1:30; m })
   betas <- ptLadder(8, 0.01)
-  fit <- smcMDI(X, c("G", "MVN"), K = c(3, 3), n_particles = 25, schedule = "fixed", betas = betas, check_prior = FALSE)
+  fit <- smcMDI(X, c("G", "MVN"), K_max = c(3, 3), n_particles = 25, schedule = "fixed", betas = betas, check_prior = FALSE)
   expect_equal(fit$trace$beta, betas)
   expect_equal(dim(fit$allocations), c(1, 30, 2, 25))
   expect_equal(dim(fit$phis), c(1, 1, 25))
@@ -91,7 +91,7 @@ test_that("evidence and unnormalised posterior are unbiased against the exact va
   betas <- ptLadder(12, 0.005)
   runs <- lapply(1:150, function(i) {
     set.seed(500 + i)
-    f <- smcMDI(list(X), "C", K = K, n_particles = 40, schedule = "fixed", betas = betas, check_prior = FALSE)
+    f <- smcMDI(list(X), "C", K_max = K, n_particles = 40, schedule = "fixed", betas = betas, check_prior = FALSE)
     codes <- code(t(f$allocations[1, , 1, ]))
     w <- tapply(f$particle_weights, factor(codes + 1, levels = seq_len(2^N)), sum)
     w[is.na(w)] <- 0
@@ -108,7 +108,7 @@ test_that("evidence and unnormalised posterior are unbiased against the exact va
 test_that("weighted helpers agree with direct calculations", {
   X <- smc_small()
   set.seed(4)
-  fit <- smcMDI(X, "MVN", K = 3, n_particles = 25, final_sweeps = 4, thin = 2, check_prior = FALSE,
+  fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 25, final_sweeps = 4, thin = 2, check_prior = FALSE,
     resample_threshold = 0)
   # weighted PSM equals the direct weighted sum over draws
   psm <- weightedPSM(fit)
@@ -150,7 +150,7 @@ test_that("weighted helpers agree with direct calculations", {
 test_that("a weighted ensemble feeds the existing chain workflow", {
   X <- smc_small()
   set.seed(5)
-  fit <- smcMDI(X, "MVN", K = 3, n_particles = 40, final_sweeps = 5, thin = 1, check_prior = FALSE)
+  fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 40, final_sweeps = 5, thin = 1, check_prior = FALSE)
   ch <- smcAsChain(fit, n_draws = 60)
   expect_s3_class(ch, "mdir_fit")
   expect_equal(dim(ch$allocations), c(61, 40, 1))
@@ -163,7 +163,7 @@ test_that("a weighted ensemble feeds the existing chain workflow", {
 test_that("independent runs combine by their evidence estimates", {
   X <- smc_small()
   betas <- ptLadder(10, 0.01)
-  runs <- lapply(1:5, function(i) { set.seed(60 + i); smcMDI(X, "MVN", K = 3, n_particles = 15, schedule = "fixed",
+  runs <- lapply(1:5, function(i) { set.seed(60 + i); smcMDI(X, "MVN", K_max = 3, n_particles = 15, schedule = "fixed",
     betas = betas, check_prior = FALSE) })
   cb <- combineSMC(runs)
   expect_equal(sum(cb$particle_weights), 1)
@@ -175,7 +175,7 @@ test_that("independent runs combine by their evidence estimates", {
   expect_equal(cb$particle_weights[1:15], runs[[1]]$particle_weights * a[1])
   eq <- combineSMC(runs, "equal")
   expect_equal(eq$run_weights, rep(1 / 5, 5))
-  expect_error(combineSMC(list(runs[[1]], smcMDI(smc_small(60), "MVN", K = 3, n_particles = 5, check_prior = FALSE))), "same numbers")
+  expect_error(combineSMC(list(runs[[1]], smcMDI(smc_small(60), "MVN", K_max = 3, n_particles = 5, check_prior = FALSE))), "same numbers")
   expect_error(combineSMC(list(1, 2)), "mdir_smc")
 
   # jackknife standard errors need at least four runs and give a pooled estimate in [0, 1]
@@ -190,7 +190,7 @@ test_that("smcReplicates fixes the schedule before the runs and agrees with its 
   skip_on_cran()
   X <- smc_small(30)
   set.seed(8)
-  rr <- smcReplicates(X, "MVN", n_runs = 4, n_particles = 12, K = 3, check_prior = FALSE)
+  rr <- smcReplicates(X, "MVN", n_runs = 4, n_particles = 12, K_max = 3, check_prior = FALSE)
   expect_s3_class(rr, "mdir_smc_runs")
   expect_length(rr$runs, 4)
   expect_true(all(vapply(rr$runs, function(r) identical(r$trace$beta, rr$pilot$trace$beta), logical(1))))
@@ -205,7 +205,7 @@ test_that("smcReplicates fixes the schedule before the runs and agrees with its 
 test_that("compareRuns detects disagreement and accepts chains", {
   set.seed(9)
   X <- smc_small(30)
-  a <- callMDI(X, R = 60, thin = 2, types = "MVN", K = 3, check_prior = FALSE)
+  a <- callMDI(X, n_iter = 60, thin = 2, types = "MVN", K_max = 3, check_prior = FALSE)
   expect_equal(compareRuns(list(a, a))$max_range, 0)
   # two fits that cluster the items differently disagree
   b <- a
@@ -221,7 +221,7 @@ test_that("compareRuns detects disagreement and accepts chains", {
 test_that("a start above the prior moves the schedule and keeps weights equal at the start", {
   X <- smc_small()
   set.seed(10)
-  fit <- smcMDI(X, "MVN", K = 3, n_particles = 20, beta_start = 0.5, start_sweeps = 10, check_prior = FALSE)
+  fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 20, beta_start = 0.5, start_sweeps = 10, check_prior = FALSE)
   expect_equal(fit$schedule[1], 0.5)
   expect_true(all(fit$trace$beta > 0.5))
   expect_equal(fit$beta_start, 0.5)
@@ -247,7 +247,7 @@ test_that("the weight tail diagnostic separates light and heavy tails and refuse
   # an annealed-importance-sampling run goes through
   X <- smc_small()
   set.seed(13)
-  fit <- smcMDI(X, "MVN", K = 3, n_particles = 60, resample_threshold = 0, check_prior = FALSE)
+  fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 60, resample_threshold = 0, check_prior = FALSE)
   d <- smcWeightDiagnostic(fit)
   expect_true(is.finite(d$pareto_k))
 })

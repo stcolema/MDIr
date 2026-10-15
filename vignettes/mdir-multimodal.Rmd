@@ -136,7 +136,7 @@ from the data (see `?mdiPrior`), with the variance scale pooled across
 components (`?densityPrior`). That uses the data twice, weakly; it is a deliberate
 trade-off, standard for mixtures, and worth stating in a report.
 
-**The sparsity check.** Fitting with `K = 6` components per view and the default
+**The sparsity check.** Fitting with `K_max = 6` components per view and the default
 prior on `mass` prints a message for the views where the prior on the weights is
 on the side of the Rousseau-Mengersen threshold at which superfluous components
 *duplicate* occupied ones instead of emptying. The result is asymptotic and does
@@ -145,7 +145,7 @@ not cover a random concentration, so read it as guidance on where the prior sits
 ```{r sparsity-default}
 K <- c(6, 6, 6)
 old <- options(mdir.quiet = FALSE)          # the messages are silenced in this vignette
-invisible(callMDI(X, R = 10, thin = 5, types = types, K = K))
+invisible(callMDI(X, n_iter = 10, thin = 5, types = types, K_max = K))
 options(old)
 ```
 
@@ -155,7 +155,7 @@ default on `phi` is kept.
 ```{r sparsity}
 prior <- mdiPrior(mass_shape = 2, mass_rate = 0.5)
 old <- options(mdir.quiet = FALSE)
-invisible(callMDI(X, R = 10, thin = 5, types = types, K = K, prior = prior))
+invisible(callMDI(X, n_iter = 10, thin = 5, types = types, K_max = K, prior = prior))
 options(old)
 prior
 ```
@@ -179,7 +179,7 @@ ari <- function(a, b) {
 ```
 
 ```{r prior-predictive}
-prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 200, prior = prior)
+prior_sims <- simulatePriorPredictive(X, types, K_max = K, n_datasets = 200, prior = prior)
 prior_ari <- vapply(prior_sims$parameters, function(p) ari(p$labels[, 1], p$labels[, 2]),
                     numeric(1))
 summary(prior_ari)
@@ -206,8 +206,8 @@ plain chains, which are cheap, and four of them.
 
 ```{r fit-plain}
 set.seed(105)
-fit_plain <- fitMDI(X, n_chains = 4, R = 6000, thin = 10, types = types, K = K,
-                    prior = prior, burn = 3000, verbose = FALSE)
+fit_plain <- fitMDI(X, n_chains = 4, n_iter = 6000, thin = 10, types = types, K_max = K,
+                    prior = prior, convergence_burn = 3000, verbose = FALSE)
 ```
 
 ## Convergence for a mixture model
@@ -286,8 +286,8 @@ times as costly per iteration.
 ```{r fit}
 set.seed(205)
 burn <- 1500
-fit <- fitMDI(X, n_chains = 4, R = 3000, thin = 10, types = types, K = K, prior = prior,
-              betas = ptLadder(4, 0.1), split_merge = 2, burn = burn,
+fit <- fitMDI(X, n_chains = 4, n_iter = 3000, thin = 10, types = types, K_max = K, prior = prior,
+              betas = ptLadder(4, 0.1), split_merge = 2, convergence_burn = burn,
               save_pointwise = TRUE, verbose = FALSE)
 fit
 round(per_chain(fit, burn), 2)
@@ -482,8 +482,8 @@ single mixture.
 ```{r sensitivity}
 sens <- function(prior, K, seed) {
   set.seed(seed)
-  fitMDI(X, n_chains = 2, R = 2000, thin = 10, types = types, K = K, prior = prior,
-         betas = ptLadder(3, 0.25), split_merge = 2, burn = 1000, save_pointwise = TRUE,
+  fitMDI(X, n_chains = 2, n_iter = 2000, thin = 10, types = types, K_max = K, prior = prior,
+         betas = ptLadder(3, 0.25), split_merge = 2, convergence_burn = 1000, save_pointwise = TRUE,
          verbose = FALSE)
 }
 fit_weak <- sens(mdiPrior(mass_shape = 2, mass_rate = 0.5, phi_shape = 1, phi_rate = 0.5),
@@ -514,7 +514,7 @@ views, the fusion probabilities), which stay the same.
 pp_weak <- predictFromMultipleChains(fit_weak, burn = 1000)
 pp_bigK <- predictFromMultipleChains(fit_bigK, burn = 1000)
 data.frame(
-  model = c("default phi prior, K = 6", "weak phi prior", "K = 10"),
+  model = c("default phi prior, K_max = 6", "weak phi prior", "K_max = 10"),
   ARI_view1 = c(ari(pooled$pred[[1]], z1), ari(pp_weak$pred[[1]], z1), ari(pp_bigK$pred[[1]], z1)),
   ARI_view2 = c(ari(pooled$pred[[2]], z2), ari(pp_weak$pred[[2]], z2), ari(pp_bigK$pred[[2]], z2)),
   ARI_view3 = c(ari(pooled$pred[[3]], z3), ari(pp_weak$pred[[3]], z3), ari(pp_bigK$pred[[3]], z3)),
@@ -589,8 +589,8 @@ fixed <- matrix(0, N, 3)
 fixed[known, 1] <- 1
 start <- matrix(1, N, 3)
 start[, 1] <- z1                      # only the rows with fixed = 1 are used
-ss <- fitMDI(X, n_chains = 2, R = 3000, thin = 10, types = types, K = K, prior = prior,
-             initial_labels = start, fixed = fixed, burn = 1500, verbose = FALSE)
+ss <- fitMDI(X, n_chains = 2, n_iter = 3000, thin = 10, types = types, K_max = K, prior = prior,
+             initial_labels = start, fixed = fixed, convergence_burn = 1500, verbose = FALSE)
 ss_pred <- predictFromMultipleChains(ss, burn = 1500)
 held_out <- setdiff(seq_len(N), known)
 mean(ss_pred$pred[[1]][held_out] == z1[held_out])    # accuracy on the held-out items

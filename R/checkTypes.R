@@ -6,7 +6,7 @@
 #' @return No return value, called for side effects.
 #' @examples
 #' types <- c("GP", "MVN", "C")
-#' checkTypes(types)
+#' mdir:::checkTypes(types)
 checkTypes <- function(types) {
   allowed_types <- c("MVN", "TAGM", "C", "G", "GP", "TAGPM")
   not_a_vector <- !is.vector(types)

@@ -8,7 +8,7 @@
 #' N <- 20
 #' K <- 3
 #' labels <- sample(seq(1, K), replace = TRUE, size = N)
-#' checkLabels(labels, K)
+#' mdir:::checkLabels(labels, K)
 checkLabels <- function(labels, K) {
   not_numeric <- any(!is.numeric(labels))
 

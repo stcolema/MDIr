@@ -54,7 +54,7 @@ replicates too.
 set.seed(1)
 X <- matrix(rnorm(60 * 2, rep(c(0, 3), each = 30)), 60, 2)
 rownames(X) <- seq_len(60)
-sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 20)
+sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 20)
 plotPredictiveCheck(X, sims, style = "density", column = 1)
 plotPredictiveCheck(X, sims, style = "statistic", column = 1,
   statistic = stats::sd, statistic_name = "SD")

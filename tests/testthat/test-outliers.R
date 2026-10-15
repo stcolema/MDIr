@@ -14,7 +14,7 @@ test_that("t-augmented model flags gross outliers and estimates their weight", {
   # in a local mode where one component holds both clusters and the other absorbs
   # the outliers, which is what running several chains and checking Rhat is for.
   labels <- matrix(rep(1:2, c(50, 70)), N, 1)
-  fit <- callMDI(list(X), R = 3000, thin = 5, types = "TAGM", K = 2,
+  fit <- callMDI(list(X), n_iter = 3000, thin = 5, types = "TAGM", K_max = 2,
                  initial_labels = labels, initial_labels_as_intended = TRUE)
   keep <- -(1:200)
   p_out <- colMeans(fit$outliers[keep, , 1])
@@ -34,7 +34,7 @@ test_that("outlier weight follows its Beta posterior", {
   N <- 20
   X <- matrix(rnorm(N * 2), N); rownames(X) <- seq_len(N)
   labels <- matrix(rep(1:2, length.out = N), N, 1)
-  fit <- callMDI(list(X), R = 12000, thin = 3, types = "TAGM", K = 2,
+  fit <- callMDI(list(X), n_iter = 12000, thin = 3, types = "TAGM", K_max = 2,
                  initial_labels = labels, fixed = matrix(1, N, 1))
   w <- fit$outlier_weights[-(1:50), 1]
   a <- 2; b <- 10
@@ -52,7 +52,7 @@ test_that("the outlier weight update counts only items without an observed label
   lab <- matrix(rep(c(1, 2), each = N / 2), N, 1)
   fixed <- matrix(0, N, 1)
   fixed[c(1:15, 31:45), 1] <- 1
-  fit <- callMDI(X, R = 4000, thin = 1, types = "TAGM", K = 2, initial_labels = lab,
+  fit <- callMDI(X, n_iter = 4000, thin = 1, types = "TAGM", K_max = 2, initial_labels = lab,
                  fixed = fixed, check_prior = FALSE)
   n_free <- sum(fixed == 0)
   n_out <- rowSums(fit$outliers[, , 1])

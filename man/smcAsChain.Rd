@@ -12,7 +12,7 @@ smcAsChain(fit, n_draws = 1000)
 \item{n_draws}{Number of resampled draws.}
 }
 \value{
-An object of class \code{mdir_fit} with \code{R = n_draws},
+An object of class \code{mdir_fit} with \code{n_iter = n_draws},
 \code{thin = 1}. Quantities not recorded by the ensemble (likelihood traces
 other than the data log-likelihood, outliers) are filled with zeros or \code{NA}.
 }

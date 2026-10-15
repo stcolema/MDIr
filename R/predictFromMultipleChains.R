@@ -48,7 +48,7 @@
 #' types <- rep("G", V)
 #'
 #' n_chains <- 3
-#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K_max = K)
 #' predictFromMultipleChains(mcmc_out, burn)
 #' }
 #' @export
@@ -137,6 +137,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   # Various parameters of model runs and processing
   merged_outputs$R <- R
+  merged_outputs$n_iter <- R
   merged_outputs$thin <- thin
   merged_outputs$burn <- burn
   merged_outputs$n_chains <- n_chains

@@ -33,6 +33,6 @@ that the model does not reproduce. For a two-sided reading use
 set.seed(1)
 X <- matrix(rnorm(60 * 2, rep(c(0, 3), each = 30)), 60, 2)
 rownames(X) <- seq_len(60)
-sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 20)
+sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 20)
 predictiveCheck(X, sims, function(m) cor(m[, 1], m[, 2], use = "complete.obs"))
 }

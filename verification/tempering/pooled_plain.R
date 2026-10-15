@@ -10,7 +10,7 @@ d <- make_data(sep = mm$sep)
 dp <- densityPrior(scale_pool_shape = 0)
 one <- function(i) {
   set.seed(7000 + i)
-  f <- callMDI(list(d$X), R = R, thin = 10, types = "MVN", K = 3, check_prior = FALSE, save_parameters = FALSE, density_prior = dp)
+  f <- callMDI(list(d$X), n_iter = R, thin = 10, types = "MVN", K_max = 3, check_prior = FALSE, save_parameters = FALSE, density_prior = dp)
   pat <- apply(f$allocations[-(1:50), , 1], 1, group_partition, truth = d$truth)
   as.numeric(table(factor(pat, levels = names(exact)))) / length(pat)
 }

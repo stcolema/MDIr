@@ -7,16 +7,19 @@
 runMCMCChainsSavingToFile(
   X,
   n_chains,
-  R,
+  n_iter,
   thin,
   types,
   dir_path,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
   initial_labels_as_intended = FALSE,
-  proposal_windows = NULL
+  proposal_windows = NULL,
+  control = mdirControl(),
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
@@ -25,7 +28,7 @@ held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -35,7 +38,7 @@ held in rows.}
 
 \item{dir_path}{A string for the directory to save samples to.}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
@@ -48,45 +51,17 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
-}
-\value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using
 the same inputs in each model run.
-}
-\examples{
-\donttest{
-N <- 100
-X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-
-truth <- c(rep(1, N / 2), rep(2, N / 2))
-data_modelled <- list(X, Y)
-
-V <- length(data_modelled)
-
-# MCMC parameters
-R <- 100
-thin <- 10
-burn <- 20
-
-K_max <- 10
-K <- rep(K_max, V)
-types <- rep("G", V)
-
-n_chains <- 2
-dir_path <- file.path(tempdir(), "mdir_chains")
-dir.create(dir_path)
-mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, R, thin, types,
-  K = K, dir_path = dir_path
-)
-}
 }

@@ -3,26 +3,27 @@
 #' wrapper to allow more intuitive inputs for the single dataset case of MDI.
 #' @param X Data to cluster. Matrix with the N items to cluster held
 #' in rows.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param type Character vector indicating density type to use. 'G' (Gaussian
 #' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 #' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 #' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
-#' @param K Integer indicating the number of components to include (the upper
+#' @param K_max Integer indicating the number of components to include (the upper
 #' bound on the number of clusters).
+#' @param control A \code{\link{mdirControl}} object: the proposal windows of the
+#' Gaussian process hyperparameters and whether and for how long they are adapted
+#' during burn in.
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N$-vector.
 #' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
-#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
-#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
-#' view. For views modelled using a Gaussian process, the first entry is the
-#' proposal window for the ampltiude, the second is for the length-scale and the
-#' third is for the noise. These are not used in other mixture types.
+#' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
 #' @param save_parameters,save_imputed,prior,density_prior See ``callMDI``.
 #' @return A named list containing the sampled partitions, component weights,
 #' and mass parameters, model fit measures and some details on the model call.
@@ -30,22 +31,22 @@
 #' N <- 100
 #' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #'
-#' # This R is much too low for real applications
-#' R <- 100
+#' # This n_iter is much too low for real applications
+#' n_iter <- 100
 #' thin <- 5
 #'
 #' alpha <- 1
-#' K <- 10
+#' K_max <- 10
 #' type <- "MVN"
 #'
-#' mcmc_out <- callMixtureModel(X, R, thin, type, K = K)
+#' mcmc_out <- callMixtureModel(X, n_iter, thin, type, K_max = K_max)
 #'
 #' @export
 callMixtureModel <- function(X,
-                             R,
+                             n_iter,
                              thin,
                              type,
-                             K = 75,
+                             K_max = 75,
                              initial_labels = NULL,
                              fixed = NULL,
                              alpha = NULL,
@@ -54,10 +55,25 @@ callMixtureModel <- function(X,
                              save_parameters = TRUE,
                              save_imputed = FALSE,
                              prior = mdiPrior(),
-                             density_prior = densityPrior()) {
+                             density_prior = densityPrior(),
+                             control = mdirControl(),
+                             R = NULL,
+                             K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "callMixtureModel", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "callMixtureModel")
+  if (is.null(K_max)) K_max <- 75
+  K <- K_max
+  control <- .mdirResolveControl(
+    missing(control), control,
+    if (!missing(proposal_windows)) list(proposal_windows = proposal_windows) else list(),
+    "callMixtureModel"
+  )
+  proposal_windows <- control$proposal_windows
+  auto_tune <- control$auto_tune
+  n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
 
-  # Check that the R > thin
-  checkNumberOfSamples(R, thin)
+  # Check that n_iter >= thin
+  checkNumberOfSamples(n_iter, thin)
 
   # Check inputs and translate to C++ inputs
   inputDataValid <- is.matrix(X)
@@ -111,7 +127,7 @@ callMixtureModel <- function(X,
 
   # Pull samples from the MDI model
   mcmc_output <- runMDI(
-    R,
+    n_iter,
     thin,
     X,
     K,
@@ -131,8 +147,12 @@ callMixtureModel <- function(X,
     swap_scheme = 0L,
     swap_every = 1L,
     split_merge = 0L,
-    joint_allocation = 0L
+    joint_allocation = 0L,
+    auto_tune = auto_tune,
+    n_burn = n_burn
   )
+
+  mcmc_output$final_proposal_windows <- lapply(mcmc_output$final_proposal_windows, as.numeric)
 
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0
@@ -165,7 +185,8 @@ callMixtureModel <- function(X,
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
-  mcmc_output$R <- R
+  mcmc_output$n_iter <- n_iter
+  mcmc_output$R <- n_iter
   mcmc_output$burn <- 0
 
   # Density choice

@@ -6,7 +6,7 @@ for (sep in seps) {
   d <- make_data(sep = sep)
   runs <- parallel::mclapply(1:6, function(i) {
     set.seed(300 + i)
-    f <- callMDI(list(d$X), R = 8000, thin = 10, types = "MVN", K = 3, check_prior = FALSE, save_parameters = FALSE)
+    f <- callMDI(list(d$X), n_iter = 8000, thin = 10, types = "MVN", K_max = 3, check_prior = FALSE, save_parameters = FALSE)
     a <- f$allocations[-(1:100), , 1]
     pat <- apply(a, 1, group_partition, truth = d$truth)
     list(switches = sum(pat[-1] != pat[-length(pat)]), patterns = names(sort(table(pat), decreasing = TRUE))[1:2],
