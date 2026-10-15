@@ -8,7 +8,7 @@
 #' @examples
 #' R <- 10000
 #' thin <- 50
-#' checkNumberOfSamples(R, thin)
+#' mdir:::checkNumberOfSamples(R, thin)
 checkNumberOfSamples <- function(R, thin, verbose = FALSE) {
   if (R < thin) {
     stop("Iterations to run less than thinning factor. No samples recorded.")

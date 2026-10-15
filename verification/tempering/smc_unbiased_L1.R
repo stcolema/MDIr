@@ -16,10 +16,10 @@ betas <- exp(seq(log(0.002), 0, length.out = 25))
 one <- function(seed, thr, scheme, schedule) {
   set.seed(seed)
   fit <- if (schedule == "fixed") {
-    smcMDI(list(X), "C", K = K, n_particles = n_part, schedule = "fixed", betas = betas, resample_threshold = thr,
+    smcMDI(list(X), "C", K_max = K, n_particles = n_part, schedule = "fixed", betas = betas, resample_threshold = thr,
       resample = scheme, check_prior = FALSE)
   } else {
-    smcMDI(list(X), "C", K = K, n_particles = n_part, schedule = "adaptive", cess = 0.9, resample_threshold = thr,
+    smcMDI(list(X), "C", K_max = K, n_particles = n_part, schedule = "adaptive", cess = 0.9, resample_threshold = thr,
       resample = scheme, check_prior = FALSE)
   }
   codes <- config_code(t(fit$allocations[1, , 1, ]), K)

@@ -93,7 +93,7 @@ test_that("callMDI recodes observed classes to contiguous labels and keeps them"
     lab <- matrix(codes[1], N, 2)
     lab[1:4, 1] <- codes[1]
     lab[31:34, 1] <- codes[2]
-    fit <- callMDI(d$X, R = 120, thin = 1, types = c("G", "G"), K = c(5, 5), initial_labels = lab,
+    fit <- callMDI(d$X, n_iter = 120, thin = 1, types = c("G", "G"), K_max = c(5, 5), initial_labels = lab,
                    fixed = fixed, check_prior = FALSE, split_merge = 1)
     a <- fit$allocations[, , 1]
     expect_true(all(a[, 1:4] == 0), info = paste(codes, collapse = ","))
@@ -109,7 +109,7 @@ test_that("a single observed class with any code is accepted", {
   fixed[1:5, 1] <- 1
   lab <- matrix(1, 45, 2)
   lab[1:5, 1] <- 2
-  fit <- callMDI(d$X, R = 30, thin = 1, types = c("G", "G"), K = c(4, 4), initial_labels = lab,
+  fit <- callMDI(d$X, n_iter = 30, thin = 1, types = c("G", "G"), K_max = c(4, 4), initial_labels = lab,
                  fixed = fixed, check_prior = FALSE)
   expect_true(all(fit$allocations[, 1:5, 1] == 0))
 })

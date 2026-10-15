@@ -26,24 +26,24 @@ test_that("the ladder helpers validate their input", {
 
 test_that("a ladder is refused where the tempered conditionals are not implemented", {
   X <- tp_data_G(20)
-  expect_error(callMDI(X, R = 10, thin = 1, types = c("G", "G"), K = c(3, 3), betas = c(0.5, 1),
+  expect_error(callMDI(X, n_iter = 10, thin = 1, types = c("G", "G"), K_max = c(3, 3), betas = c(0.5, 1),
     check_prior = FALSE), NA)
   Xm <- X
   Xm[[1]][2, 1] <- NA
-  expect_error(callMDI(Xm, R = 10, thin = 1, types = c("G", "G"), K = c(3, 3), betas = c(0.5, 1),
+  expect_error(callMDI(Xm, n_iter = 10, thin = 1, types = c("G", "G"), K_max = c(3, 3), betas = c(0.5, 1),
     check_prior = FALSE), "complete data")
-  expect_error(callMDI(X, R = 10, thin = 1, types = c("TAGM", "G"), K = c(3, 3), betas = c(0.5, 1),
+  expect_error(callMDI(X, n_iter = 10, thin = 1, types = c("TAGM", "G"), K_max = c(3, 3), betas = c(0.5, 1),
     check_prior = FALSE), "outlier")
   # but a missing value is fine without tempering
-  expect_error(callMDI(Xm, R = 10, thin = 1, types = c("G", "G"), K = c(3, 3), check_prior = FALSE), NA)
+  expect_error(callMDI(Xm, n_iter = 10, thin = 1, types = c("G", "G"), K_max = c(3, 3), check_prior = FALSE), NA)
 })
 
 test_that("betas = 1 is the untempered sampler, draw for draw", {
   X <- tp_data_G(30)
   set.seed(3)
-  a <- callMDI(X, R = 60, thin = 2, types = c("G", "MVN"), K = c(3, 3), check_prior = FALSE)
+  a <- callMDI(X, n_iter = 60, thin = 2, types = c("G", "MVN"), K_max = c(3, 3), check_prior = FALSE)
   set.seed(3)
-  b <- callMDI(X, R = 60, thin = 2, types = c("G", "MVN"), K = c(3, 3), check_prior = FALSE, betas = 1)
+  b <- callMDI(X, n_iter = 60, thin = 2, types = c("G", "MVN"), K_max = c(3, 3), check_prior = FALSE, betas = 1)
   for (nm in c("allocations", "phis", "weights", "mass", "joint_likelihood", "parameters")) {
     expect_identical(a[[nm]], b[[nm]])
   }
@@ -54,7 +54,7 @@ test_that("a tempered component follows the tempered conjugate posterior", {
   skip_on_cran()
   one <- function(X, type, beta, R = 12000) {
     rownames(X) <- seq_len(nrow(X))
-    callMDI(list(X), R = R, thin = 1, types = type, K = 1, initial_labels = matrix(1, nrow(X), 1),
+    callMDI(list(X), n_iter = R, thin = 1, types = type, K_max = 1, initial_labels = matrix(1, nrow(X), 1),
       density_prior = densityPrior(scale_pool_shape = 0), betas = beta, check_prior = FALSE)$parameters[[1]][-(1:300), ]
   }
   set.seed(21)
@@ -107,7 +107,7 @@ test_that("the exchange log-likelihood equals an independent recomputation from 
   set.seed(5)
   N <- 24
   X <- tp_data_G(N, L = 2, seed = 5)
-  fit <- callMDI(X, R = 30, thin = 3, types = c("G", "MVN"), K = c(3, 3), betas = c(0.3, 0.6, 1),
+  fit <- callMDI(X, n_iter = 30, thin = 3, types = c("G", "MVN"), K_max = c(3, 3), betas = c(0.3, 0.6, 1),
     check_prior = FALSE)
   ell_cpp <- fit$tempering$data_log_likelihood[, 3]
   ell_r <- vapply(seq_along(ell_cpp), function(s) {
@@ -130,7 +130,7 @@ test_that("the exchange log-likelihood equals an independent recomputation from 
 
   set.seed(6)
   Xc <- list({ m <- matrix(sample(0:2, 24 * 2, TRUE), 24, 2); rownames(m) <- 1:24; m })
-  fit <- callMDI(Xc, R = 20, thin = 2, types = "C", K = 3, betas = c(0.5, 1), check_prior = FALSE)
+  fit <- callMDI(Xc, n_iter = 20, thin = 2, types = "C", K_max = 3, betas = c(0.5, 1), check_prior = FALSE)
   ell_cpp <- fit$tempering$data_log_likelihood[, 2]
   ell_r <- vapply(seq_along(ell_cpp), function(s) {
     th <- fit$parameters[[1]][s, ]
@@ -152,7 +152,7 @@ test_that("exchange bookkeeping is consistent", {
   X <- tp_data_G(30)
   betas <- c(0.2, 0.5, 0.8, 1)
   for (scheme in c("deo", "seo")) {
-    fit <- callMDI(X, R = 200, thin = 5, types = c("G", "G"), K = c(3, 3), betas = betas,
+    fit <- callMDI(X, n_iter = 200, thin = 5, types = c("G", "G"), K_max = c(3, 3), betas = betas,
       swap_scheme = scheme, check_prior = FALSE)
     tp <- fit$tempering
     expect_s3_class(tp, "mdir_tempering")
@@ -180,7 +180,7 @@ test_that("exchange bookkeeping is consistent", {
     expect_output(print(d), "Exchange diagnostics only")
   }
   # no ladder, no record
-  expect_error(ptDiagnostics(callMDI(X, R = 20, thin = 2, types = c("G", "G"), K = c(3, 3), check_prior = FALSE)),
+  expect_error(ptDiagnostics(callMDI(X, n_iter = 20, thin = 2, types = c("G", "G"), K_max = c(3, 3), check_prior = FALSE)),
     "no tempering record")
 })
 
@@ -213,7 +213,7 @@ test_that("parallel tempering reproduces the exact label posterior of a tiny mod
   code <- function(a) as.numeric(a %*% K^(seq_len(N) - 1))
   run <- function(betas, seed, R = 30000) {
     set.seed(seed)
-    a <- callMDI(list(X), R = R, thin = 1, types = "C", K = K, betas = betas, check_prior = FALSE,
+    a <- callMDI(list(X), n_iter = R, thin = 1, types = "C", K_max = K, betas = betas, check_prior = FALSE,
       save_parameters = FALSE)$allocations[-(1:200), , 1]
     tabulate(code(a) + 1, K^N) / nrow(a)
   }

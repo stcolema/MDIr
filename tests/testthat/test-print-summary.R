@@ -29,7 +29,7 @@ make_convergence <- function(rhat, ess, n_chains = 4, threshold = 1.01) {
 test_that("callMDI() returns an mdir_fit that prints briefly and keeps `$` access", {
   set.seed(1)
   X <- make_views()
-  fit <- callMDI(X, R = 100, thin = 5, types = c("MVN", "MVN"), K = c(3, 3))
+  fit <- callMDI(X, n_iter = 100, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3))
 
   expect_s3_class(fit, "mdir_fit")
   expect_true(is.list(fit))
@@ -48,7 +48,7 @@ test_that("callMDI() returns an mdir_fit that prints briefly and keeps `$` acces
 test_that("summary.mdir_fit() reports views, phi and, once processed, clustering tables", {
   set.seed(2)
   X <- make_views()
-  fit <- callMDI(X, R = 200, thin = 5, types = c("MVN", "MVN"), K = c(3, 3))
+  fit <- callMDI(X, n_iter = 200, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3))
 
   smry <- summary(fit)
   expect_s3_class(smry, "summary.mdir_fit")
@@ -84,7 +84,7 @@ test_that("summary.mdir_fit() reports views, phi and, once processed, clustering
 
 test_that("a single view has no phi table", {
   set.seed(3)
-  fit <- callMDI(make_views(V = 1), R = 60, thin = 5, types = "MVN", K = 3)
+  fit <- callMDI(make_views(V = 1), n_iter = 60, thin = 5, types = "MVN", K_max = 3)
   expect_null(summary(fit)$phi)
   expect_no_error(capture.output(print(summary(fit))))
 })
@@ -93,7 +93,7 @@ test_that("runMCMCChains() returns an mdir_fit_list, reports progress only when 
   set.seed(4)
   X <- make_views()
   run <- function(...) {
-    runMCMCChains(X, 2, R = 60, thin = 5, types = c("MVN", "MVN"), K = c(3, 3), ...)
+    runMCMCChains(X, 2, n_iter = 60, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3), ...)
   }
 
   expect_no_message(chains <- run())
@@ -105,7 +105,7 @@ test_that("runMCMCChains() returns an mdir_fit_list, reports progress only when 
   expect_true(any(grepl("Chain 1/2: running 60 iterations", msgs)))
   expect_true(any(grepl("Chain 2/2: finished in", msgs)))
 
-  expect_error(runMCMCChains(X, 0, R = 60, thin = 5, types = c("MVN", "MVN")), "n_chains")
+  expect_error(runMCMCChains(X, 0, n_iter = 60, thin = 5, types = c("MVN", "MVN")), "n_chains")
 
   out <- capture.output(print(chains))
   expect_lt(length(out), 12)
@@ -123,7 +123,7 @@ test_that("runMCMCChains() returns an mdir_fit_list, reports progress only when 
 test_that("fitMDI() attaches convergence, reports it when verbose, and stays quiet otherwise", {
   set.seed(5)
   X <- make_views()
-  fit_args <- list(X, n_chains = 3, R = 300, thin = 5, types = c("MVN", "MVN"), K = c(3, 3), burn = 150)
+  fit_args <- list(X, n_chains = 3, n_iter = 300, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3), burn = 150)
 
   expect_no_message(fit <- do.call(fitMDI, c(fit_args, verbose = FALSE)))
   expect_s3_class(fit, "mdir_fit_list")
@@ -158,7 +158,7 @@ test_that("fitMDI() warns, rather than failing silently, when diagnostics cannot
   set.seed(6)
   X <- make_views()
   expect_warning(
-    fit <- fitMDI(X, n_chains = 2, R = 20, thin = 5, types = c("MVN", "MVN"), K = c(3, 3), verbose = FALSE),
+    fit <- fitMDI(X, n_chains = 2, n_iter = 20, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3), verbose = FALSE),
     "Convergence diagnostics could not be computed"
   )
   expect_s3_class(fit, "mdir_fit_list")

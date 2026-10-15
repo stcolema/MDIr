@@ -7,7 +7,7 @@ d <- make_data(sep = 2.5); dp <- densityPrior(scale_pool_shape = 0)
 cat("exact:", paste(top4, round(exact[top4], 3), collapse = "  "), "\n")
 one <- function(label, bstar, P, start_sweeps, thr = 0.5, seed = 1) {
   set.seed(seed); t0 <- Sys.time()
-  fit <- smcMDI(list(d$X), "MVN", K = 3, n_particles = P, cess = 0.9, resample_threshold = thr, density_prior = dp,
+  fit <- smcMDI(list(d$X), "MVN", K_max = 3, n_particles = P, cess = 0.9, resample_threshold = thr, density_prior = dp,
     check_prior = FALSE, beta_start = bstar, start_sweeps = start_sweeps)
   pm <- smcPosterior(fit, function(l) group_partition(l, d$truth), view = 1)
   est <- setNames(rep(0, 4), top4); k <- intersect(names(pm$estimate), top4); est[k] <- pm$estimate[k]

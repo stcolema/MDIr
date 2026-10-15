@@ -19,7 +19,7 @@ ragged_run <- function(K, types, supervised, R = 4000, N = 36, seed = 1) {
     fixed[obs, l] <- 1; init[obs, l] <- ((truth[obs] - 1) %% K_fix) + 1
     init[obs[seq_len(K_fix)], l] <- seq_len(K_fix)       # every observed class is present
   }
-  out <- callMDI(X, R = R, thin = 10, types = types, K = K, initial_labels = init, fixed = fixed)
+  out <- callMDI(X, n_iter = R, thin = 10, types = types, K_max = K, initial_labels = init, fixed = fixed)
   list(out = out, fixed = fixed, init = init, K = K)
 }
 

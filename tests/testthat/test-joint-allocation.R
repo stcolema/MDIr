@@ -97,7 +97,7 @@ test_that("prior labels are drawn beyond the enumeration limit", {
   skip_on_cran()
   X <- lapply(1:4, function(v) { m <- matrix(rnorm(20), 10, 2); rownames(m) <- 1:10; m })
   # 50^4 combinations: enumerating them was refused
-  sims <- simulatePriorPredictive(X, rep("G", 4), K = rep(50, 4), n_datasets = 3)
+  sims <- simulatePriorPredictive(X, rep("G", 4), K_max = rep(50, 4), n_datasets = 3)
   expect_equal(dim(sims$parameters[[1]]$labels), c(10, 4))
   expect_true(all(sims$parameters[[1]]$labels >= 0 & sims$parameters[[1]]$labels < 50))
 })
@@ -164,9 +164,9 @@ test_that("a block smaller than the number of views is accepted", {
   out <- raw_joint(d$X, rep("G", 4), rep(4, 4), matrix(0L, N, 4), matrix(0, N, 4), R = 60, joint = 2L)
   expect_true(all(out$allocations >= 0 & out$allocations < 4))
   expect_error(raw_joint(d$X[1], "G", 4, matrix(0L, N, 1), matrix(0, N, 1), R = 5, joint = 2L), "two views")
-  expect_error(callMDI(d$X, R = 10, thin = 5, types = rep("G", 4), K = rep(4, 4), joint_allocation = 1L),
+  expect_error(callMDI(d$X, n_iter = 10, thin = 5, types = rep("G", 4), K_max = rep(4, 4), joint_allocation = 1L),
                "at least 2")
-  expect_error(callMDI(d$X, R = 10, thin = 5, types = rep("G", 4), K = rep(4, 4), joint_allocation = 13L),
+  expect_error(callMDI(d$X, n_iter = 10, thin = 5, types = rep("G", 4), K_max = rep(4, 4), joint_allocation = 13L),
                "at most 12")
 })
 
@@ -191,7 +191,7 @@ test_that("the sampler with joint allocation recovers the prior under a constant
     stats_of(grid[sample.int(nrow(grid), N, TRUE, p), , drop = FALSE], w)
   }
   ref <- t(replicate(20000, forward()))
-  out <- callMDI(X, R = 200000, thin = 10, types = c("C", "C"), K = K, joint_allocation = 2L,
+  out <- callMDI(X, n_iter = 200000, thin = 10, types = c("C", "C"), K_max = K, joint_allocation = 2L,
                  check_prior = FALSE, save_parameters = FALSE)
   keep <- -(1:50)
   al <- out$allocations[keep, , , drop = FALSE] + 1L

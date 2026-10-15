@@ -65,16 +65,16 @@ K_classes <- length(all_markers)
 
 `callMDI` fits the model using MCMC sampling. Key parameters:
 - `types`: Data types for each dataset (TAGM handles continuous LOPIT profiles with outliers, C handles categorical GO terms)
-- `K`: Upper bound on clusters (model selects active number)
-- `R` and `thin`: 15000 iterations, keeping every 50th (300 samples total)
+- `K_max`: Upper bound on clusters (model selects active number)
+- `n_iter` and `thin`: 15000 iterations, keeping every 50th (300 samples total)
 
 ```r
 mdi_result <- callMDI(
   X = data_list,
-  R = 15000,
+  n_iter = 15000,
   thin = 50,
   types = c("TAGM", "C"),
-  K = rep(K_classes + 5, 2),
+  K_max = rep(K_classes + 5, 2),
   initial_labels = initial_labels,
   fixed = fixed,
   initial_labels_as_intended = FALSE
@@ -181,10 +181,10 @@ n_chains <- 3
 chains <- runMCMCChains(
   X = data_list, 
   n_chains = n_chains,
-  R = 15000,
+  n_iter = 15000,
   thin = 50,
   types = c("TAGM", "C"),
-  K = rep(K_classes + 10, 2),
+  K_max = rep(K_classes + 10, 2),
   initial_labels = initial_labels,
   fixed = fixed,
   initial_labels_as_intended = FALSE
@@ -251,10 +251,10 @@ consensus_chains <- vector("list", n_consensus_chains)
 consensus_chains <- runMCMCChains(
   X = data_list, 
   n_chains = n_consensus_chains,
-  R = R_short,
+  n_iter = R_short,
   thin = R_short,
   types = c("TAGM", "C"), 
-  K = rep(K_classes + 10, 2),
+  K_max = rep(K_classes + 10, 2),
   initial_labels = initial_labels,
   fixed = fixed,
   initial_labels_as_intended = FALSE
@@ -290,7 +290,7 @@ in a ladder ending at 1 and neighbours exchange states; the replica at \(\beta\)
 
 ```r
 betas <- ptLadder(8, beta_min = 0.05)           # any ladder is valid; it only affects efficiency
-fit <- callMDI(X, R = 5000, thin = 5, types = c("MVN", "MVN"), K = c(6, 6), betas = betas)
+fit <- callMDI(X, n_iter = 5000, thin = 5, types = c("MVN", "MVN"), K_max = c(6, 6), betas = betas)
 ptDiagnostics(fit)                              # exchange rates, round trips (no guarantee)
 ```
 
@@ -316,7 +316,7 @@ consistent but not exactly unbiased; `beta_start > 0` is conditional on a start 
 sampler cannot certify (a proved bias bound is in the theory note).
 
 ```r
-runs <- smcReplicates(X, c("MVN", "MVN"), n_runs = 8, n_particles = 200, K = c(6, 6))
+runs <- smcReplicates(X, c("MVN", "MVN"), n_runs = 8, n_particles = 200, K_max = c(6, 6))
 smcSE(runs, function(labels) paste(sort(table(labels[, 1])), collapse = "-"))  # jackknife SE over runs
 weightedConsensus(runs$combined)                # point estimate and weighted similarity matrix
 compareRuns(runs)                               # agreement between independent runs (no guarantee)
@@ -381,12 +381,12 @@ value is rejected. Use `save_imputed = TRUE` to record the imputations.
 
 ```r
 # 1. Look at what the priors imply before fitting (see ?mdiPrior for guidance)
-prior_sims <- simulatePriorPredictive(X, types, K = K, n_datasets = 50)
+prior_sims <- simulatePriorPredictive(X, types, K_max = K, n_datasets = 50)
 plotPredictiveCheck(X[[1]], prior_sims, column = 1)
 
 # 2. Fit several chains. fitMDI() reports each chain as it finishes and checks
 #    convergence (rank-normalised split Rhat and bulk/tail ESS) before returning
-chains <- fitMDI(X, n_chains = 4, R = 10000, thin = 10, types = types, K = K, burn = 5000)
+chains <- fitMDI(X, n_chains = 4, n_iter = 10000, thin = 10, types = types, K_max = K, burn = 5000)
 
 # 3. Look at the result: print() is a short report, summary() has per-chain
 #    detail and the full convergence table

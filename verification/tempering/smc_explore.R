@@ -4,15 +4,15 @@ source("bimodal_setup.R")
 mm <- readRDS("mode_mass_sep2.5_results.rds"); exact <- mm$exact
 top4 <- names(sort(exact, decreasing = TRUE))[1:4]
 d <- make_data(sep = 2.5); dp <- densityPrior(scale_pool_shape = 0)
-pilot <- { set.seed(5); smcMDI(list(d$X), "MVN", K = 3, n_particles = 300, cess = 0.9, density_prior = dp, check_prior = FALSE) }
+pilot <- { set.seed(5); smcMDI(list(d$X), "MVN", K_max = 3, n_particles = 300, cess = 0.9, density_prior = dp, check_prior = FALSE) }
 betas <- pilot$trace$beta
 cat("exact:", paste(top4, round(exact[top4], 3), collapse = "  "), "\n")
 run <- function(label, P, thr, scheme = "systematic", sched = "fixed", cess = 0.9, seed = 1) {
   set.seed(seed)
   t0 <- Sys.time()
-  fit <- if (sched == "fixed") smcMDI(list(d$X), "MVN", K = 3, n_particles = P, schedule = "fixed", betas = betas,
+  fit <- if (sched == "fixed") smcMDI(list(d$X), "MVN", K_max = 3, n_particles = P, schedule = "fixed", betas = betas,
       resample_threshold = thr, resample = scheme, density_prior = dp, check_prior = FALSE)
-    else smcMDI(list(d$X), "MVN", K = 3, n_particles = P, cess = cess, resample_threshold = thr, density_prior = dp, check_prior = FALSE)
+    else smcMDI(list(d$X), "MVN", K_max = 3, n_particles = P, cess = cess, resample_threshold = thr, density_prior = dp, check_prior = FALSE)
   pm <- smcPosterior(fit, function(l) group_partition(l, d$truth), view = 1)
   est <- setNames(rep(0, 4), top4); est[intersect(names(pm$estimate), top4)] <- pm$estimate[intersect(names(pm$estimate), top4)]
   cat(sprintf("%-34s P=%5d steps=%3d finalESS=%7.1f  %s  (%.0fs)\n", label, P, nrow(fit$trace), 1 / sum(fit$particle_weights^2),

@@ -11,7 +11,7 @@ alpha <- hp$concentration
 cat("data:", X[, 1], " alpha:", unlist(alpha), "\n")
 run <- function(betas, seed) {
   set.seed(seed)
-  fit <- callMDI(list(X), R = R, thin = 1, types = "C", K = K, betas = betas, check_prior = FALSE, save_parameters = FALSE)
+  fit <- callMDI(list(X), n_iter = R, thin = 1, types = "C", K_max = K, betas = betas, check_prior = FALSE, save_parameters = FALSE)
   fit$allocations[-(1:200), , 1]
 }
 # name, ladder run, beta of the exact reference compared against; the last two

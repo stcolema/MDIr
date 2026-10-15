@@ -39,7 +39,7 @@
 #' types <- rep("G", V)
 #'
 #' n_chains <- 3
-#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K_max = K)
 #' mcmc_out <- processMCMCChains(mcmc_out, burn, construct_psm = TRUE)
 #'
 #' psms_v1 <- list()

@@ -26,7 +26,7 @@ chain_last <- function(f) {
 ensemble <- function(job) {
   set.seed(job$seed)
   flags <- vapply(seq_len(job$W), function(i) {
-    f <- callMDI(X, R = job$D, thin = max(1, job$D %/% 20), types = types, K = K, prior = prior,
+    f <- callMDI(X, n_iter = job$D, thin = max(1, job$D %/% 20), types = types, K_max = K, prior = prior,
                  check_prior = FALSE, save_parameters = FALSE, joint_allocation = job$joint)
     chain_last(f)
   }, numeric(1))
@@ -44,7 +44,7 @@ print(aggregate(p_split ~ joint + D + sweeps, res_ens, function(x) c(mean = mean
 # the reference: tempered chains with joint allocation and split-merge moves
 pt <- function(job) {
   set.seed(job$seed)
-  f <- callMDI(X, R = 3000, thin = 10, types = types, K = K, prior = prior, check_prior = FALSE,
+  f <- callMDI(X, n_iter = 3000, thin = 10, types = types, K_max = K, prior = prior, check_prior = FALSE,
                save_parameters = FALSE, betas = ptLadder(4, 0.1), joint_allocation = V, split_merge = 2L)
   a <- f$allocations[-(1:151), , , drop = FALSE]
   data.frame(method = "PT + joint + split-merge", seed = job$seed, p_split_draws = mean(apply(a, 1, function(m) split_mode(matrix(m, nrow = dim(a)[2])))),
@@ -57,13 +57,13 @@ print(res_pt, row.names = FALSE, digits = 3)
 
 # SMC on a schedule from a pilot
 set.seed(11)
-pilot <- smcMDI(X, types, K = K, n_particles = 100, cess = 0.9, prior = prior, check_prior = FALSE,
+pilot <- smcMDI(X, types, K_max = K, n_particles = 100, cess = 0.9, prior = prior, check_prior = FALSE,
                 joint_allocation = V)
 betas <- pilot$trace$beta
 cat("\npilot schedule:", length(betas), "temperatures\n")
 smc_block <- function(joint, sm, m, P) {
   t0 <- Sys.time()
-  rr <- smcReplicates(X, types, n_runs = n_rep, n_particles = P, betas = betas, K = K, n_cores = n_cores,
+  rr <- smcReplicates(X, types, n_runs = n_rep, n_particles = P, betas = betas, K_max = K, n_cores = n_cores,
                       prior = prior, check_prior = FALSE, joint_allocation = joint, split_merge = sm,
                       sweeps_per_step = m, resample_threshold = 0.5)
   est <- vapply(rr$runs, function(r) smcPosterior(r, split_mode)$estimate["1"], numeric(1))

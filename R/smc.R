@@ -142,12 +142,12 @@
 #' set.seed(1)
 #' X <- list(matrix(rnorm(60 * 2, rep(c(0, 4), each = 30)), 60, 2))
 #' rownames(X[[1]]) <- 1:60
-#' fit <- smcMDI(X, "MVN", K = 3, n_particles = 20)
+#' fit <- smcMDI(X, "MVN", K_max = 3, n_particles = 20)
 #' smcDiagnostics(fit)
 #' @export
 smcMDI <- function(X,
                    types,
-                   K = NULL,
+                   K_max = NULL,
                    n_particles = 200,
                    schedule = c("adaptive", "fixed"),
                    betas = NULL,
@@ -166,7 +166,10 @@ smcMDI <- function(X,
                    start_sweeps = 0L,
                    split_merge = 0L,
                    fixed = NULL,
-                   joint_allocation = 0L) {
+                   joint_allocation = 0L,
+                   K = NULL) {
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "smcMDI")
+  K <- K_max
   if (!is.null(fixed)) {
     stop("smcMDI is unsupervised only: the particles start from exact draws of the prior, which are not available ",
       "given observed labels. Use callMDI(..., betas = ) (parallel tempering) for semi-supervised models.")
@@ -256,7 +259,7 @@ smcMDI <- function(X,
 
   P_n <- as.integer(n_particles)
   n_draws <- nrow(raw$data_log_likelihood)
-  K_max <- max(K)
+  K_largest <- max(K)
   LC2 <- if (V > 1) choose(V, 2) else 1L
   stack <- function(lst, dims) array(unlist(lapply(lst, as.numeric)), dim = c(dims, P_n))
 
@@ -277,7 +280,7 @@ smcMDI <- function(X,
     trace = trace,
     phis = stack(raw$phis, c(n_draws, LC2)),
     mass = stack(raw$mass, c(n_draws, V)),
-    mdi_weights = stack(raw$weights_record, c(n_draws, K_max, V)),
+    mdi_weights = stack(raw$weights_record, c(n_draws, K_largest, V)),
     data_log_likelihood = unname(raw$data_log_likelihood),
     root = as.integer(raw$root),
     forced_final_step = isTRUE(raw$forced_final_step),
@@ -748,12 +751,13 @@ combineSMC <- function(fits, weight_by = c("evidence", "equal")) {
 #' \code{mdir_smc}), \code{combined}, \code{schedule}, \code{pilot} (or \code{NULL}).
 #' @export
 smcReplicates <- function(X, types, n_runs = 8, n_particles = 200, betas = NULL,
-                          K = NULL, n_cores = NULL, verbose = FALSE, check_prior = TRUE, ...) {
+                          K_max = NULL, n_cores = NULL, verbose = FALSE, check_prior = TRUE, ..., K = NULL) {
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "smcReplicates")
   .mdirCheckCount(n_runs, "n_runs", 2)
   pilot <- NULL
   if (is.null(betas)) {
     if (verbose) message("Pilot run to choose the schedule...")
-    pilot <- smcMDI(X, types, K = K, n_particles = n_particles, schedule = "adaptive",
+    pilot <- smcMDI(X, types, K_max = K_max, n_particles = n_particles, schedule = "adaptive",
       check_prior = check_prior, ...)
     betas <- pilot$trace$beta
   } else {
@@ -761,7 +765,7 @@ smcReplicates <- function(X, types, n_runs = 8, n_particles = 200, betas = NULL,
   }
   n_cores <- .mdirResolveCores(n_cores, n_runs)
   fit_one <- function() {
-    smcMDI(X, types, K = K, n_particles = n_particles, schedule = "fixed", betas = betas,
+    smcMDI(X, types, K_max = K_max, n_particles = n_particles, schedule = "fixed", betas = betas,
       check_prior = FALSE, ...)
   }
   if (verbose) message(sprintf("%d runs of %d particles on %d temperatures...", n_runs, n_particles, length(betas)))
@@ -936,7 +940,7 @@ print.mdir_run_agreement <- function(x, ...) {
 #' drops the first saved sample.
 #' @param fit An \code{mdir_smc} object.
 #' @param n_draws Number of resampled draws.
-#' @return An object of class \code{mdir_fit} with \code{R = n_draws},
+#' @return An object of class \code{mdir_fit} with \code{n_iter = n_draws},
 #' \code{thin = 1}. Quantities not recorded by the ensemble (likelihood traces
 #' other than the data log-likelihood, outliers) are filled with zeros or \code{NA}.
 #' @export
@@ -968,7 +972,7 @@ smcAsChain <- function(fit, n_draws = 1000) {
       tabulate(alloc[r, , v] + 1, K_max)
     }, numeric(K_max)), dim = c(K_max, nrow(idx), V)),
     N = N, P = fit$P, K = fit$K, V = V, types = fit$types,
-    R = n_draws, thin = 1, burn = 0, Semisupervised = rep(FALSE, V),
+    R = n_draws, n_iter = n_draws, thin = 1, burn = 0, Semisupervised = rep(FALSE, V),
     Overfitted = rep(TRUE, V), sample_ids = fit$sample_ids,
     missing_proportion = rep(0, V), Time = fit$Time
   )

@@ -199,7 +199,7 @@ rankNormalizedRhat <- function(chains) {
 #'   rownames(m) <- 1:60
 #'   m
 #' })
-#' chains <- runMCMCChains(X, 3, R = 1000, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+#' chains <- runMCMCChains(X, 3, n_iter = 1000, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 #' assessConvergence(chains, burn = 500)
 #' }
 assessConvergence <- function(mcmc_chains,

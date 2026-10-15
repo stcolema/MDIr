@@ -9,7 +9,7 @@ ad <- mdir:::adaptLadder(list(d$X), "MVN", b0, rounds = 4, R_pilot = 1500, K = 3
 cat("adaptation took", format(Sys.time() - t0), "\n")
 for (i in seq_along(ad$history)) cat(sprintf("round %d rejection: %s\n", i, paste(round(ad$history[[i]]$rejection_rate, 2), collapse = " ")))
 cat("final ladder:", round(ad$betas, 3), "\n")
-f <- callMDI(list(d$X), R = 6000, thin = 5, types = "MVN", K = 3, betas = ad$betas, check_prior = FALSE, save_parameters = FALSE)
+f <- callMDI(list(d$X), n_iter = 6000, thin = 5, types = "MVN", K_max = 3, betas = ad$betas, check_prior = FALSE, save_parameters = FALSE)
 print(mdir:::ptDiagnostics(f))
 a <- f$allocations[-(1:100), , 1]
 pat <- apply(a, 1, group_partition, truth = d$truth)

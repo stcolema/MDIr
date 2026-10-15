@@ -59,7 +59,7 @@
 #'   m
 #' }
 #' X <- list(make_view(40), make_view(40))
-#' fit <- callMDI(X, R = 200, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+#' fit <- callMDI(X, n_iter = 200, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 #'
 #' new <- list(matrix(c(0.2, -0.1, 4.1, 3.8), 2, 2, byrow = TRUE),
 #'             matrix(c(0.1, 0.3, 4.2, 4.0), 2, 2, byrow = TRUE))

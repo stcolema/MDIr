@@ -4,13 +4,15 @@
 #' @param X Data to cluster. List of $L$ matrices with the $N$ items to cluster
 #' held in rows.
 #' @param n_chains Integer. Number of MCMC chains to run.
-#' @param R The number of iterations in the sampler.
+#' @param n_iter The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
 #' @param types Character vector indicating density type to use. 'MVN'
 #' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
-#' @param K Vector indicating the number of components to include (the upper
+#' @param K_max Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param R Deprecated; use \code{n_iter}.
+#' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N x L$ matrix.
 #' @param fixed Which items are fixed in their initial label. $N x L$ matrix.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
@@ -56,24 +58,23 @@
 #' V <- length(data_modelled)
 #'
 #' # MCMC parameters
-#' R <- 5000
+#' n_iter <- 5000
 #' thin <- 50
 #' burn <- 1000
 #'
-#' K_max <- 10
-#' K <- rep(K_max, V)
+#' K_max <- rep(10, V)
 #' types <- rep("G", V)
 #'
 #' n_chains <- 3
-#' mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+#' mcmc_out <- runMCMCChains(data_modelled, n_chains, n_iter, thin, types, K_max = K_max)
 #' }
 #' @export
 runMCMCChains <- function(X,
                           n_chains,
-                          R,
+                          n_iter,
                           thin,
                           types,
-                          K = NULL,
+                          K_max = NULL,
                           initial_labels = NULL,
                           fixed = NULL,
                           alpha = NULL,
@@ -91,7 +92,12 @@ runMCMCChains <- function(X,
                           swap_scheme = c("deo", "seo"),
                           swap_every = 1L,
                           split_merge = 0L,
-                          joint_allocation = 0L) {
+                          joint_allocation = 0L,
+                          R = NULL,
+                          K = NULL) {
+  n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "runMCMCChains", required = TRUE)
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "runMCMCChains")
+  K <- K_max
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (!is.numeric(n_chains) || length(n_chains) != 1 || is.na(n_chains) || n_chains < 1) {
@@ -105,10 +111,10 @@ runMCMCChains <- function(X,
 
   fit_one <- function() {
     callMDI(X,
-      R,
+      n_iter,
       thin,
       types,
-      K = K,
+      K_max = K_max,
       initial_labels = initial_labels,
       fixed = fixed,
       alpha = alpha,
@@ -131,7 +137,7 @@ runMCMCChains <- function(X,
 
   if (n_cores > 1) {
     if (verbose) {
-      message(sprintf("Running %d chains of %d iterations on %d cores...", n_chains, R, n_cores))
+      message(sprintf("Running %d chains of %d iterations on %d cores...", n_chains, n_iter, n_cores))
     }
     mcmc_lst <- .mdirRunChainsParallel(n_chains, n_cores, fit_one)
     for (ii in seq_len(n_chains)) {
@@ -146,7 +152,7 @@ runMCMCChains <- function(X,
     mcmc_lst <- vector("list", n_chains)
     for (ii in seq_len(n_chains)) {
       if (verbose) {
-        message(sprintf("Chain %d/%d: running %d iterations...", ii, n_chains, R))
+        message(sprintf("Chain %d/%d: running %d iterations...", ii, n_chains, n_iter))
       }
       mcmc_lst[[ii]] <- fit_one()
 

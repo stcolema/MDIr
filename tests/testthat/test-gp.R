@@ -76,7 +76,7 @@ test_that("GP hyperparameter sampler targets the marginal posterior under the gu
 
   # one occupied component: the population (m, s) is informed by a single log amplitude, so the
   # amplitude mixes slowly and a long run is needed
-  out <- callMDI(list(X), R = 400000, thin = 10, types = "GP", K = 1)
+  out <- callMDI(list(X), n_iter = 400000, thin = 10, types = "GP", K_max = 1)
   h_out <- out$hypers[[1]]
   keep <- -(1:200)
   draws <- list(amplitude = log(h_out$amplitude[keep, 1]), noise = log(h_out$noise[keep, 1]),
@@ -96,7 +96,7 @@ test_that("the length scale never falls below the floor, even for white noise da
   set.seed(93)
   X <- matrix(rnorm(60 * 8), 60); rownames(X) <- seq_len(60)
   for (floor_value in c(1, 2.5)) {
-    fit <- callMDI(list(X), R = 3000, thin = 3, types = "GP", K = 3,
+    fit <- callMDI(list(X), n_iter = 3000, thin = 3, types = "GP", K_max = 3,
                    density_prior = densityPrior(gp_min_length = floor_value))
     len <- fit$hypers[[1]]$length
     expect_gte(min(len), floor_value)
@@ -113,7 +113,7 @@ test_that("GP data need not be standardised and are centred at the column means"
   f <- cbind(sin(seq_len(P) / 2), cos(seq_len(P) / 2))
   X <- 500 + 40 * (f[, truth] |> t()) + matrix(rnorm(N * P, sd = 5), N)
   rownames(X) <- seq_len(N)
-  fit <- callMDI(list(X), R = 1500, thin = 3, types = "GP", K = 2)
+  fit <- callMDI(list(X), n_iter = 1500, thin = 3, types = "GP", K_max = 2)
   pred <- apply(fit$allocations[-(1:100), , 1], 2, function(z) as.integer(names(which.max(table(z)))))
   tab <- table(pred, truth)
   expect_gte(sum(apply(tab, 2, max)) / N, 0.95)
@@ -125,7 +125,7 @@ test_that("Gaussian-process acceptance rates are proportions", {
   N <- 30
   X <- list(matrix(rnorm(N * 6, rep(c(0, 2), each = 15)), N, 6))
   rownames(X[[1]]) <- 1:N
-  fit <- callMDI(X, R = 200, thin = 5, types = "GP", K = 3, check_prior = FALSE)
+  fit <- callMDI(X, n_iter = 200, thin = 5, types = "GP", K_max = 3, check_prior = FALSE)
   ac <- fit$acceptance_count[[1]]
   expect_true(all(ac >= 0 & ac <= 1))
   expect_gt(max(ac), 0)

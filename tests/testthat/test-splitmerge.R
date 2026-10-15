@@ -97,31 +97,31 @@ test_that("split-merge is accepted for G, MVN, C and combinations, and refused o
   set.seed(2)
   X <- matrix(rnorm(60, rep(c(0, 4), each = 30)), 30, 2); rownames(X) <- 1:30
   Xc <- matrix(sample(0:2, 60, TRUE), 30, 2, dimnames = list(1:30, NULL))
-  fit <- callMDI(list(X, Xc), R = 40, thin = 1, types = c("MVN", "C"), K = c(3, 3), split_merge = 2L, check_prior = FALSE)
+  fit <- callMDI(list(X, Xc), n_iter = 40, thin = 1, types = c("MVN", "C"), K_max = c(3, 3), split_merge = 2L, check_prior = FALSE)
   expect_equal(fit$split_merge$moves, 2L)
   expect_gt(fit$split_merge$attempts, 0)
   # semi-supervised: fixed labels are not moved
   lab <- matrix(c(rep(0:1, length.out = 6), rep(0, 24)), ncol = 1)
   fx <- matrix(c(rep(1, 6), rep(0, 24)), ncol = 1)
-  fit2 <- callMDI(list(X), R = 60, thin = 1, types = "MVN", K = 3, initial_labels = lab, fixed = fx, split_merge = 1L,
+  fit2 <- callMDI(list(X), n_iter = 60, thin = 1, types = "MVN", K_max = 3, initial_labels = lab, fixed = fx, split_merge = 1L,
     check_prior = FALSE)
   expect_true(all(apply(fit2$allocations[, 1:6, 1], 1, identical, as.numeric(lab[1:6, 1]))))
   # TAGM (outlier component), with and without missing values
-  fit3 <- callMDI(list(X), R = 30, thin = 1, types = "TAGM", K = 3, split_merge = 2L, check_prior = FALSE)
+  fit3 <- callMDI(list(X), n_iter = 30, thin = 1, types = "TAGM", K_max = 3, split_merge = 2L, check_prior = FALSE)
   expect_gt(fit3$split_merge$attempts, 0)
   Xna <- X
   Xna[3, 1] <- NA
-  fit4 <- callMDI(list(Xna), R = 30, thin = 1, types = "TAGM", K = 3, split_merge = 2L, check_prior = FALSE)
+  fit4 <- callMDI(list(Xna), n_iter = 30, thin = 1, types = "TAGM", K_max = 3, split_merge = 2L, check_prior = FALSE)
   expect_gt(fit4$split_merge$attempts, 0)
-  expect_error(callMDI(list(X), R = 20, thin = 1, types = "GP", K = 3, split_merge = 1L, check_prior = FALSE))
-  expect_error(callMDI(list(X), R = 20, thin = 1, types = "MVN", K = 3, split_merge = -1L, check_prior = FALSE), "split_merge")
+  expect_error(callMDI(list(X), n_iter = 20, thin = 1, types = "GP", K_max = 3, split_merge = 1L, check_prior = FALSE))
+  expect_error(callMDI(list(X), n_iter = 20, thin = 1, types = "MVN", K_max = 3, split_merge = -1L, check_prior = FALSE), "split_merge")
 })
 
 test_that("split-merge changes the chain but not at zero moves", {
   set.seed(3)
   X <- matrix(rnorm(40, rep(c(0, 4), each = 20)), 20, 2); rownames(X) <- 1:20
-  set.seed(5); a <- callMDI(list(X), R = 30, thin = 1, types = "MVN", K = 3, check_prior = FALSE)
-  set.seed(5); b <- callMDI(list(X), R = 30, thin = 1, types = "MVN", K = 3, split_merge = 0L, check_prior = FALSE)
+  set.seed(5); a <- callMDI(list(X), n_iter = 30, thin = 1, types = "MVN", K_max = 3, check_prior = FALSE)
+  set.seed(5); b <- callMDI(list(X), n_iter = 30, thin = 1, types = "MVN", K_max = 3, split_merge = 0L, check_prior = FALSE)
   expect_identical(a$allocations, b$allocations)
 })
 

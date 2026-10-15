@@ -34,8 +34,9 @@
 #' \code{\link{callMDI}}. \code{NA} entries are ignored when setting the
 #' hyperparameters.
 #' @param types Density type of each view, as for \code{\link{callMDI}}.
-#' @param K Number of components in each view. Defaults to \code{min(10, N/2)}
+#' @param K_max Number of components in each view. Defaults to \code{min(10, N/2)}
 #' in every view.
+#' @param K Deprecated; use \code{K_max}.
 #' @param n_datasets Number of datasets to simulate.
 #' @param prior MDI-level priors, see \code{\link{mdiPrior}}.
 #' @param density_prior Density-level priors, see \code{\link{densityPrior}}.
@@ -59,15 +60,18 @@
 #' set.seed(1)
 #' X <- matrix(rnorm(80 * 2, rep(c(0, 3), each = 40)), 80, 2)
 #' rownames(X) <- seq_len(nrow(X))
-#' prior_sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 5)
+#' prior_sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 5)
 #' plotPredictiveCheck(X, prior_sims, column = 1)
 simulatePriorPredictive <- function(X,
                                     types,
-                                    K = NULL,
+                                    K_max = NULL,
                                     n_datasets = 20,
                                     prior = mdiPrior(),
                                     density_prior = densityPrior(),
-                                    mimic_missingness = TRUE) {
+                                    mimic_missingness = TRUE,
+                                    K = NULL) {
+  K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "simulatePriorPredictive")
+  K <- K_max
   X <- .asViewList(X)
   checkDataCorrectInput(X, types)
   V <- length(X)
@@ -143,7 +147,7 @@ simulatePriorPredictive <- function(X,
 #' set.seed(1)
 #' X <- matrix(rnorm(80 * 2, rep(c(0, 3), each = 40)), 80, 2)
 #' rownames(X) <- seq_len(nrow(X))
-#' fit <- callMDI(list(X), R = 500, thin = 5, types = "MVN", K = 4)
+#' fit <- callMDI(list(X), n_iter = 500, thin = 5, types = "MVN", K_max = 4)
 #' post_sims <- simulatePosteriorPredictive(fit, X, n_draws = 20, burn = 250)
 #' plotPredictiveCheck(X, post_sims, column = 1)
 #' }
@@ -237,7 +241,7 @@ simulatePosteriorPredictive <- function(mcmc_output,
 #' set.seed(1)
 #' X <- matrix(rnorm(60 * 2, rep(c(0, 3), each = 30)), 60, 2)
 #' rownames(X) <- seq_len(60)
-#' sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 20)
+#' sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 20)
 #' predictiveCheck(X, sims, function(m) cor(m[, 1], m[, 2], use = "complete.obs"))
 predictiveCheck <- function(X, predictive, statistic, view = 1) {
   X <- .asViewList(X)
@@ -278,7 +282,7 @@ predictiveCheck <- function(X, predictive, statistic, view = 1) {
 #' set.seed(1)
 #' X <- matrix(rnorm(60 * 2, rep(c(0, 3), each = 30)), 60, 2)
 #' rownames(X) <- seq_len(60)
-#' sims <- simulatePriorPredictive(X, "MVN", K = 3, n_datasets = 20)
+#' sims <- simulatePriorPredictive(X, "MVN", K_max = 3, n_datasets = 20)
 #' plotPredictiveCheck(X, sims, style = "density", column = 1)
 #' plotPredictiveCheck(X, sims, style = "statistic", column = 1,
 #'   statistic = stats::sd, statistic_name = "SD")

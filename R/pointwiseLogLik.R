@@ -40,7 +40,7 @@
 #'   rownames(m) <- 1:40
 #'   m
 #' })
-#' fit <- callMDI(X, R = 100, thin = 5, types = c("MVN", "MVN"), K = c(4, 4),
+#' fit <- callMDI(X, n_iter = 100, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4),
 #'                save_pointwise = TRUE)
 #' ll <- pointwiseLogLik(fit, burn = 20)
 #' dim(ll)
