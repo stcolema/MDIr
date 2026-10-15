@@ -78,3 +78,30 @@ test_that("the effective sample size agrees with the posterior package", {
     })
   }
 })
+
+test_that("an undefined tail ESS is NA, as in posterior, and does not fail a quantity", {
+  set.seed(2)
+  # few distinct values: the indicator of the 95% quantile is constant
+  x <- matrix(sample(1:4, 1200, replace = TRUE, prob = c(0.5, 0.3, 0.15, 0.05)), ncol = 4)
+  d <- rankNormalizedRhat(x)
+  expect_true(is.na(d$ess_tail))
+  expect_true(is.finite(d$ess_bulk) && is.finite(d$rhat))
+  # a constant series has no diagnostics at all
+  expect_true(all(is.na(unlist(rankNormalizedRhat(matrix(1, 100, 3))))))
+  if (requireNamespace("posterior", quietly = TRUE)) {
+    expect_true(is.na(suppressWarnings(posterior::ess_tail(x))))
+    expect_equal(d$ess_bulk, posterior::ess_bulk(x), tolerance = 1e-3)
+  }
+
+  conv <- data.frame(
+    quantity = c("continuous", "count"), rhat = c(1.001, 1.002), rhat_bulk = c(1.001, 1.002),
+    rhat_tail = c(1.001, 1.002), ess_bulk = c(800, 700), ess_tail = c(600, NA), converged = c(TRUE, TRUE)
+  )
+  attr(conv, "threshold") <- 1.01
+  attr(conv, "min_ess") <- 400
+  attr(conv, "burn") <- 100
+  attr(conv, "n_chains") <- 4
+  class(conv) <- c("mdir_convergence", "data.frame")
+  expect_match(format(conv), "All 2 monitored quantities")
+  expect_output(print(conv), "convergence diagnostics")
+})

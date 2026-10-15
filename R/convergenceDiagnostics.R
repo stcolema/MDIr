@@ -22,7 +22,10 @@
 #' shortest).
 #' @return A named list: \code{rhat} (the maximum of \code{rhat_bulk} and
 #' \code{rhat_tail}), \code{rhat_bulk}, \code{rhat_tail}, \code{ess_bulk} and
-#' \code{ess_tail}.
+#' \code{ess_tail}. As in Stan and \pkg{posterior}, \code{ess_tail} is the smaller
+#' of the ESS of the 5\% and 95\% quantile indicators and is \code{NA} if either is
+#' constant (for example for a count with few distinct values); everything is
+#' \code{NA} for a constant or non-finite series.
 #' @references Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and
 #' Burkner, P.-C. (2021). Rank-normalization, folding, and localization: an
 #' improved Rhat for assessing convergence of MCMC. \emph{Bayesian Analysis},
@@ -60,7 +63,8 @@ rankNormalizedRhat <- function(chains) {
   bulk <- .rhatAndEss(.rankNormalize(split))
   folded <- .rhatAndEss(.rankNormalize(abs(split - stats::median(split))))
 
-  # Tail ESS: minimum over the 5% and 95% quantile indicator functions. The
+  # Tail ESS: minimum over the 5% and 95% quantile indicator functions; NA if either
+  # indicator is constant, as in Stan and posterior. The
   # cut-offs come from the chains before splitting, as in posterior, which matters
   # for an odd number of draws (the split drops the middle one).
   q <- stats::quantile(chains, c(0.05, 0.95), names = FALSE, type = 7)
@@ -77,7 +81,7 @@ rankNormalizedRhat <- function(chains) {
     rhat_bulk = bulk$rhat,
     rhat_tail = folded$rhat,
     ess_bulk = bulk$ess,
-    ess_tail = suppressWarnings(min(ess_q, na.rm = TRUE))
+    ess_tail = if (anyNA(ess_q)) NA_real_ else min(ess_q)
   )
 }
 
@@ -179,7 +183,9 @@ rankNormalizedRhat <- function(chains) {
 #' @param threshold The \eqn{\hat{R}} above which a quantity is flagged
 #' (1.01 following Vehtari et al., 2021).
 #' @param min_ess_per_chain Minimum bulk and tail ESS per chain for a quantity to pass
-#' (100, following Vehtari et al., 2021).
+#' (100, following Vehtari et al., 2021). A tail ESS that is undefined (\code{NA}, see
+#' \code{\link{rankNormalizedRhat}}) is not assessable and does not fail the quantity;
+#' an undefined Rhat or bulk ESS does.
 #' @return A data frame with a row per monitored quantity and columns
 #' \code{quantity}, \code{rhat}, \code{rhat_bulk}, \code{rhat_tail},
 #' \code{ess_bulk}, \code{ess_tail} and \code{converged}, with class
@@ -272,8 +278,12 @@ assessConvergence <- function(mcmc_chains,
   })
   out <- do.call(rbind, rows)
   n_effective_chains <- n_chains
-  out$converged <- with(out, !is.na(rhat) & rhat < threshold &
-    ess_bulk >= min_ess_per_chain * n_effective_chains & ess_tail >= min_ess_per_chain * n_effective_chains)
+  # The tail ESS is undefined (NA) for a series whose 5% or 95% quantile indicator is
+  # constant, such as a count of occupied components; as in Stan it is then not
+  # assessable rather than a failure. An undefined Rhat or bulk ESS is a failure.
+  min_ess <- min_ess_per_chain * n_effective_chains
+  out$converged <- with(out, !is.na(rhat) & rhat < threshold & !is.na(ess_bulk) & ess_bulk >= min_ess &
+    (is.na(ess_tail) | ess_tail >= min_ess))
   attr(out, "threshold") <- threshold
   attr(out, "min_ess") <- min_ess_per_chain * n_effective_chains
   attr(out, "burn") <- burn
@@ -348,7 +358,7 @@ format.mdir_convergence <- function(x, ...) {
   n <- nrow(x)
 
   rhat_fail <- !is.na(x$rhat) & x$rhat >= threshold
-  ess_fail <- x$ess_bulk < min_ess | x$ess_tail < min_ess
+  ess_fail <- is.na(x$ess_bulk) | x$ess_bulk < min_ess | (!is.na(x$ess_tail) & x$ess_tail < min_ess)
   n_rhat <- sum(rhat_fail)
   n_ess <- sum(ess_fail & !rhat_fail)
 
