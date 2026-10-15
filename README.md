@@ -386,7 +386,7 @@ plotPredictiveCheck(X[[1]], prior_sims, column = 1)
 
 # 2. Fit several chains. fitMDI() reports each chain as it finishes and checks
 #    convergence (rank-normalised split Rhat and bulk/tail ESS) before returning
-chains <- fitMDI(X, n_chains = 4, n_iter = 10000, thin = 10, types = types, K_max = K, burn = 5000)
+chains <- fitMDI(X, n_chains = 4, n_iter = 10000, thin = 10, types = types, K_max = K, convergence_burn = 5000)
 
 # 3. Look at the result: print() is a short report, summary() has per-chain
 #    detail and the full convergence table

@@ -65,7 +65,7 @@ reports progress as each chain finishes (silenced here with
 
 ```{r fit}
 chains <- fitMDI(X, n_chains = 3, n_iter = 1500, thin = 5, types = types, K_max = K,
-                 burn = 750, verbose = FALSE)
+                 convergence_burn = 750, verbose = FALSE)
 chains
 ```
 

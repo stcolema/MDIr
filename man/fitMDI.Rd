@@ -20,7 +20,7 @@ fitMDI(
   save_imputed = FALSE,
   prior = mdiPrior(),
   density_prior = densityPrior(),
-  burn = NULL,
+  convergence_burn = NULL,
   verbose = !isTRUE(getOption("mdir.quiet")),
   save_pointwise = FALSE,
   phi_update = c("slice", "gibbs"),
@@ -31,6 +31,7 @@ fitMDI(
   split_merge = 0L,
   joint_allocation = 0L,
   control = mdirControl(),
+  burn = NULL,
   R = NULL,
   K = NULL
 )
@@ -66,7 +67,7 @@ labels are as intended or should ``generateInitialLabels`` be called.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
 
-\item{burn}{Number of iterations treated as burn in when assessing
+\item{convergence_burn}{Number of iterations treated as burn in when assessing
 convergence. Defaults to half of \code{n_iter}. It only affects the diagnostics
 attached to the result, not the chains themselves; choose the burn in for
 point estimates in \code{\link{processMCMCChains}}.}
@@ -81,6 +82,8 @@ is set.}
 \item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
 Gaussian process hyperparameters and whether and for how long they are adapted
 during burn in.}
+
+\item{burn}{Deprecated; use \code{convergence_burn}.}
 
 \item{R}{Deprecated; use \code{n_iter}.}
 

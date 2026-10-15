@@ -15,10 +15,11 @@
 #' The sampler is compiled C++ and does not report progress within a chain, so
 #' messages appear when each chain starts and finishes.
 #' @inheritParams runMCMCChains
-#' @param burn Number of iterations treated as burn in when assessing
+#' @param convergence_burn Number of iterations treated as burn in when assessing
 #' convergence. Defaults to half of \code{n_iter}. It only affects the diagnostics
 #' attached to the result, not the chains themselves; choose the burn in for
 #' point estimates in \code{\link{processMCMCChains}}.
+#' @param burn Deprecated; use \code{convergence_burn}.
 #' @param save_pointwise,phi_update,n_cores,betas,swap_scheme,swap_every,split_merge,joint_allocation See
 #' \code{\link{runMCMCChains}}.
 #' @param verbose Logical. Report progress and the convergence verdict as
@@ -69,7 +70,7 @@ fitMDI <- function(X,
                    save_imputed = FALSE,
                    prior = mdiPrior(),
                    density_prior = densityPrior(),
-                   burn = NULL,
+                   convergence_burn = NULL,
                    verbose = !isTRUE(getOption("mdir.quiet")),
                    save_pointwise = FALSE,
                    phi_update = c("slice", "gibbs"),
@@ -80,6 +81,7 @@ fitMDI <- function(X,
                    split_merge = 0L,
                    joint_allocation = 0L,
                    control = mdirControl(),
+                   burn = NULL,
                    R = NULL,
                    K = NULL) {
   n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "fitMDI", required = TRUE)
@@ -93,6 +95,9 @@ fitMDI <- function(X,
   proposal_windows <- control$proposal_windows
   auto_tune <- control$auto_tune
   n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
+  convergence_burn <- .mdirRenamedArg(
+    if (missing(convergence_burn)) NULL else convergence_burn, burn, "convergence_burn", "burn", "fitMDI"
+  )
   phi_update <- match.arg(phi_update)
   swap_scheme <- match.arg(swap_scheme)
   if (verbose && is.list(X) && length(X) > 0 && is.matrix(X[[1]])) {
@@ -127,7 +132,7 @@ fitMDI <- function(X,
   )
 
   convergence <- tryCatch(
-    assessConvergence(chains, burn = burn),
+    assessConvergence(chains, burn = convergence_burn),
     error = function(e) {
       warning(
         "Convergence diagnostics could not be computed: ", conditionMessage(e),
