@@ -34,6 +34,11 @@
   both an argument and its old name is an error. The old names will be removed in a later release. `K` stays the name of
   the number of components in the fitted object and in the lower-level helpers (`generateInitialLabels()`,
   `stickBreakingPrior()` and so on), where it is not an upper bound chosen by the user.
+* `fitMDI(burn = )` is now **`convergence_burn`**, the name `batchmix::fitBatchMix()` uses for the same thing (the
+  iterations dropped when assessing convergence; it does not change the chains). The old name still works, with a
+  warning. `burn` keeps its meaning in `assessConvergence()`, `summary()`, `as_draws()`, `pointwiseLogLik()` and the
+  other functions that analyse a fit; `n_burn` in `mdirControl()` is the length of the adaptation of the proposal
+  windows.
 * Fits store `n_iter` alongside `R` (same value), so saved fits and code that reads `fit$R` keep working. `print()` and
   `summary()` report `n_iter`.
 

@@ -123,7 +123,7 @@ test_that("runMCMCChains() returns an mdir_fit_list, reports progress only when 
 test_that("fitMDI() attaches convergence, reports it when verbose, and stays quiet otherwise", {
   set.seed(5)
   X <- make_views()
-  fit_args <- list(X, n_chains = 3, n_iter = 300, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3), burn = 150)
+  fit_args <- list(X, n_chains = 3, n_iter = 300, thin = 5, types = c("MVN", "MVN"), K_max = c(3, 3), convergence_burn = 150)
 
   expect_no_message(fit <- do.call(fitMDI, c(fit_args, verbose = FALSE)))
   expect_s3_class(fit, "mdir_fit_list")

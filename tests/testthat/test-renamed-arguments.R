@@ -96,3 +96,20 @@ test_that("only the documented interface is exported", {
   expect_false(any(c("runMDI", "runMDISMC", "checkTypes", "gammaLogLikelihood", "wishartLogLikelihood") %in% exports))
   expect_false(any(grepl("Cpp$", exports)))
 })
+
+test_that("fitMDI(burn = ) is the deprecated name of convergence_burn", {
+  X <- views()
+  types <- c("MVN", "MVN")
+  new <- fitMDI(X, 2, n_iter = 200, thin = 2, types = types, K_max = c(3, 3), convergence_burn = 50,
+                verbose = FALSE)
+  expect_equal(attr(attr(new, "convergence"), "burn"), 50)
+  old <- catch_warnings(fitMDI(X, 2, n_iter = 200, thin = 2, types = types, K_max = c(3, 3), burn = 50,
+                               verbose = FALSE))
+  expect_match(old$warnings, "`burn` argument of `?fitMDI\\(\\)`? is deprecated")
+  expect_equal(attr(attr(old$value, "convergence"), "burn"), 50)
+  expect_error(
+    fitMDI(X, 2, n_iter = 200, thin = 2, types = types, K_max = c(3, 3), convergence_burn = 50, burn = 50,
+           verbose = FALSE),
+    "both given"
+  )
+})
