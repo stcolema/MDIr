@@ -14,7 +14,10 @@ shortest).}
 \value{
 A named list: \code{rhat} (the maximum of \code{rhat_bulk} and
 \code{rhat_tail}), \code{rhat_bulk}, \code{rhat_tail}, \code{ess_bulk} and
-\code{ess_tail}.
+\code{ess_tail}. As in Stan and \pkg{posterior}, \code{ess_tail} is the smaller
+of the ESS of the 5\% and 95\% quantile indicators and is \code{NA} if either is
+constant (for example for a count with few distinct values); everything is
+\code{NA} for a constant or non-finite series.
 }
 \description{
 Computes the rank-normalised, folded, split

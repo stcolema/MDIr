@@ -12,14 +12,16 @@
 * Fits store `n_iter` alongside `R` (same value), so saved fits and code that reads `fit$R` keep working. `print()` and
   `summary()` report `n_iter`.
 
-## Corrected: tail ESS for an odd number of draws
+## Corrected: tail ESS follows Stan
 
 * `rankNormalizedRhat()` (and so `assessConvergence()`) took the 5% and 95% cut-offs of the tail ESS after splitting the
   chains, which drops the middle draw when the number of draws is odd; `posterior` takes them before. The two now agree
   (for 801 draws the tail ESS was 2972 against 2987, and 1551 against 1562). Even numbers of draws are unchanged. The
-  tail ESS of a discrete series with a constant quantile indicator is still the smaller of the other, where
-  `posterior::ess_tail()` gives `NA`; this is deliberate for now, since `assessConvergence()` compares it with a
-  threshold.
+  tail ESS is now `NA` when the 5% or 95% quantile indicator is constant (a count of occupied components, say), which
+  is what rstan's `ess_tail()` and `posterior::ess_tail()` (which brms calls) return, since the minimum of
+  two ESS values is `NA` if either is; before, the smaller ESS of the other quantile was reported. `assessConvergence()` treats an
+  undefined tail ESS as not assessable, not as a failure (an undefined Rhat or bulk ESS still fails), so `converged` for
+  such a quantity depends on Rhat and the bulk ESS alone.
 
 ## Changed: exports are listed explicitly
 
