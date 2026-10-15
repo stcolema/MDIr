@@ -14,7 +14,7 @@
 \code{\link{processMCMCChain}} (one chain).}
 
 \item{burn}{Number of iterations to discard before summarising. Defaults to
-half of \code{R}, as in \code{\link{assessConvergence}}. Ignored (the applied
+half of \code{n_iter}, as in \code{\link{assessConvergence}}. Ignored (the applied
 burn in is used) if the chain has already been through
 \code{\link{processMCMCChain}}.}
 
@@ -38,6 +38,6 @@ applied, a clustering table for each view.
 \examples{
 set.seed(1)
 X <- lapply(1:2, function(v) matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
-fit <- callMDI(X, R = 200, thin = 5, types = c("MVN", "MVN"), K = c(4, 4))
+fit <- callMDI(X, n_iter = 200, thin = 5, types = c("MVN", "MVN"), K_max = c(4, 4))
 summary(fit)
 }

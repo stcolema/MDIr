@@ -25,6 +25,6 @@ properties.
 N <- 100
 V <- 3
 fixed <- matrix(0, N, V)
-checkFixedInput(fixed, N, V)
+mdir:::checkFixedInput(fixed, N, V)
 
 }

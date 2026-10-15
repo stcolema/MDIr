@@ -7,10 +7,10 @@
 runMCMCChains(
   X,
   n_chains,
-  R,
+  n_iter,
   thin,
   types,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -28,7 +28,9 @@ runMCMCChains(
   swap_scheme = c("deo", "seo"),
   swap_every = 1L,
   split_merge = 0L,
-  joint_allocation = 0L
+  joint_allocation = 0L,
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
@@ -37,7 +39,7 @@ held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -45,7 +47,7 @@ held in rows.}
 \item{types}{Character vector indicating density type to use. 'MVN'
 (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x L$ matrix.}
@@ -87,6 +89,10 @@ CRAN requires. Progress messages are given when the chains have finished.}
 
 \item{split_merge, joint_allocation}{Split-merge style moves and joint allocation within each
 chain; see \code{\link{callMDI}}.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 An object of class \code{mdir_fit_list}: a list with one
@@ -110,15 +116,14 @@ data_modelled <- list(X, Y)
 V <- length(data_modelled)
 
 # MCMC parameters
-R <- 5000
+n_iter <- 5000
 thin <- 50
 burn <- 1000
 
-K_max <- 10
-K <- rep(K_max, V)
+K_max <- rep(10, V)
 types <- rep("G", V)
 
 n_chains <- 3
-mcmc_out <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+mcmc_out <- runMCMCChains(data_modelled, n_chains, n_iter, thin, types, K_max = K_max)
 }
 }

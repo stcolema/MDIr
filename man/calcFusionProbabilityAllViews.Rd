@@ -39,7 +39,7 @@ K_max <- 10
 K <- rep(K_max, V) 
 types <- rep("G", V)
 
-mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
+mcmc_out <- callMDI(data_modelled, R, thin, types, K_max = K)
 calcFusionProbabilityAllViews(mcmc_out)
 
 }

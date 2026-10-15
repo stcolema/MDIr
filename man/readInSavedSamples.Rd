@@ -38,6 +38,6 @@ K_max <- 10
 K <- rep(K_max, V)
 types <- rep("G", V)
 
-model_call <- callMDIWritingToFile(data_modelled, R, thin, types, K = K)
+model_call <- callMDIWritingToFile(data_modelled, R, thin, types, K_max = K)
 mcmc_out <- readInSavedSamples(model_call)
 }

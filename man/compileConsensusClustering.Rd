@@ -63,7 +63,7 @@ K <- rep(K_max, V)
 types <- rep("G", V)
 
 n_chains <- 5
-mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K = K)
+mcmc_lst <- runMCMCChains(data_modelled, n_chains, R, thin, types, K_max = K)
 cc <- compileConsensusClustering(mcmc_lst)
 }
 }

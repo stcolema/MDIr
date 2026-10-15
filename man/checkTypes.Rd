@@ -19,5 +19,5 @@ are the correct format.
 }
 \examples{
 types <- c("GP", "MVN", "C")
-checkTypes(types)
+mdir:::checkTypes(types)
 }

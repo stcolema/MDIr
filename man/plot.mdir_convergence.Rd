@@ -24,6 +24,6 @@ are coloured.
 set.seed(1)
 X <- list(matrix(rnorm(80, rep(c(0, 3), each = 20)), 40, 2))
 rownames(X[[1]]) <- 1:40
-fit <- runMCMCChains(X, n_chains = 2, R = 400, thin = 2, types = "G", K = 4)
+fit <- runMCMCChains(X, n_chains = 2, n_iter = 400, thin = 2, types = "G", K_max = 4)
 plot(assessConvergence(fit))
 }

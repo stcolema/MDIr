@@ -22,9 +22,9 @@
 
 \method{as_draws}{mdir_fit_list}(x, burn = NULL, weights = FALSE, allocations = FALSE, ...)
 
-\method{as_draws_array}{mdir_fit}(x, ...)
+\method{as_draws_array}{mdir_fit}(x, burn = NULL, weights = FALSE, allocations = FALSE, ...)
 
-\method{as_draws_array}{mdir_fit_list}(x, ...)
+\method{as_draws_array}{mdir_fit_list}(x, burn = NULL, weights = FALSE, allocations = FALSE, ...)
 
 \method{as_draws_df}{mdir_fit}(x, ...)
 
@@ -49,13 +49,19 @@
 \method{as_draws_df}{mdir_smc}(x, ...)
 }
 \arguments{
-\item{x}{Output of \code{\link{callMDI}} (\code{mdir_fit}), of \code{\link{runMCMCChains}} / \code{\link{fitMDI}} / \code{\link{processMCMCChains}} (\code{mdir_fit_list}), or of \code{\link{smcMDI}} (\code{mdir_smc}).}
+\item{x}{Output of \code{\link{callMDI}} (\code{mdir_fit}), of
+\code{\link{runMCMCChains}} / \code{\link{fitMDI}} /
+\code{\link{processMCMCChains}} (\code{mdir_fit_list}), or of
+\code{\link{smcMDI}} (\code{mdir_smc}).}
 
-\item{burn}{Number of iterations treated as burn in. The default is half of \code{R}, as in \code{\link{summary.mdir_fit}}. Ignored for chains that have been through \code{\link{processMCMCChain}}.}
+\item{burn}{Number of iterations treated as burn in. The default is half of
+\code{n_iter}, as in \code{\link{summary.mdir_fit}}. Ignored for chains that have
+been through \code{\link{processMCMCChain}}.}
 
 \item{weights}{Include the sorted normalised component weights.}
 
-\item{allocations}{Include the item allocations (large: one variable per item and view).}
+\item{allocations}{Include the item allocations (large: one variable per item
+and view).}
 
 \item{...}{Unused.}
 }
@@ -116,7 +122,7 @@ if (requireNamespace("posterior", quietly = TRUE)) {
     rownames(m) <- 1:40
     m
   })
-  fit <- runMCMCChains(X, n_chains = 2, R = 400, thin = 5, types = c("G", "G"), K = c(4, 4))
+  fit <- runMCMCChains(X, n_chains = 2, n_iter = 400, thin = 5, types = c("G", "G"), K_max = c(4, 4))
   draws <- posterior::as_draws(fit)
   posterior::summarise_draws(draws)
 }

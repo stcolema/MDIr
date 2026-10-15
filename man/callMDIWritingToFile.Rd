@@ -6,10 +6,10 @@
 \usage{
 callMDIWritingToFile(
   X,
-  R,
+  n_iter,
   thin,
   types,
-  K = NULL,
+  K_max = NULL,
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
@@ -17,14 +17,16 @@ callMDIWritingToFile(
   proposal_windows = NULL,
   dir_path = tempdir(),
   prior = mdiPrior(),
-  density_prior = densityPrior()
+  density_prior = densityPrior(),
+  R = NULL,
+  K = NULL
 )
 }
 \arguments{
 \item{X}{Data to cluster. List of matrices with the N items to cluster held
 in rows.}
 
-\item{R}{The number of iterations in the sampler.}
+\item{n_iter}{The number of iterations in the sampler.}
 
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
@@ -34,7 +36,7 @@ with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
 (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
-\item{K}{Vector indicating the number of components to include (the upper
+\item{K_max}{Vector indicating the number of components to include (the upper
 bound on the number of clusters in each dataset).}
 
 \item{initial_labels}{Initial clustering. $N x V$ matrix.}
@@ -59,6 +61,10 @@ a shorthand containing the `~` symbol.}
 \item{prior}{MDI-level prior hyperparameters, see \code{\link{mdiPrior}}.}
 
 \item{density_prior}{Density-level prior options, see \code{\link{densityPrior}}.}
+
+\item{R}{Deprecated; use \code{n_iter}.}
+
+\item{K}{Deprecated; use \code{K_max}.}
 }
 \value{
 A named list containing the sampled partitions, component weights,
@@ -79,14 +85,13 @@ data_modelled <- list(X, Y)
 
 V <- length(data_modelled)
 
-# This R is much too low for real applications
-R <- 100
+# This n_iter is much too low for real applications
+n_iter <- 100
 thin <- 5
 burn <- 10
 
-K_max <- 10
-K <- rep(K_max, V)
+K_max <- rep(10, V)
 types <- rep("G", V)
 
-mcmc_out <- callMDIWritingToFile(data_modelled, R, thin, types, K = K)
+mcmc_out <- callMDIWritingToFile(data_modelled, n_iter, thin, types, K_max = K_max)
 }
