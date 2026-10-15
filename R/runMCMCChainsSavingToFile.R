@@ -12,6 +12,9 @@
 #' @param dir_path A string for the directory to save samples to.
 #' @param K_max Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param control A \code{\link{mdirControl}} object: the proposal windows of the
+#' Gaussian process hyperparameters and whether and for how long they are adapted
+#' during burn in.
 #' @param R Deprecated; use \code{n_iter}.
 #' @param K Deprecated; use \code{K_max}.
 #' @param initial_labels Initial clustering. $N x L$ matrix.
@@ -20,40 +23,7 @@
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
-#' @param proposal_windows List of the proposal windows for the Metropolis-Hastings
-#' sampling of Gaussian process hyperparameters. Each entry corresponds to a
-#' view. For views modelled using a Gaussian process, the first entry is the
-#' proposal window for the ampltiude, the second is for the length-scale and the
-#' third is for the noise. These are not used in other mixture types.
-#' @return A named list containing the sampled partitions, component weights and
-#' phi parameters, model fit measures and some details on the model call.
-#' @examples
-#' \donttest{
-#' N <- 100
-#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
-#'
-#' truth <- c(rep(1, N / 2), rep(2, N / 2))
-#' data_modelled <- list(X, Y)
-#'
-#' V <- length(data_modelled)
-#'
-#' # MCMC parameters
-#' n_iter <- 100
-#' thin <- 10
-#' burn <- 20
-#'
-#' K_max <- rep(10, V)
-#' types <- rep("G", V)
-#'
-#' n_chains <- 2
-#' dir_path <- file.path(tempdir(), "mdir_chains")
-#' dir.create(dir_path)
-#' mcmc_out <- runMCMCChainsSavingToFile(data_modelled, n_chains, n_iter, thin, types,
-#'   K_max = K_max, dir_path = dir_path
-#' )
-#' }
-#' @export
+#' @param proposal_windows Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.
 runMCMCChainsSavingToFile <- function(X,
                           n_chains,
                           n_iter,
@@ -66,11 +36,20 @@ runMCMCChainsSavingToFile <- function(X,
                           alpha = NULL,
                           initial_labels_as_intended = FALSE,
                           proposal_windows = NULL,
+                          control = mdirControl(),
                           R = NULL,
                           K = NULL) {
   n_iter <- .mdirRenamedArg(if (missing(n_iter)) NULL else n_iter, R, "n_iter", "R", "runMCMCChainsSavingToFile", required = TRUE)
   K_max <- .mdirRenamedArg(if (missing(K_max)) NULL else K_max, K, "K_max", "K", "runMCMCChainsSavingToFile")
   K <- K_max
+  control <- .mdirResolveControl(
+    missing(control), control,
+    if (!missing(proposal_windows)) list(proposal_windows = proposal_windows) else list(),
+    "runMCMCChainsSavingToFile"
+  )
+  proposal_windows <- control$proposal_windows
+  auto_tune <- control$auto_tune
+  n_burn <- .mdirResolveAutoTune(auto_tune, control$n_burn, n_iter)
   model_call <- vector("list", n_chains)
   
   chain_dirs <- paste0(dir_path, "/Chain_", seq(1, n_chains))
@@ -89,8 +68,8 @@ runMCMCChainsSavingToFile <- function(X,
             fixed = fixed,
             alpha = alpha,
             initial_labels_as_intended = initial_labels_as_intended,
-            proposal_windows = proposal_windows, 
-            dir_path = chain_dirs[ii]
+            dir_path = chain_dirs[ii],
+            control = control
     )
   model_call[[ii]]$Chain <- ii
   

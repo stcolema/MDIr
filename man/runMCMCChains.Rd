@@ -29,6 +29,7 @@ runMCMCChains(
   swap_every = 1L,
   split_merge = 0L,
   joint_allocation = 0L,
+  control = mdirControl(),
   R = NULL,
   K = NULL
 )
@@ -60,11 +61,7 @@ weights in the model.}
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
 
-\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
-sampling of Gaussian process hyperparameters. Each entry corresponds to a
-view. For views modelled using a Gaussian process, the first entry is the
-proposal window for the ampltiude, the second is for the length-scale and the
-third is for the noise. These are not used in other mixture types.}
+\item{proposal_windows}{Deprecated; use \code{control = mdirControl(proposal_windows = ...)}.}
 
 \item{save_parameters, save_imputed, prior, density_prior}{See ``callMDI``.}
 
@@ -89,6 +86,10 @@ CRAN requires. Progress messages are given when the chains have finished.}
 
 \item{split_merge, joint_allocation}{Split-merge style moves and joint allocation within each
 chain; see \code{\link{callMDI}}.}
+
+\item{control}{A \code{\link{mdirControl}} object: the proposal windows of the
+Gaussian process hyperparameters and whether and for how long they are adapted
+during burn in.}
 
 \item{R}{Deprecated; use \code{n_iter}.}
 

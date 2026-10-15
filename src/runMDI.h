@@ -60,6 +60,9 @@ using namespace arma ;
 //' re-partition of two randomly chosen components (0 turns it off).
 //' @param joint_allocation Size of the blocks of views whose labels are redrawn jointly for each
 //' item, from their exact joint conditional (0 turns it off; see `mdi::joint_block`).
+//' @param auto_tune Adapt the proposal windows of the Gaussian process hyperparameters
+//' during the first `n_burn` sweeps, towards an acceptance rate of 0.44, then keep them fixed.
+//' @param n_burn Number of sweeps over which the windows are adapted.
 //' @return Named list of the different quantities drawn by the sampler.
 // [[Rcpp::export]]
 Rcpp::List runMDI(
@@ -83,7 +86,9 @@ Rcpp::List runMDI(
   arma::uword swap_scheme,
   arma::uword swap_every,
   arma::uword split_merge,
-  arma::uword joint_allocation
+  arma::uword joint_allocation,
+  bool auto_tune = false,
+  arma::uword n_burn = 0
 );
 
 #endif /* RUNMDI_H */

@@ -28,7 +28,9 @@ Rcpp::List runMDI(
     arma::uword swap_scheme,
     arma::uword swap_every,
     arma::uword split_merge,
-    arma::uword joint_allocation
+    arma::uword joint_allocation,
+    bool auto_tune,
+    arma::uword n_burn
 ) {
   
   if(thin < 1) {
@@ -267,6 +269,14 @@ Rcpp::List runMDI(
     for(uword t = 0; t < T; t++) {
       replicas[t]->sweep(r);
     }
+    // Adapt the proposal windows during the burn in only
+    if(auto_tune && r < n_burn) {
+      for(uword t = 0; t < T; t++) {
+        for(uword l = 0; l < L; l++) {
+          replicas[t]->mixtures[l]->density_ptr->adaptHyperParametersProposalWindows();
+        }
+      }
+    }
     if(T > 1 && (r + 1) % swap_every == 0) {
       exchange();
     }
@@ -341,6 +351,12 @@ Rcpp::List runMDI(
       Named("missing_cells") = missing_cells
   );
   result["tempering"] = pt;
+  field< vec > final_windows(L);
+  for(uword l = 0; l < L; l++) {
+    final_windows(l) = (mixture_types(l) == 3) ?
+      my_mdi.mixtures[l]->density_ptr->hyperParametersProposalWindows() : proposal_windows(l);
+  }
+  result["final_proposal_windows"] = final_windows;
   uword sm_attempts = 0, sm_accepts = 0;
   for(uword t = 0; t < T; t++) {
     sm_attempts += replicas[t]->split_merge_attempts;

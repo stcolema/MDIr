@@ -95,6 +95,8 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_prio
   hypers.zeros(3 * K);
   acceptance_count.zeros(3 * K);
   acceptance_attempts.zeros(3 * K);
+  adapt_prev_accept.zeros(3 * K);
+  adapt_prev_attempt.zeros(3 * K);
   
   identifyMissingValues();
   initializeMissingValues();
@@ -401,6 +403,53 @@ void gp::updatePooledHyperparameters(const arma::uvec& occupied) {
 
 arma::vec gp::pooledHyperparameters() const {
   return arma::vec({m_amp, s_amp, m_noise, s_noise});
+}
+
+// One diminishing-adaptation step of a log-scale random-walk window: the log window
+// moves by (acceptance rate - target) / n^kappa. The rate may be a fraction over
+// several components sharing the window (the batched Robbins-Monro process, as in
+// Garthwaite, Fan and Sisson, 2016); kappa = 0.6 lies in (0.5, 1], so the
+// adaptation diminishes and, being stopped after burn in, leaves the chain a
+// Metropolis-Hastings chain with fixed windows.
+static double robbinsMonroWindow(double window, double rate, double target, double n) {
+  const double step = 1.0 / std::pow(std::max(n, 1.0), 0.6);
+  const double log_window = std::log(window) + step * (rate - target);
+  return std::exp(std::min(std::max(log_window, -20.0), 20.0));
+}
+
+// Called after every sweep of the burn in. The hyperparameters are only updated every
+// `sampleHypersFrequency` sweeps, and only for occupied components, so most calls find
+// no new proposals and do nothing. Each window is adapted from the acceptance rate of
+// its own proposals since the last adaptation, over all components.
+void gp::adaptHyperParametersProposalWindows() {
+  const double target = 0.44;
+  double rate[3] = {0.0, 0.0, 0.0};
+  bool any_new = false, new_for[3] = {false, false, false};
+  for(uword h = 0; h < 3; h++) {
+    const uvec accepted = acceptance_count.subvec(h * K, (h + 1) * K - 1);
+    const uvec attempted = acceptance_attempts.subvec(h * K, (h + 1) * K - 1);
+    const double d_accept = (double) arma::accu(accepted) - (double) arma::accu(adapt_prev_accept.subvec(h * K, (h + 1) * K - 1));
+    const double d_attempt = (double) arma::accu(attempted) - (double) arma::accu(adapt_prev_attempt.subvec(h * K, (h + 1) * K - 1));
+    if(d_attempt > 0.0) {
+      rate[h] = d_accept / d_attempt;
+      new_for[h] = true;
+      any_new = true;
+    }
+  }
+  if(!any_new) {
+    return;
+  }
+  adaptation_events++;
+  const double n = (double) adaptation_events;
+  if(new_for[0]) amplitude_proposal_window = robbinsMonroWindow(amplitude_proposal_window, rate[0], target, n);
+  if(new_for[1]) length_proposal_window = robbinsMonroWindow(length_proposal_window, rate[1], target, n);
+  if(new_for[2]) noise_proposal_window = robbinsMonroWindow(noise_proposal_window, rate[2], target, n);
+  adapt_prev_accept = acceptance_count;
+  adapt_prev_attempt = acceptance_attempts;
+}
+
+vec gp::hyperParametersProposalWindows() const {
+  return vec({amplitude_proposal_window, length_proposal_window, noise_proposal_window});
 }
 
 void gp::receiveHyperParametersProposalWindows(vec proposal_windows) {
