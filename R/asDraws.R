@@ -107,7 +107,8 @@
 #'   \item{\code{occupied[v]}}{Number of occupied components in view \code{v}.}
 #'   \item{\code{outlier_weight[v]}}{Outlier weight of a view with an outlier component.}
 #'   \item{\code{pooled[v,j]}}{The pooled hyperparameters of view \code{v} (variance
-#'   scales, or the Gaussian-process population parameters; see \code{\link{densityPrior}}).}
+#'   scales, then the component-mean precision \code{kappa} if it is sampled, or the
+#'   Gaussian-process population parameters; see \code{\link{densityPrior}}).}
 #'   \item{\code{sorted_weight[v,k]}}{With \code{weights = TRUE}: the normalised
 #'   component weights of a view sorted from largest to smallest.}
 #'   \item{\code{allocation[v,n]}}{With \code{allocations = TRUE}: the component

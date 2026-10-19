@@ -23,7 +23,13 @@ gaussian::gaussian(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _
   // Mean and variance per feature
   n_param = 2 * P;
 
-  kappa = 0.01;
+  kappa = density_prior(5);
+  kappa_min = density_prior(6);
+  kappa_max = density_prior(7);
+  kappa_sampled = kappa_max > kappa_min;
+  if(kappa_sampled) {
+    kappa = std::sqrt(kappa_min * kappa_max);
+  }
   nu = 3.0;
 
   // These use only the observed entries
@@ -60,6 +66,7 @@ Rcpp::List gaussian::hyperparameterList() const {
     Rcpp::Named("scale_prior_mean") = scale_prior_mean,
     Rcpp::Named("scale_pooling_shape") = scale_shape,
     Rcpp::Named("kappa") = kappa,
+    Rcpp::Named("kappa_range") = kappa_sampled ? Rcpp::NumericVector::create(kappa_min, kappa_max) : Rcpp::NumericVector(0),
     Rcpp::Named("nu") = nu
   );
 }
@@ -86,31 +93,56 @@ void gaussian::sampleMuPrior() {
   }
 };
 
-void gaussian::updatePooledHyperparameters(const arma::uvec& occupied) {
-  if(scale_shape <= 0.0) {
-    return;
-  }
-  const double shape = scale_shape + 0.5 * nu * (double) occupied.n_elem;
-  for(uword p = 0; p < P; p++) {
-    double rate = scale_shape / scale_prior_mean(p);
-    for(uword i = 0; i < occupied.n_elem; i++) {
-      rate += 0.5 * precisions(p, occupied(i));
+void gaussian::updateKappa(const arma::uvec& occupied) {
+  double Q = 0.0;
+  for(uword i = 0; i < occupied.n_elem; i++) {
+    const uword k = occupied(i);
+    for(uword p = 0; p < P; p++) {
+      Q += std::pow(mu(p, k) - xi(p), 2.0) * precisions(p, k);
     }
-    scale(p) = rGamma(shape, rate);
+  }
+  const double shape = 0.5 * (double) P * (double) occupied.n_elem;
+  kappa = rTruncatedGamma(shape, 0.5 * Q, kappa_min, kappa_max);
+}
+
+void gaussian::updatePooledHyperparameters(const arma::uvec& occupied) {
+  if(scale_shape > 0.0) {
+    const double shape = scale_shape + 0.5 * nu * (double) occupied.n_elem;
+    for(uword p = 0; p < P; p++) {
+      double rate = scale_shape / scale_prior_mean(p);
+      for(uword i = 0; i < occupied.n_elem; i++) {
+        rate += 0.5 * precisions(p, occupied(i));
+      }
+      scale(p) = rGamma(shape, rate);
+    }
+  }
+  if(kappa_sampled) {
+    updateKappa(occupied);
   }
 }
 
+// The scale (P entries) followed by kappa when it is sampled
 arma::vec gaussian::pooledHyperparameters() const {
-  return scale;
+  arma::vec out = scale;
+  if(kappa_sampled) {
+    out = arma::join_cols(out, arma::vec({kappa}));
+  }
+  return out;
 }
 
 void gaussian::setPooledHyperparameters(const arma::vec& pooled) {
-  if(pooled.n_elem == P) {
-    scale = pooled;
+  if(pooled.n_elem == P || (kappa_sampled && pooled.n_elem == P + 1)) {
+    scale = pooled.head(P);
+  }
+  if(kappa_sampled && pooled.n_elem == P + 1) {
+    kappa = pooled(P);
   }
 }
 
 void gaussian::sampleFromPriors() {
+  if(kappa_sampled) {
+    kappa = rLogUniform(kappa_min, kappa_max);
+  }
   if(scale_shape > 0.0) {
     for(uword p = 0; p < P; p++) {
       scale(p) = rGamma(scale_shape, scale_shape / scale_prior_mean(p));

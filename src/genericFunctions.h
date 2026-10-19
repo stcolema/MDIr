@@ -17,6 +17,15 @@ using namespace arma ;
 //' @return Sample from Gamma(shape, rate).
 double rGamma(double shape, double rate);
 
+// Draw from the Gamma(shape, rate) distribution truncated to [lower, upper] by
+// inversion. A rate of zero (or less) gives the density proportional to
+// x^(shape - 1) on the interval, and a shape of zero the density proportional
+// to 1 / x (log-uniform), the two limits of the Gamma family.
+double rTruncatedGamma(double shape, double rate, double lower, double upper);
+
+// Log-uniform draw on [lower, upper]
+double rLogUniform(double lower, double upper);
+
 //' @title The Gamma Distribution
 //' @description Random generation from the Gamma distribution.
 //' @param N Number of samples to draw.

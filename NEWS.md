@@ -1,5 +1,21 @@
 # mdir (development version)
 
+## A hierarchical prior on the precision of the component-mean prior
+
+* `densityPrior()` has two new arguments, `kappa` (default `0.01`, the value that was hard-coded) and
+  `kappa_range` (default `NULL`). `kappa_range = c(lo, hi)` gives the precision `kappa` of the conjugate prior
+  `mu_k | Sigma_k ~ N(xi, Sigma_k / kappa)` a log-uniform hyperprior on `[lo, hi]`, shared by the components and
+  sampled in every sweep from its full conditional given the occupied components, a Gamma distribution truncated to
+  the range. It applies to the `"MVN"`, `"TAGM"` and `"G"` densities, is a pooled hyperparameter (the last column of
+  `pooled_hyperparameters`), is drawn from its prior at the start and by `smcMDI()`, and travels with the state in
+  tempering exchanges. The default is unchanged and output at the default is bit-identical to the previous version.
+* Why: with `kappa = 0.01` the prior standard deviation of a component mean is ten of its own standard deviations, so
+  the marginal likelihood of a partition penalises a component far from the grand mean. In a one-dimensional example
+  with eight well separated pairs of sub-clusters the posterior probability that the left-most pair splits was 1.00 with
+  one, two or four identical pairs present and 0.00 with eight. A log-uniform hyperprior on `[1e-6, 1]`, a fixed
+  `kappa = 1e-4` and an independent normal prior on the mean all remove this, and agree on the separation at which a
+  single pair splits to within about 0.2 standard deviations (sub-clusters of 3 to 40 items). See `?densityPrior`.
+
 ## Guards against underflow of the component weights
 
 * A mass prior that puts almost all of its probability near zero (for example `mdiPrior(mass_shape = 1, mass_rate = 1e3)`)

@@ -27,6 +27,14 @@ public:
   // Parameters and hyperparameters
   double kappa = 0.01, nu = 3.0;
 
+  // Log-uniform hyperprior on kappa on [kappa_min, kappa_max], shared by the
+  // components and features; sampled only if kappa_sampled. Given the occupied
+  // components, kappa | . ~ Gamma(P n_occ / 2, sum_kp (mu_kp - xi_p)^2 / (2 sigma2_kp))
+  // truncated to the range.
+  double kappa_min = 0.0, kappa_max = 0.0;
+  bool kappa_sampled = false;
+  void updateKappa(const arma::uvec& occupied);
+
   arma::vec xi, scale;
 
   // Component parameters, P x K. Note these are variances, not standard

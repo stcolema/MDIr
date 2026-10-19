@@ -36,6 +36,55 @@ double rGamma(double shape, double rate) {
   return std::max(x, std::numeric_limits<double>::min());
 };
 
+double rLogUniform(double lower, double upper) {
+  if(!(lower > 0.0) || !(upper > lower) || !std::isfinite(upper)) {
+    Rcpp::stop("rLogUniform: need 0 < lower < upper < Inf (lower = %g, upper = %g).", lower, upper);
+  }
+  const double u = arma::randu();
+  return std::exp(std::log(lower) + u * (std::log(upper) - std::log(lower)));
+};
+
+double rTruncatedGamma(double shape, double rate, double lower, double upper) {
+  if(!(lower > 0.0) || !(upper > lower) || !std::isfinite(upper)) {
+    Rcpp::stop("rTruncatedGamma: need 0 < lower < upper < Inf (lower = %g, upper = %g).", lower, upper);
+  }
+  if(!(shape >= 0.0) || !std::isfinite(shape) || !std::isfinite(rate)) {
+    Rcpp::stop("rTruncatedGamma: invalid shape or rate (shape = %g, rate = %g).", shape, rate);
+  }
+  if(shape == 0.0 && rate <= 0.0) {
+    return rLogUniform(lower, upper);
+  }
+  const double u = arma::randu();
+  if(rate <= 0.0) {
+    // Density proportional to x^(shape - 1): invert x^shape
+    const double a = std::pow(lower, shape), b = std::pow(upper, shape);
+    return std::min(std::max(std::pow(a + u * (b - a), 1.0 / shape), lower), upper);
+  }
+  if(shape == 0.0) {
+    // A limit of the Gamma family: density proportional to exp(-rate x) / x
+    // has no closed-form inverse, so use a log-uniform proposal with a
+    // rejection step on exp(-rate x).
+    for(int it = 0; it < 10000; it++) {
+      const double x = rLogUniform(lower, upper);
+      if(arma::randu() < std::exp(-rate * (x - lower))) {
+        return x;
+      }
+    }
+    return lower;
+  }
+  const double scale = 1.0 / rate;
+  const double F_lo = R::pgamma(lower, shape, scale, 1, 0);
+  const double F_hi = R::pgamma(upper, shape, scale, 1, 0);
+  if(!(F_hi > F_lo)) {
+    // The interval holds no mass in double precision. All the mass is either
+    // below the lower end or above the upper end, so the truncated draw
+    // sits at the nearer end.
+    return (F_lo >= 0.5) ? lower : upper;
+  }
+  const double x = R::qgamma(F_lo + u * (F_hi - F_lo), shape, scale, 1, 0);
+  return std::min(std::max(x, lower), upper);
+};
+
 //' title The Gamma Distribution
 //' description Random generation from the Gamma distribution.
 //' param N Number of samples to draw.

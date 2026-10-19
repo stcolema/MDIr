@@ -16,6 +16,27 @@
 #' which is the exact conditional with the empty components integrated out.
 #' \code{scale_pool_shape = 0} fixes the scale at \eqn{c_p}.
 #'
+#' \strong{Precision of the component-mean prior (\code{"MVN"}, \code{"TAGM"},
+#' \code{"G"}).} The component means have the conjugate prior
+#' \eqn{\mu_k \mid \Sigma_k \sim N(\xi, \Sigma_k / \kappa)}, so the prior
+#' standard deviation of a mean is \eqn{\sigma_k / \sqrt{\kappa}}. The default
+#' \eqn{\kappa = 0.01} (a small fraction of one observation of information,
+#' as in the regularising prior of Fraley and Raftery, 2007) therefore says that
+#' component means lie within about ten of their own standard deviations of the
+#' grand mean. That is harmless for estimating the means of known components, but
+#' the marginal likelihood of a partition depends on it: for well separated
+#' groups the penalty on a component far from \eqn{\xi} can outweigh the
+#' evidence for splitting it, so the posterior odds that a group splits can
+#' change when unrelated groups elsewhere in the data are added or removed.
+#' With \code{kappa_range = c(lo, hi)} \eqn{\kappa} is shared by the
+#' components and given a log-uniform hyperprior on \eqn{[lo, hi]}, and is
+#' sampled from its full conditional given the occupied components,
+#' \eqn{\mathrm{Gamma}(P n_{occ} / 2, \sum_k (\mu_k - \xi)^\top \Sigma_k^{-1}
+#' (\mu_k - \xi) / 2)} truncated to the range. It is then included among the
+#' pooled hyperparameters (the last column of \code{pooled_hyperparameters}),
+#' and \code{kappa} is ignored. \code{kappa_range = NULL} (the default) keeps
+#' \eqn{\kappa} fixed at \code{kappa}.
+#'
 #' \strong{Gaussian process views (\code{"GP"}, \code{"TAGPM"}).} Component \eqn{k}
 #' has mean function \eqn{\mu_k = \xi + f_k} with \eqn{\xi} the column means and
 #' \eqn{f_k} a Gaussian process with squared exponential kernel
@@ -43,6 +64,12 @@
 #' \eqn{N(\log v, 1)}.
 #' @param scale_pool_shape Shape \eqn{a} of the hyperprior on the variance
 #' scale; 0 disables pooling.
+#' @param kappa Positive number. The precision of the component-mean prior when
+#' it is not sampled.
+#' @param kappa_range \code{NULL} (the default) or a numeric vector
+#' \code{c(lo, hi)} with \code{0 < lo < hi}: the range of a log-uniform
+#' hyperprior on \eqn{\kappa}, which is then sampled. For example
+#' \code{c(1e-6, 1)}.
 #' @param pool_gp Logical. Pool the GP amplitude and noise across components.
 #' @param gp_min_length Smallest permitted GP length scale, in multiples of the
 #' smallest spacing between measurements (the spacing itself for equally spaced
@@ -52,7 +79,11 @@
 #' @param gp_pool_sd_scale Scale of the half-normal prior on the sd of those
 #' populations.
 #' @return A numeric vector of class \code{mdir_density_prior}.
-#' @references Richardson, S. and Green, P. J. (1997). On Bayesian analysis of
+#' @references Fraley, C. and Raftery, A. E. (2007). Bayesian regularization for
+#' normal mixture estimation and model-based clustering. \emph{Journal of
+#' Classification}, 24, 155-181.
+#'
+#' Richardson, S. and Green, P. J. (1997). On Bayesian analysis of
 #' mixtures with an unknown number of components. \emph{Journal of the Royal
 #' Statistical Society B}, 59(4), 731-792.
 #'
@@ -71,7 +102,9 @@ densityPrior <- function(scale_pool_shape = 2,
                          pool_gp = TRUE,
                          gp_min_length = 1,
                          gp_center_sd = 2,
-                         gp_pool_sd_scale = 1) {
+                         gp_pool_sd_scale = 1,
+                         kappa = 0.01,
+                         kappa_range = NULL) {
   ok <- function(x) is.numeric(x) && length(x) == 1 && is.finite(x)
   if (!ok(scale_pool_shape) || scale_pool_shape < 0) {
     stop("`scale_pool_shape` must be a single non-negative number.")
@@ -84,10 +117,21 @@ densityPrior <- function(scale_pool_shape = 2,
       stop("`", nm, "` must be a single positive number.")
     }
   }
+  if (!ok(kappa) || kappa <= 0) {
+    stop("`kappa` must be a single positive number.")
+  }
+  if (is.null(kappa_range)) {
+    kappa_range <- c(0, 0)
+  } else if (!is.numeric(kappa_range) || length(kappa_range) != 2 ||
+             !all(is.finite(kappa_range)) || kappa_range[1] <= 0 ||
+             kappa_range[2] <= kappa_range[1]) {
+    stop("`kappa_range` must be NULL or c(lo, hi) with 0 < lo < hi.")
+  }
   structure(
     c(scale_pool_shape = scale_pool_shape, pool_gp = as.numeric(pool_gp),
       gp_min_length = gp_min_length, gp_center_sd = gp_center_sd,
-      gp_pool_sd_scale = gp_pool_sd_scale),
+      gp_pool_sd_scale = gp_pool_sd_scale, kappa = kappa,
+      kappa_min = kappa_range[1], kappa_max = kappa_range[2]),
     class = "mdir_density_prior"
   )
 }
@@ -102,6 +146,11 @@ print.mdir_density_prior <- function(x, ...) {
     cat(sprintf("  variance scale pooled across components, Gamma shape %g\n", x[1]))
   } else {
     cat("  variance scale fixed (no pooling)\n")
+  }
+  if (length(x) >= 8 && x[8] > x[7]) {
+    cat(sprintf("  component-mean precision kappa sampled, log-uniform on [%g, %g]\n", x[7], x[8]))
+  } else {
+    cat(sprintf("  component-mean precision kappa fixed at %g\n", if (length(x) >= 6) x[6] else 0.01))
   }
   cat(sprintf("  GP amplitude / noise %s; min length scale %g grid units; centre sd %g; population sd scale %g\n",
               if (x[2] > 0) "pooled" else "not pooled", x[3], x[4], x[5]))
