@@ -94,7 +94,8 @@ public:
   arma::umat has_missing;
 
   // Options for the density-level (hierarchical) priors, ordered as
-  //  (scale_pool_shape, gp_pool, gp_min_length, gp_center_sd, gp_pool_sd_scale);
+  //  (scale_pool_shape, gp_pool, gp_min_length, gp_center_sd, gp_pool_sd_scale,
+  //   kappa, kappa_min, kappa_max);
   // see resolveDensityPrior()
   arma::vec density_prior;
   

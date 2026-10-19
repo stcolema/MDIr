@@ -18,14 +18,23 @@ using namespace arma ;
 // Multivariate normal components with a conjugate normal-inverse-Wishart prior,
 //   Sigma_k ~ IW(scale, nu),  mu_k | Sigma_k ~ N(xi, Sigma_k / kappa).
 // xi is the column mean of the observed data and scale = (mean marginal
-// variance) / K^{2/P} * I; kappa = 0.01 and nu = P + 2 are fixed (see
-// hyperparameterList()).
+// variance) / K^{2/P} * I; nu = P + 2 is fixed (see hyperparameterList()).
+// kappa is 0.01 unless densityPrior(kappa_range = c(lo, hi)) gives it a
+// log-uniform hyperprior on [lo, hi], shared by the components. Its full
+// conditional given the occupied components is
+//   kappa | . ~ Gamma(P n_occ / 2, sum_k (mu_k - xi)' Sigma_k^{-1} (mu_k - xi) / 2)
+// truncated to [lo, hi]; the empty components are integrated out.
 class mvn : virtual public density
 {
 public:
 
   // Parameters and hyperparameters
   double kappa, nu;
+
+  // Hyperprior on kappa (see above); sampled only if kappa_sampled
+  double kappa_min = 0.0, kappa_max = 0.0;
+  bool kappa_sampled = false;
+  void updateKappa(const arma::uvec& occupied);
 
   arma::vec xi, cov_log_det;
   arma::mat scale, mu;

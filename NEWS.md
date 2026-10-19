@@ -1,5 +1,48 @@
 # mdir (development version)
 
+## A hierarchical prior on the precision of the component-mean prior
+
+* `densityPrior()` has two new arguments, `kappa` (default `0.01`, the value that was hard-coded) and
+  `kappa_range` (default `NULL`). `kappa_range = c(lo, hi)` gives the precision `kappa` of the conjugate prior
+  `mu_k | Sigma_k ~ N(xi, Sigma_k / kappa)` a log-uniform hyperprior on `[lo, hi]`, shared by the components and
+  sampled in every sweep from its full conditional given the occupied components, a Gamma distribution truncated to
+  the range. It applies to the `"MVN"`, `"TAGM"` and `"G"` densities, is a pooled hyperparameter (the last column of
+  `pooled_hyperparameters`), is drawn from its prior at the start and by `smcMDI()`, and travels with the state in
+  tempering exchanges. The default is unchanged and output at the default is bit-identical to the previous version.
+* Why: with `kappa = 0.01` the prior standard deviation of a component mean is ten of its own standard deviations, so
+  the marginal likelihood of a partition penalises a component far from the grand mean. In a one-dimensional example
+  with eight well separated pairs of sub-clusters the posterior probability that the left-most pair splits was 1.00 with
+  one, two or four identical pairs present and 0.00 with eight. A log-uniform hyperprior on `[1e-6, 1]`, a fixed
+  `kappa = 1e-4` and an independent normal prior on the mean all remove this, and agree on the separation at which a
+  single pair splits to within about 0.2 standard deviations (sub-clusters of 3 to 40 items). See `?densityPrior`.
+
+## Guards against underflow of the component weights
+
+* A mass prior that puts almost all of its probability near zero (for example `mdiPrior(mass_shape = 1, mass_rate = 1e3)`)
+  made about a third of the runs fail in the first sweep with `randg(): incorrect distribution parameters; a and b
+  must be greater than zero`. The prior weights `Gamma(mass / K, rate)` are then astronomically small and `rGamma()`
+  floors them at the smallest positive double, so the normalising constant `Z` is a few times that floor; the
+  strategic latent variable `v ~ Gamma(N, Z)` overflows, and the next conditional has an infinite rate. Between 1% and 2% of
+  runs with `mdiPrior(mass_shape = 1, mass_rate = 10)` failed in this way (4 of 240, 2 of 200 and 1 of 200 seeds).
+* Runs that did not fail were not necessarily right: with the weights at the floor, `log(w)` no longer reflects the
+  component counts and the sampler used weights that ignore them until the mass recovered.
+* The start is now drawn again from the prior whenever the normalising constant, or the largest weight of any view, is
+  below `1e-200` (after 1000 failed attempts the run stops and says why). Draws that pass use no extra random numbers, so
+  output for the default prior is bit-identical to the previous version (checked for 200 seeds), and so is output for
+  `mdiPrior(mass_shape = 1, mass_rate = 10)` except for the seeds that failed or started below the threshold. This truncates the
+  starting law, not the model; `smcMDI()` therefore draws its particles from the prior restricted to representable starts.
+* Every sweep now checks the same condition and stops with an error that names the cause, instead of continuing with
+  weights that the floor has distorted. `rGamma()` reports invalid or overflowing arguments with their values (a zero
+  rate used to return `Inf` silently).
+* The weight scale is a nuisance coordinate that moves slowly when the mass is small, and the stationary law of the
+  total weight, `Gamma(mass, rate)`, has real probability below `1e-200` when the mass is below about 0.01. With a sparse
+  mass prior a small share of long runs therefore reaches the stop: 3 to 5 of 1200 chains of 40000 sweeps for `Gamma(1, 10)`
+  at N = 9 (three repetitions), none of 260 runs at N = 60 and N = 288. The stop removes those chains, so a sample of the runs that complete is
+  very slightly thinner in the lower tail of the mass than the posterior; a reparameterisation in terms of the
+  normalised weights would remove the limit.
+* Checked against exact enumeration at N = 9 with `Gamma(1, 10)`: partition frequencies agree (chi-squared 10.1 on 15
+  degrees of freedom, p = 0.81) and the posterior median of the mass is 0.105 (exact 0.106).
+
 ## Gaussian process views at unequally spaced positions: `time_points`
 
 * A Gaussian process view (`"GP"`, `"TAGPM"`) no longer assumes that its columns are one unit apart. Give the

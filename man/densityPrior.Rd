@@ -10,7 +10,9 @@ densityPrior(
   pool_gp = TRUE,
   gp_min_length = 1,
   gp_center_sd = 2,
-  gp_pool_sd_scale = 1
+  gp_pool_sd_scale = 1,
+  kappa = 0.01,
+  kappa_range = NULL
 )
 
 \method{print}{mdir_density_prior}(x, ...)
@@ -30,6 +32,14 @@ populations around the log average data variance.}
 
 \item{gp_pool_sd_scale}{Scale of the half-normal prior on the sd of those
 populations.}
+
+\item{kappa}{Positive number. The precision of the component-mean prior when
+it is not sampled.}
+
+\item{kappa_range}{\code{NULL} (the default) or a numeric vector
+\code{c(lo, hi)} with \code{0 < lo < hi}: the range of a log-uniform
+hyperprior on \eqn{\kappa}, which is then sampled. For example
+\code{c(1e-6, 1)}.}
 
 \item{x}{An \code{mdir_density_prior} object.}
 
@@ -55,6 +65,27 @@ components, so small or empty components borrow strength). Richardson and Green
 univariate mixture. The update conditions on the occupied components only,
 which is the exact conditional with the empty components integrated out.
 \code{scale_pool_shape = 0} fixes the scale at \eqn{c_p}.
+
+\strong{Precision of the component-mean prior (\code{"MVN"}, \code{"TAGM"},
+\code{"G"}).} The component means have the conjugate prior
+\eqn{\mu_k \mid \Sigma_k \sim N(\xi, \Sigma_k / \kappa)}, so the prior
+standard deviation of a mean is \eqn{\sigma_k / \sqrt{\kappa}}. The default
+\eqn{\kappa = 0.01} (a small fraction of one observation of information,
+as in the regularising prior of Fraley and Raftery, 2007) therefore says that
+component means lie within about ten of their own standard deviations of the
+grand mean. That is harmless for estimating the means of known components, but
+the marginal likelihood of a partition depends on it: for well separated
+groups the penalty on a component far from \eqn{\xi} can outweigh the
+evidence for splitting it, so the posterior odds that a group splits can
+change when unrelated groups elsewhere in the data are added or removed.
+With \code{kappa_range = c(lo, hi)} \eqn{\kappa} is shared by the
+components and given a log-uniform hyperprior on \eqn{[lo, hi]}, and is
+sampled from its full conditional given the occupied components,
+\eqn{\mathrm{Gamma}(P n_{occ} / 2, \sum_k (\mu_k - \xi)^\top \Sigma_k^{-1}
+(\mu_k - \xi) / 2)} truncated to the range. It is then included among the
+pooled hyperparameters (the last column of \code{pooled_hyperparameters}),
+and \code{kappa} is ignored. \code{kappa_range = NULL} (the default) keeps
+\eqn{\kappa} fixed at \code{kappa}.
 
 \strong{Gaussian process views (\code{"GP"}, \code{"TAGPM"}).} Component \eqn{k}
 has mean function \eqn{\mu_k = \xi + f_k} with \eqn{\xi} the column means and
@@ -89,6 +120,10 @@ densityPrior()
 densityPrior(scale_pool_shape = 0, gp_min_length = 2)
 }
 \references{
+Fraley, C. and Raftery, A. E. (2007). Bayesian regularization for
+normal mixture estimation and model-based clustering. \emph{Journal of
+Classification}, 24, 155-181.
+
 Richardson, S. and Green, P. J. (1997). On Bayesian analysis of
 mixtures with an unknown number of components. \emph{Journal of the Royal
 Statistical Society B}, 59(4), 731-792.

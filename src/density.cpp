@@ -13,17 +13,26 @@ using namespace arma ;
 
 arma::vec resolveDensityPrior(const arma::vec& prior) {
   // scale_pool_shape (0 switches pooling of variance scales off), gp_pool (0/1), 
-  // gp_min_length (grid units), gp_center_sd, gp_pool_sd_scale
-  arma::vec out = {2.0, 1.0, 1.0, 2.0, 1.0};
+  // gp_min_length (grid units), gp_center_sd, gp_pool_sd_scale, kappa (the 
+  // precision of the component-mean prior when it is fixed), kappa_min and 
+  // kappa_max (both 0 for a fixed kappa; 0 < kappa_min < kappa_max for a 
+  // log-uniform hyperprior on kappa that is sampled). A vector of five entries 
+  // (without the kappa options) is accepted and means a fixed kappa of 0.01.
+  arma::vec out = {2.0, 1.0, 1.0, 2.0, 1.0, 0.01, 0.0, 0.0};
   if(prior.n_elem == 0) {
     return out;
   }
-  if(prior.n_elem != 5 || !prior.is_finite() || prior(0) < 0.0 
-     || (prior(1) != 0.0 && prior(1) != 1.0) || prior(2) <= 0.0 
-     || prior(3) <= 0.0 || prior(4) <= 0.0) {
+  arma::vec p = prior;
+  if(p.n_elem == 5) {
+    p = arma::join_cols(p, arma::vec({0.01, 0.0, 0.0}));
+  }
+  const bool kappa_ok = p.n_elem == 8 && p.is_finite() && p(5) > 0.0
+    && ((p(6) == 0.0 && p(7) == 0.0) || (p(6) > 0.0 && p(7) > p(6)));
+  if(!kappa_ok || p(0) < 0.0 || (p(1) != 0.0 && p(1) != 1.0) || p(2) <= 0.0 
+     || p(3) <= 0.0 || p(4) <= 0.0) {
     Rcpp::stop("Invalid density prior options; see densityPrior().");
   }
-  return prior;
+  return p;
 }
 
 density::density(

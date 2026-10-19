@@ -12,10 +12,77 @@ using namespace arma ;
 //' param rate Rate parameter.
 //' return Sample from Gamma(shape, rate).
 double rGamma(double shape, double rate) {
+  // Arguments that cannot describe a Gamma distribution are reported here, with
+  // the values, instead of by armadillo (whose message names neither the
+  // function nor the values) or, for a zero rate, silently as an infinite draw.
+  if(!(shape > 0.0) || !std::isfinite(shape)) {
+    Rcpp::stop("rGamma: the shape must be positive and finite (shape = %g, rate = %g).", shape, rate);
+  }
+  if(!(rate > 0.0) || !std::isfinite(rate)) {
+    Rcpp::stop(
+      "rGamma: the rate must be positive and finite (shape = %g, rate = %g). A rate of this kind comes from a "
+      "normalising constant or a weight that has underflowed or overflowed; see the notes on the mass prior in "
+      "?mdiPrior.", shape, rate);
+  }
+  const double x = arma::randg( distr_param(shape, 1.0 / rate) );
+  // A draw that overflows would feed Inf into the next conditional. Stopping is
+  // safer than clamping, which would leave the weights at the floor below and
+  // make them independent of the component counts without any error.
+  if(!std::isfinite(x)) {
+    Rcpp::stop("rGamma: the draw overflowed (shape = %g, rate = %g).", shape, rate);
+  }
   // Gamma draws with small shape can underflow to exactly zero, which breaks
   // any subsequent log(). Floor at the smallest positive normal double.
-  double x = arma::randg( distr_param(shape, 1.0 / rate) );
   return std::max(x, std::numeric_limits<double>::min());
+};
+
+double rLogUniform(double lower, double upper) {
+  if(!(lower > 0.0) || !(upper > lower) || !std::isfinite(upper)) {
+    Rcpp::stop("rLogUniform: need 0 < lower < upper < Inf (lower = %g, upper = %g).", lower, upper);
+  }
+  const double u = arma::randu();
+  return std::exp(std::log(lower) + u * (std::log(upper) - std::log(lower)));
+};
+
+double rTruncatedGamma(double shape, double rate, double lower, double upper) {
+  if(!(lower > 0.0) || !(upper > lower) || !std::isfinite(upper)) {
+    Rcpp::stop("rTruncatedGamma: need 0 < lower < upper < Inf (lower = %g, upper = %g).", lower, upper);
+  }
+  if(!(shape >= 0.0) || !std::isfinite(shape) || !std::isfinite(rate)) {
+    Rcpp::stop("rTruncatedGamma: invalid shape or rate (shape = %g, rate = %g).", shape, rate);
+  }
+  if(shape == 0.0 && rate <= 0.0) {
+    return rLogUniform(lower, upper);
+  }
+  const double u = arma::randu();
+  if(rate <= 0.0) {
+    // Density proportional to x^(shape - 1): invert x^shape
+    const double a = std::pow(lower, shape), b = std::pow(upper, shape);
+    return std::min(std::max(std::pow(a + u * (b - a), 1.0 / shape), lower), upper);
+  }
+  if(shape == 0.0) {
+    // A limit of the Gamma family: density proportional to exp(-rate x) / x
+    // has no closed-form inverse, so use a log-uniform proposal with a
+    // rejection step on exp(-rate x).
+    for(int it = 0; it < 10000; it++) {
+      const double x = rLogUniform(lower, upper);
+      if(arma::randu() < std::exp(-rate * (x - lower))) {
+        return x;
+      }
+    }
+    return lower;
+  }
+  const double scale = 1.0 / rate;
+  const double F_lo = R::pgamma(lower, shape, scale, 1, 0);
+  const double F_hi = R::pgamma(upper, shape, scale, 1, 0);
+  if(!(F_hi > F_lo)) {
+    // The interval holds no mass in double precision. All the mass is either
+    // below the lower end or above the upper end, so the truncated draw
+    // sits at the nearer end.
+    return (F_lo >= 0.5) ? lower : upper;
+  }
+  const double x = R::qgamma(F_lo + u * (F_hi - F_lo), shape, scale, 1, 0);
+  return std::min(std::max(x, lower), upper);
 };
 
 //' title The Gamma Distribution
@@ -25,6 +92,9 @@ double rGamma(double shape, double rate) {
 //' param rate Rate parameter.
 //' return N samples from Gamma(shape, rate).
 arma::vec rGamma(uword N, double shape, double rate) {
+  if(!(shape > 0.0) || !std::isfinite(shape) || !(rate > 0.0) || !std::isfinite(rate)) {
+    Rcpp::stop("rGamma: the shape and the rate must be positive and finite (shape = %g, rate = %g).", shape, rate);
+  }
   return arma::randg(N, distr_param(shape, 1.0 / rate) );
 };
 

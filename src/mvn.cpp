@@ -28,7 +28,13 @@ mvn::mvn(arma::uword _K, arma::uvec _labels, arma::mat _X, arma::vec _density_pr
   // Mean vector and covariance matrix
   n_param = P * (1 + (P + 1) * 0.5);
 
-  kappa = 0.01;
+  kappa = density_prior(5);
+  kappa_min = density_prior(6);
+  kappa_max = density_prior(7);
+  kappa_sampled = kappa_max > kappa_min;
+  if(kappa_sampled) {
+    kappa = std::sqrt(kappa_min * kappa_max);
+  }
   nu = P + 2;
 
   // These use only the observed entries
@@ -65,6 +71,7 @@ Rcpp::List mvn::hyperparameterList() const {
     Rcpp::Named("scale_prior_mean") = scale_prior_mean,
     Rcpp::Named("scale_pooling_shape") = scale_shape,
     Rcpp::Named("kappa") = kappa,
+    Rcpp::Named("kappa_range") = kappa_sampled ? Rcpp::NumericVector::create(kappa_min, kappa_max) : Rcpp::NumericVector(0),
     Rcpp::Named("nu") = nu
   );
 }
@@ -81,33 +88,57 @@ void mvn::sampleMuPrior() {
   }
 };
 
-void mvn::updatePooledHyperparameters(const arma::uvec& occupied) {
-  if(scale_shape <= 0.0) {
-    return;
+void mvn::updateKappa(const arma::uvec& occupied) {
+  double Q = 0.0;
+  for(uword i = 0; i < occupied.n_elem; i++) {
+    const uword k = occupied(i);
+    const arma::vec dist = mu.col(k) - xi;
+    Q += arma::as_scalar(dist.t() * cov_inv.slice(k) * dist);
   }
-  const double shape = scale_shape + 0.5 * nu * (double) occupied.n_elem;
-  arma::vec s(P);
-  for(uword p = 0; p < P; p++) {
-    double rate = scale_shape / scale_prior_mean(p);
-    for(uword i = 0; i < occupied.n_elem; i++) {
-      rate += 0.5 * cov_inv(p, p, occupied(i));
-    }
-    s(p) = rGamma(shape, rate);
-  }
-  scale = arma::diagmat(s);
+  const double shape = 0.5 * (double) P * (double) occupied.n_elem;
+  kappa = rTruncatedGamma(shape, 0.5 * Q, kappa_min, kappa_max);
 }
 
+void mvn::updatePooledHyperparameters(const arma::uvec& occupied) {
+  if(scale_shape > 0.0) {
+    const double shape = scale_shape + 0.5 * nu * (double) occupied.n_elem;
+    arma::vec s(P);
+    for(uword p = 0; p < P; p++) {
+      double rate = scale_shape / scale_prior_mean(p);
+      for(uword i = 0; i < occupied.n_elem; i++) {
+        rate += 0.5 * cov_inv(p, p, occupied(i));
+      }
+      s(p) = rGamma(shape, rate);
+    }
+    scale = arma::diagmat(s);
+  }
+  if(kappa_sampled) {
+    updateKappa(occupied);
+  }
+}
+
+// The scale (P entries) followed by kappa when it is sampled
 arma::vec mvn::pooledHyperparameters() const {
-  return scale.diag();
+  arma::vec out = scale.diag();
+  if(kappa_sampled) {
+    out = arma::join_cols(out, arma::vec({kappa}));
+  }
+  return out;
 }
 
 void mvn::setPooledHyperparameters(const arma::vec& pooled) {
-  if(pooled.n_elem == P) {
-    scale = arma::diagmat(pooled);
+  if(pooled.n_elem == P || (kappa_sampled && pooled.n_elem == P + 1)) {
+    scale = arma::diagmat(pooled.head(P));
+  }
+  if(kappa_sampled && pooled.n_elem == P + 1) {
+    kappa = pooled(P);
   }
 }
 
 void mvn::sampleFromPriors() {
+  if(kappa_sampled) {
+    kappa = rLogUniform(kappa_min, kappa_max);
+  }
   if(scale_shape > 0.0) {
     arma::vec s(P);
     for(uword p = 0; p < P; p++) {
