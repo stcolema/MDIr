@@ -193,6 +193,13 @@ void mdi::updateNormalisingConstant() {
 }
 
 void mdi::sampleStrategicLatentVariable() {
+  if(!weightsAreRepresentable()) {
+    Rcpp::stop(
+      "The component weights have reached a numerically degenerate scale (normalising constant %g). This happens "
+      "when the mass prior puts most of its probability near zero, so that the weights underflow; rather than "
+      "continue with weights that no longer depend on the component counts, the run is stopped. Use a mass prior "
+      "with more probability away from zero (a larger mass_shape or a smaller mass_rate in mdiPrior()).", Z);
+  }
   v = rGamma((double) N, Z);
 };
 
@@ -407,20 +414,60 @@ vec mdi::sampleMassPrior() {
   return rGamma(L, mass_shape_prior, mass_rate_prior);
 }
 
-void mdi::sampleFromGlobalPriors() {
-  mass = sampleMassPrior();
-  if(L > 1) {
-    phis = samplePhiPrior(LC2);
-  } else {
-    phis.zeros();
+// The strategic latent variable is v ~ Gamma(N, Z), about N / Z, and the weights are then
+// drawn with rate w_rate_prior + v * rate. The scale of the weights is a nuisance
+// coordinate (only their ratios affect the labels) and it moves slowly when the mass is
+// small. When the mass is very small the prior weights Gamma(mass / K, rate) are
+// astronomically small and rGamma floors them at the smallest positive double. Z is then a
+// few times that floor, v overflows and the first conditional fails with an opaque error; and
+// where it does not fail, the floor is as large as the weights themselves, log(w) no longer
+// reflects the component counts, and the sampler runs with distorted weights. Weights are
+// representable when the normalising constant and the largest weight of every view are at
+// least kMinWeightScale, so that the floor is negligible next to them. A prior draw that is
+// not representable is drawn again; a later sweep that is not representable stops the run
+// (see sampleStrategicLatentVariable()). Only the starting law is truncated, not the model,
+// and a draw that passes uses no extra random numbers, so the output is unchanged for it.
+static const double kMinWeightScale = 1e-200;
+static const int kMaxPriorRedraws = 1000;
+
+bool mdi::weightsAreRepresentable() const {
+  if(!(std::isfinite(Z) && Z >= kMinWeightScale)) {
+    return false;
   }
-  w.zeros();
   for(uword l = 0; l < L; l++) {
-    for(uword k = 0; k < K(l); k++) {
-      w(k, l) = sampleWeightPrior(l);
+    if(!(w.col(l).head(K(l)).max() >= kMinWeightScale)) {
+      return false;
     }
   }
-  updateNormalisingConstant();
+  return true;
+}
+
+void mdi::sampleFromGlobalPriors() {
+  for(int attempt = 1; ; attempt++) {
+    mass = sampleMassPrior();
+    if(L > 1) {
+      phis = samplePhiPrior(LC2);
+    } else {
+      phis.zeros();
+    }
+    w.zeros();
+    for(uword l = 0; l < L; l++) {
+      for(uword k = 0; k < K(l); k++) {
+        w(k, l) = sampleWeightPrior(l);
+      }
+    }
+    updateNormalisingConstant();
+    if(weightsAreRepresentable()) {
+      break;
+    }
+    if(attempt >= kMaxPriorRedraws) {
+      Rcpp::stop(
+        "Could not draw a numerically representable start from the prior in %d attempts: the weights "
+        "underflow because the mass prior puts almost all of its probability near zero (the prior mean of "
+        "the mass is mass_shape / mass_rate). Use a mass prior with more probability away from zero, "
+        "for example a larger mass_shape or a smaller mass_rate in mdiPrior().", kMaxPriorRedraws);
+    }
+  }
   sampleStrategicLatentVariable();
 };
 

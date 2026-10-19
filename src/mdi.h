@@ -250,6 +250,7 @@ public:
   void sampleFromPriors();
   void sampleFromLocalPriors();
   void sampleFromGlobalPriors();
+  bool weightsAreRepresentable() const;
   vec samplePhiPrior(uword n_phis);
   double sampleWeightPrior(uword l);
   vec sampleMassPrior();

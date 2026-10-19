@@ -12,9 +12,27 @@ using namespace arma ;
 //' param rate Rate parameter.
 //' return Sample from Gamma(shape, rate).
 double rGamma(double shape, double rate) {
+  // Arguments that cannot describe a Gamma distribution are reported here, with
+  // the values, instead of by armadillo (whose message names neither the
+  // function nor the values) or, for a zero rate, silently as an infinite draw.
+  if(!(shape > 0.0) || !std::isfinite(shape)) {
+    Rcpp::stop("rGamma: the shape must be positive and finite (shape = %g, rate = %g).", shape, rate);
+  }
+  if(!(rate > 0.0) || !std::isfinite(rate)) {
+    Rcpp::stop(
+      "rGamma: the rate must be positive and finite (shape = %g, rate = %g). A rate of this kind comes from a "
+      "normalising constant or a weight that has underflowed or overflowed; see the notes on the mass prior in "
+      "?mdiPrior.", shape, rate);
+  }
+  const double x = arma::randg( distr_param(shape, 1.0 / rate) );
+  // A draw that overflows would feed Inf into the next conditional. Stopping is
+  // safer than clamping, which would leave the weights at the floor below and
+  // make them independent of the component counts without any error.
+  if(!std::isfinite(x)) {
+    Rcpp::stop("rGamma: the draw overflowed (shape = %g, rate = %g).", shape, rate);
+  }
   // Gamma draws with small shape can underflow to exactly zero, which breaks
   // any subsequent log(). Floor at the smallest positive normal double.
-  double x = arma::randg( distr_param(shape, 1.0 / rate) );
   return std::max(x, std::numeric_limits<double>::min());
 };
 
@@ -25,6 +43,9 @@ double rGamma(double shape, double rate) {
 //' param rate Rate parameter.
 //' return N samples from Gamma(shape, rate).
 arma::vec rGamma(uword N, double shape, double rate) {
+  if(!(shape > 0.0) || !std::isfinite(shape) || !(rate > 0.0) || !std::isfinite(rate)) {
+    Rcpp::stop("rGamma: the shape and the rate must be positive and finite (shape = %g, rate = %g).", shape, rate);
+  }
   return arma::randg(N, distr_param(shape, 1.0 / rate) );
 };
 

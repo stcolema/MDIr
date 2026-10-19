@@ -33,7 +33,11 @@
 #' \eqn{a / K} exceeds \eqn{d / 2}. With the defaults (prior median of \eqn{a}
 #' about 17) that happens when \eqn{K} is small relative to \eqn{d}, so lower
 #' \code{mass_shape} or raise \code{mass_rate} to put \eqn{a / K} below
-#' \eqn{d / 2}. (ii) \eqn{\phi} multiplies the probability that an item takes the
+#' \eqn{d / 2}. A prior with almost all of its probability near zero (for example
+#' \code{mass_shape = 1} with \code{mass_rate} in the thousands) makes the prior
+#' weights underflow in double precision: the start is then drawn again from the
+#' prior, and a run whose weights later reach an unrepresentable scale stops with an
+#' error that names this cause. (ii) \eqn{\phi} multiplies the probability that an item takes the
 #' same component in two views by \eqn{1 + \phi}; the default prior has median
 #' around 8 and mean 10, which expresses an expectation of strong agreement
 #' between views. If you expect weaker sharing, lower the prior mean. (iii) Use
